@@ -23,6 +23,7 @@ func main() {
 func identifierFromString(str string) string {
 	str = strings.ReplaceAll(str, ".", "_")
 	str = strings.ReplaceAll(str, "-", "_")
+	str = strings.ReplaceAll(str, "/", "_")
 	for strings.Contains(str, "__") {
 		str = strings.ReplaceAll(str, "__", "_")
 	}
@@ -38,11 +39,12 @@ func namespaceFromPkg(pkg *packages.Package) string {
 }
 
 type Func struct {
-	Name string
+	Index int
+	Name  string
 }
 
 func run() error {
-	tmp, err := ioutil.TempDir("", "go2dotnet")
+	tmp, err := ioutil.TempDir("", "go2dotnet-")
 	if err != nil {
 		return err
 	}
@@ -54,7 +56,7 @@ func run() error {
 	pkgname := os.Args[len(os.Args)-1]
 
 	args := append([]string{"build"}, os.Args[1:]...)
-	args = append(args[:len(args)-1], "-o", wasmpath, pkgname)
+	args = append(args[:len(args)-1], "-o="+wasmpath, pkgname)
 	cmd := exec.Command("go", args...)
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(), "GOOS=js", "GOARCH=wasm")
@@ -72,14 +74,23 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	return nil
 
 	var fs []*Func
 	for _, s := range mod.Sections {
 		switch s := s.(type) {
+		case *wasm.SectionImport:
+			for i, e := range s.Entries {
+				fs = append(fs, &Func{
+					Index: i,
+					Name:  identifierFromString(e.Field),
+				})
+			}
 		case *wasm.SectionName:
 			for _, f := range s.Functions.Names {
 				fs = append(fs, &Func{
-					Name: identifierFromString(f.Name),
+					Index: int(f.Index),
+					Name:  identifierFromString(f.Name),
 				})
 			}
 		}
@@ -116,6 +127,7 @@ namespace {{.Namespace}}
     sealed class {{.Class}}
     {
 {{- range $value := .Funcs}}
+        // Index: {{$value.Index}}
         private void {{$value.Name}}()
         {
             // TODO: Implement this.
