@@ -115,7 +115,7 @@ namespace {{.Namespace}}
 {
     class {{.Class}}
     {
-{{range $value := .Funcs}}        private void {{$value.Name}}
+{{range $value := .Funcs}}        private void {{$value.Name}}()
         {
             // TODO: Implement this.
         }
