@@ -24,9 +24,10 @@ func identifierFromString(str string) string {
 	str = strings.ReplaceAll(str, ".", "_")
 	str = strings.ReplaceAll(str, "-", "_")
 	str = strings.ReplaceAll(str, "/", "_")
-	for strings.Contains(str, "__") {
+	// TODO: __ might be preserved. Use a better conversion rule.
+	/*for strings.Contains(str, "__") {
 		str = strings.ReplaceAll(str, "__", "_")
-	}
+	}*/
 	return str
 }
 
@@ -80,7 +81,8 @@ func run() error {
 	for i, f := range mod.FunctionIndexSpace {
 		name := f.Name
 		if name == "" {
-			name = mod.Import.Entries[i].FieldName
+			// TODO: Better prefix?
+			name = "import_" + mod.Import.Entries[i].FieldName
 		}
 		fs = append(fs, &Func{
 			Index:        i,

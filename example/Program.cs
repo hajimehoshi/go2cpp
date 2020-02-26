@@ -6,7 +6,7 @@ namespace example
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            // TODO: Call a function in go.cs.
         }
     }
 }
