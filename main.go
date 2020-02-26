@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/akupila/go-wasm"
+	"github.com/go-interpreter/wagon/wasm"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -70,30 +70,21 @@ func run() error {
 	}
 	defer f.Close()
 
-	mod, err := wasm.Parse(f)
+	mod, err := wasm.ReadModule(f, nil)
 	if err != nil {
 		return err
 	}
-	return nil
 
 	var fs []*Func
-	for _, s := range mod.Sections {
-		switch s := s.(type) {
-		case *wasm.SectionImport:
-			for i, e := range s.Entries {
-				fs = append(fs, &Func{
-					Index: i,
-					Name:  identifierFromString(e.Field),
-				})
-			}
-		case *wasm.SectionName:
-			for _, f := range s.Functions.Names {
-				fs = append(fs, &Func{
-					Index: int(f.Index),
-					Name:  identifierFromString(f.Name),
-				})
-			}
+	for i, f := range mod.FunctionIndexSpace {
+		name := f.Name
+		if name == "" {
+			name = mod.Import.Entries[i].FieldName
 		}
+		fs = append(fs, &Func{
+			Index: i,
+			Name:  identifierFromString(name),
+		})
 	}
 
 	pkgs, err := packages.Load(nil, pkgname)
