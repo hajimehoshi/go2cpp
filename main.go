@@ -39,8 +39,9 @@ func namespaceFromPkg(pkg *packages.Package) string {
 }
 
 type Func struct {
-	Index int
-	Name  string
+	Index        int
+	OriginalName string
+	Name         string
 }
 
 func run() error {
@@ -82,8 +83,9 @@ func run() error {
 			name = mod.Import.Entries[i].FieldName
 		}
 		fs = append(fs, &Func{
-			Index: i,
-			Name:  identifierFromString(name),
+			Index:        i,
+			OriginalName: name,
+			Name:         identifierFromString(name),
 		})
 	}
 
@@ -118,7 +120,8 @@ namespace {{.Namespace}}
     sealed class {{.Class}}
     {
 {{- range $value := .Funcs}}
-        // Index: {{$value.Index}}
+        // OriginalName: {{$value.OriginalName}}
+        // Index:        {{$value.Index}}
         private void {{$value.Name}}()
         {
             // TODO: Implement this.
