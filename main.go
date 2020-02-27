@@ -63,10 +63,10 @@ var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.Ori
 // Index:        {{.Index}}
 internal {{.ReturnType}} {{.Name}}({{.Args}})
 {
-    {{.Locals}}
-    // TODO: Implement this.
-    {{.Return}}
-}`))
+{{range .Locals}}    {{.}}
+{{end}}    // TODO: Implement this.
+{{if ne .ReturnType "void"}}    return 0;
+{{end}}}`))
 
 func wasmTypeToCSharpType(v wasm.ValueType) string {
 	switch v {
@@ -85,13 +85,11 @@ func wasmTypeToCSharpType(v wasm.ValueType) string {
 
 func (f *Func) CSharp(indent string) (string, error) {
 	var retType string
-	var ret string
 	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
 	case 0:
 		retType = "void"
 	case 1:
 		retType = wasmTypeToCSharpType(ts[0])
-		ret = "return 0;"
 	default:
 		panic("the number of return values should be 0 or 1 so far")
 	}
@@ -117,16 +115,14 @@ func (f *Func) CSharp(indent string) (string, error) {
 		Index        int
 		ReturnType   string
 		Args         string
-		Locals       string
-		Return       string
+		Locals       []string
 	}{
 		OriginalName: f.Name,
 		Name:         identifierFromString(f.Name),
 		Index:        f.Index,
 		ReturnType:   retType,
 		Args:         strings.Join(args, ", "),
-		Locals:       strings.Join(locals, "\n"),
-		Return:       ret,
+		Locals:       locals,
 	}); err != nil {
 		return "", err
 	}
