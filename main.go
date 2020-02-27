@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -21,14 +22,26 @@ func main() {
 }
 
 func identifierFromString(str string) string {
-	str = strings.ReplaceAll(str, ".", "_")
-	str = strings.ReplaceAll(str, "-", "_")
-	str = strings.ReplaceAll(str, "/", "_")
-	// TODO: __ might be preserved. Use a better conversion rule.
-	/*for strings.Contains(str, "__") {
-		str = strings.ReplaceAll(str, "__", "_")
-	}*/
-	return str
+	var ident string
+	for _, r := range []rune(str) {
+		if r > 0xff {
+			panic("identifiers cannot include non-Latin1 characters")
+		}
+		if '0' <= r && r <= '9' {
+			ident += string(r)
+			continue
+		}
+		if 'a' <= r && r <= 'z' {
+			ident += string(r)
+			continue
+		}
+		if 'A' <= r && r <= 'Z' {
+			ident += string(r)
+			continue
+		}
+		ident += fmt.Sprintf("_%02x", r)
+	}
+	return ident
 }
 
 func namespaceFromPkg(pkg *packages.Package) string {
