@@ -74,8 +74,8 @@ func wasmTypeToCSharpType(v wasm.ValueType) string {
 }
 
 func (f *Func) CSharp(indent string) string {
-	var ret string
 	var retType string
+	var ret string
 	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
 	case 0:
 		retType = "void"
@@ -86,13 +86,18 @@ func (f *Func) CSharp(indent string) string {
 		panic("the number of return values should be 0 or 1 so far")
 	}
 
+	var args []string
+	for i, t := range f.Wasm.Sig.ParamTypes {
+		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToCSharpType(t), i))
+	}
+
 	str := fmt.Sprintf(`// OriginalName: %s
 // Index:        %d
-internal %s %s()
+internal %s %s(%s)
 {
     // TODO: Implement this.
     %s
-}`, f.Name, f.Index, retType, identifierFromString(f.Name), ret)
+}`, f.Name, f.Index, retType, identifierFromString(f.Name), strings.Join(args, ", "), ret)
 
 	// Add indentations
 	var lines []string
