@@ -1,5 +1,6 @@
 github.com/edsrzf/mmap-go v1.0.0 h1:CEBF7HpRnUCSJgGUb5h1Gm7e3VkmVDrR8lvWVLtrOFw=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
+github.com/go-interpreter/wagon v0.6.0 h1:BBxDxjiJiHgw9EdkYXAWs8NHhwnazZ5P2EWBW5hFNWw=
 github.com/go-interpreter/wagon v0.6.1-0.20200226200811-4ca95707c808 h1:DK/r87dK66orWskGaYpM/0csKs1uOtwve5tX0z/ZljI=
 github.com/go-interpreter/wagon v0.6.1-0.20200226200811-4ca95707c808/go.mod h1:lQUozviuTS6v7A2HXs6L0Wc72Apl9+mKsGLsJOHYiME=
 github.com/twitchyliquid64/golang-asm v0.0.0-20190126203739-365674df15fc h1:RTUQlKzoZZVG3umWNzOYeFecQLIh+dbxXvJp1zPQJTI=

@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/go-interpreter/wagon/wasm"
+	"github.com/go-interpreter/wagon/wasm/operators"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -54,7 +55,8 @@ func namespaceFromPkg(pkg *packages.Package) string {
 }
 
 type Func struct {
-	Wasm  wasm.Function
+	Sig   *wasm.FunctionSig
+	Body  *wasm.FunctionBody
 	Index int
 	Name  string
 }
@@ -64,7 +66,9 @@ var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.Ori
 internal {{.ReturnType}} {{.Name}}({{.Args}})
 {
 {{range .Locals}}    {{.}}
-{{end}}    // TODO: Implement this.
+{{end}}
+{{range .Body}}    // {{.}}
+{{end}}
 {{if ne .ReturnType "void"}}    return 0;
 {{end}}}`))
 
@@ -85,7 +89,7 @@ func wasmTypeToCSharpType(v wasm.ValueType) string {
 
 func (f *Func) CSharp(indent string) (string, error) {
 	var retType string
-	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
+	switch ts := f.Sig.ReturnTypes; len(ts) {
 	case 0:
 		retType = "void"
 	case 1:
@@ -95,16 +99,29 @@ func (f *Func) CSharp(indent string) (string, error) {
 	}
 
 	var args []string
-	for i, t := range f.Wasm.Sig.ParamTypes {
+	for i, t := range f.Sig.ParamTypes {
 		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToCSharpType(t), i))
 	}
 
 	var locals []string
-	var idx int
-	for _, e := range f.Wasm.Body.Locals {
-		for i := 0; i < int(e.Count); i++ {
-			locals = append(locals, fmt.Sprintf("%s local%d;", wasmTypeToCSharpType(e.Type), idx))
-			idx++
+	var body []string
+	if f.Body != nil {
+		var idx int
+		for _, e := range f.Body.Locals {
+			for i := 0; i < int(e.Count); i++ {
+				locals = append(locals, fmt.Sprintf("%s local%d;", wasmTypeToCSharpType(e.Type), idx))
+				idx++
+			}
+		}
+
+		for _, c := range f.Body.Code {
+			op, err := operators.New(c)
+			if err != nil {
+				// This should be just an argument.
+				body = append(body, fmt.Sprintf("%02x", c))
+			} else {
+				body = append(body, fmt.Sprintf("%v", op))
+			}
 		}
 	}
 
@@ -116,6 +133,7 @@ func (f *Func) CSharp(indent string) (string, error) {
 		ReturnType   string
 		Args         string
 		Locals       []string
+		Body         []string
 	}{
 		OriginalName: f.Name,
 		Name:         identifierFromString(f.Name),
@@ -123,6 +141,7 @@ func (f *Func) CSharp(indent string) (string, error) {
 		ReturnType:   retType,
 		Args:         strings.Join(args, ", "),
 		Locals:       locals,
+		Body:         body,
 	}); err != nil {
 		return "", err
 	}
@@ -170,20 +189,23 @@ func run() error {
 	var ifs []*Func
 	var fs []*Func
 	for i, f := range mod.FunctionIndexSpace {
+		// There is a bug that signature and body are shifted (go-interpreter/wagon#190).
+		// TODO: Avoid using FunctionIndexSpace?
 		if f.Name == "" {
-			name := mod.Import.Entries[i].FieldName
 			ifs = append(ifs, &Func{
-				Wasm:  f,
+				Sig:   &mod.Types.Entries[mod.Import.Entries[i].Type.(wasm.FuncImport).Type],
 				Index: i,
-				Name:  name,
+				Name:  mod.Import.Entries[i].FieldName,
 			})
 			continue
 		}
-		name := f.Name
+
+		f2 := mod.FunctionIndexSpace[i - len(mod.Import.Entries)]
 		fs = append(fs, &Func{
-			Wasm:  f,
+			Sig:   f2.Sig,
+			Body:  f2.Body,
 			Index: i,
-			Name:  name,
+			Name:  f.Name,
 		})
 	}
 
