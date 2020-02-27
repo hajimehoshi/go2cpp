@@ -53,22 +53,51 @@ func namespaceFromPkg(pkg *packages.Package) string {
 }
 
 type Func struct {
-	Index        int
-	OriginalName string
-	Name         string
+	Wasm  wasm.Function
+	Index int
+	Name  string
+}
+
+func wasmTypeToCSharpType(v wasm.ValueType) string {
+	switch v {
+	case wasm.ValueTypeI32:
+		return "int"
+	case wasm.ValueTypeI64:
+		return "long"
+	case wasm.ValueTypeF32:
+		return "float"
+	case wasm.ValueTypeF64:
+		return "double"
+	default:
+		panic("not reached")
+	}
 }
 
 func (f *Func) CSharp(indent string) string {
+	var ret string
+	var retType string
+	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
+	case 0:
+		retType = "void"
+	case 1:
+		retType = wasmTypeToCSharpType(ts[0])
+		ret = "return 0;"
+	default:
+		panic("the number of return values should be 0 or 1 so far")
+	}
+
 	str := fmt.Sprintf(`// OriginalName: %s
 // Index:        %d
-internal void %s()
+internal %s %s()
 {
     // TODO: Implement this.
-}`, f.OriginalName, f.Index, f.Name)
+    %s
+}`, f.Name, f.Index, retType, identifierFromString(f.Name), ret)
 
+	// Add indentations
 	var lines []string
 	for _, line := range strings.Split(str, "\n") {
-		lines = append(lines, indent + line)
+		lines = append(lines, indent+line)
 	}
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -111,17 +140,17 @@ func run() error {
 		if f.Name == "" {
 			name := mod.Import.Entries[i].FieldName
 			ifs = append(ifs, &Func{
-				Index:        i,
-				OriginalName: name,
-				Name:         identifierFromString(name),
+				Wasm:  f,
+				Index: i,
+				Name:  name,
 			})
 			continue
 		}
 		name := f.Name
 		fs = append(fs, &Func{
-			Index:        i,
-			OriginalName: name,
-			Name:         identifierFromString(name),
+			Wasm:  f,
+			Index: i,
+			Name:  name,
 		})
 	}
 
