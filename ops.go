@@ -113,7 +113,24 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 
 			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))
 		case operators.CallIndirect:
-			// TODO: Implement this.
+			//tpyeid := instr.Immediates[0].(uint32)
+
+			idx := popStack()
+			_ = idx
+			//println(idx)
+			/*f := funcs[table[0][idx]]
+	
+			args := make([]string, len(f.Sig.ParamTypes))
+			for i := range f.Sig.ParamTypes {
+				args[len(f.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", popStack())
+			}
+
+			var ret string
+			if len(f.Sig.ReturnTypes) > 0 {
+				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
+			}
+
+			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))*/
 
 		case operators.Drop:
 			popStack()

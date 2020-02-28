@@ -93,7 +93,7 @@ func (f *Func) CSharp(indent string) (string, error) {
 	case 1:
 		retType = wasmTypeToReturnType(ts[0])
 	default:
-		panic("the number of return values should be 0 or 1 so far")
+		return "", fmt.Errorf("the number of return values must be 0 or 1 but %d", len(ts))
 	}
 
 	var args []string
@@ -155,6 +155,30 @@ type Global struct {
 
 func (g *Global) CSharp(indent string) string {
 	return fmt.Sprintf("%sprivate %s global%d = %d;", indent, wasmTypeToReturnType(g.Type).CSharp(), g.Index, g.Init)
+}
+
+type Type struct {
+	Sig   *wasm.FunctionSig
+	Index int
+}
+
+func (t *Type) CSharp(indent string) (string, error) {
+	var retType ReturnType
+	switch ts := t.Sig.ReturnTypes; len(ts) {
+	case 0:
+		retType = ReturnTypeVoid
+	case 1:
+		retType = wasmTypeToReturnType(ts[0])
+	default:
+		return "", fmt.Errorf("the number of return values must be 0 or 1 but %d", len(ts))
+	}
+
+	var args []string
+	for i, t := range t.Sig.ParamTypes {
+		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToReturnType(t).CSharp(), i))
+	}
+
+	return fmt.Sprintf("%sprivate delegate %s Type%d(%s);", indent, retType.CSharp(), t.Index, strings.Join(args, ", ")), nil
 }
 
 func run() error {
@@ -235,6 +259,15 @@ func run() error {
 		return err
 	}
 
+	var types []*Type
+	for i, e := range mod.Types.Entries {
+		e := e
+		types = append(types, &Type{
+			Sig:   &e,
+			Index: i,
+		})
+	}
+
 	namespace := namespaceFromPkg(pkgs[0])
 	class := identifierFromString(pkgs[0].Name)
 
@@ -244,6 +277,7 @@ func run() error {
 		ImportFuncs []*Func
 		Funcs       []*Func
 		Globals     []*Global
+		Types       []*Type
 		Table       [][]uint32
 	}{
 		Namespace:   namespace,
@@ -251,6 +285,7 @@ func run() error {
 		ImportFuncs: ifs,
 		Funcs:       fs,
 		Globals:     globals,
+		Types:       types,
 		Table:       mod.TableIndexSpace,
 	}); err != nil {
 		return err
@@ -279,6 +314,8 @@ namespace {{.Namespace}}
 
     sealed class Go_{{.Class}}
     {
+{{range $value := .Types}}{{$value.CSharp "        "}}
+{{end}}
         private static readonly uint[][] table = {
 {{range $value := .Table}}            new uint[] { {{- range $value2 := $value}}{{$value2}}, {{end}}},
 {{end}}        };
