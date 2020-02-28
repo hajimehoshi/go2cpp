@@ -51,10 +51,19 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 	var newIdx int
 	var idxStack []int
 
-	nextIdx := func() int {
+	pushStack := func() int {
 		idx := newIdx
+		idxStack = append(idxStack, idx)
 		newIdx++
 		return idx
+	}
+	popStack := func() int {
+		idx := idxStack[len(idxStack)-1]
+		idxStack = idxStack[:len(idxStack)-1]
+		return idx
+	}
+	peepStack := func() int {
+		return idxStack[len(idxStack)-1]
 	}
 
 	// TODO: Replace 'dynamic' with proper types
@@ -89,15 +98,12 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 
 			args := make([]string, len(f.Sig.ParamTypes))
 			for i := range f.Sig.ParamTypes {
-				args[i] = fmt.Sprintf("stack%d", idxStack[len(idxStack)-len(f.Sig.ParamTypes)+i])
+				args[len(f.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", popStack())
 			}
-			idxStack = idxStack[:len(idxStack)-len(f.Sig.ParamTypes)]
 
 			var ret string
 			if len(f.Sig.ReturnTypes) > 0 {
-				idx := nextIdx()
-				ret = fmt.Sprintf("dynamic stack%d = ", idx)
-				idxStack = append(idxStack, idx)
+				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
 			}
 
 			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))
@@ -105,30 +111,26 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 			// TODO: Implement this.
 
 		case operators.Drop:
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.Select:
 			// TODO: Implement this.
 			idxStack = idxStack[:len(idxStack)-2]
 
 		case operators.GetLocal:
-			idx := nextIdx()
+			idx := pushStack()
 			body = append(body, fmt.Sprintf("dynamic stack%d = local%d;", idx, instr.Immediates[0]))
-			idxStack = append(idxStack, idx)
 		case operators.SetLocal:
-			idx := idxStack[len(idxStack)-1]
+			idx := popStack()
 			body = append(body, fmt.Sprintf("local%d = stack%d;", instr.Immediates[0], idx))
-			idxStack = idxStack[:len(idxStack)-1]
 		case operators.TeeLocal:
-			idx := idxStack[len(idxStack)-1]
+			idx := peepStack()
 			body = append(body, fmt.Sprintf("local%d = stack%d;", instr.Immediates[0], idx))
 		case operators.GetGlobal:
-			idx := nextIdx()
+			idx := pushStack()
 			body = append(body, fmt.Sprintf("dynamic stack%d = global%d;", idx, instr.Immediates[0]))
-			idxStack = append(idxStack, idx)
 		case operators.SetGlobal:
-			idx := idxStack[len(idxStack)-1]
+			idx := popStack()
 			body = append(body, fmt.Sprintf("global%d = stack%d;", instr.Immediates[0], idx))
-			idxStack = idxStack[:len(idxStack)-1]
 
 		case operators.I32Load:
 			// TODO: Implement this.
@@ -161,159 +163,164 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 
 		case operators.I32Store:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.I64Store:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.F32Store:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.F64Store:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.I32Store8:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.I32Store16:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.I64Store8:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.I64Store16:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 		case operators.I64Store32:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			popStack()
+			popStack()
 
 		case operators.CurrentMemory:
-			idx := nextIdx()
+			idx := pushStack()
 			// TOOD: Implement this.
-			idxStack = append(idxStack, idx)
+			_ = idx
 		case operators.GrowMemory:
 			// TOOD: Implement this.
 
 		case operators.I32Const:
-			idx := nextIdx()
+			idx := pushStack()
 			body = append(body, fmt.Sprintf("dynamic stack%d = %d;", idx, instr.Immediates[0]))
-			idxStack = append(idxStack, idx)
 		case operators.I64Const:
-			idx := nextIdx()
+			idx := pushStack()
 			body = append(body, fmt.Sprintf("dynamic stack%d = %d;", idx, instr.Immediates[0]))
-			idxStack = append(idxStack, idx)
 		case operators.F32Const:
-			idx := nextIdx()
+			idx := pushStack()
 			// TODO: Implement this.
 			// https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.1
 			body = append(body, fmt.Sprintf("dynamic stack%d = 0 /* TODO */;", idx))
-			idxStack = append(idxStack, idx)
 		case operators.F64Const:
-			idx := nextIdx()
+			idx := pushStack()
 			// TODO: Implement this.
 			body = append(body, fmt.Sprintf("dynamic stack%d = 0 /* TODO */;", idx))
-			idxStack = append(idxStack, idx)
 
 		case operators.I32Eqz:
 			// TODO: Implement this.
 		case operators.I32Eq:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Ne:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32LtS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32LtU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32GtS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32GtU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32LeS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32LeU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32GeS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32GeU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Eqz:
 			// TODO: Implement this.
 		case operators.I64Eq:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Ne:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64LtS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64LtU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64GtS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64GtU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64LeS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64LeU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64GeS:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64GeU:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Eq:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Ne:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Lt:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Gt:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Le:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Ge:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Eq:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Ne:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Lt:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Gt:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Le:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Ge:
 			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 
 		case operators.I32Clz:
 			// TODO: Implement this
@@ -323,49 +330,49 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 			// TODO: Implement this
 		case operators.I32Add:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Sub:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Mul:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32DivS:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32DivU:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32RemS:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32RemU:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32And:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Or:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Xor:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Shl:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32ShrS:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32ShrU:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Rotl:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I32Rotr:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Clz:
 			// TODO: Implement this
 		case operators.I64Ctz:
@@ -374,49 +381,49 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 			// TODO: Implement this
 		case operators.I64Add:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Sub:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Mul:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64DivS:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64DivU:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64RemS:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64RemU:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64And:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Or:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Xor:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Shl:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64ShrS:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64ShrU:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Rotl:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.I64Rotr:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Abs:
 			// TODO: Implement this
 		case operators.F32Neg:
@@ -433,25 +440,25 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 			// TODO: Implement this
 		case operators.F32Add:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Sub:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Mul:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Div:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Min:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Max:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F32Copysign:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Abs:
 			// TODO: Implement this
 		case operators.F64Neg:
@@ -468,25 +475,25 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 			// TODO: Implement this
 		case operators.F64Add:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Sub:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Mul:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Div:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Min:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Max:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 		case operators.F64Copysign:
 			// TODO: Implement this
-			idxStack = idxStack[:len(idxStack)-1]
+			popStack()
 
 		case operators.I32WrapI64:
 			// TODO: Implement this
