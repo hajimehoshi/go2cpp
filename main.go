@@ -55,10 +55,14 @@ func namespaceFromPkg(pkg *packages.Package) string {
 
 type Func struct {
 	Funcs []*Func
-	Sig   *wasm.FunctionSig
+	Type  *Type
 	Body  *wasm.FunctionBody
 	Index int
 	Name  string
+}
+
+func (f *Func) Identifier() string {
+	return identifierFromString(f.Name)
 }
 
 var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.OriginalName}}
@@ -87,7 +91,7 @@ func wasmTypeToReturnType(v wasm.ValueType) ReturnType {
 
 func (f *Func) CSharp(indent string) (string, error) {
 	var retType ReturnType
-	switch ts := f.Sig.ReturnTypes; len(ts) {
+	switch ts := f.Type.Sig.ReturnTypes; len(ts) {
 	case 0:
 		retType = ReturnTypeVoid
 	case 1:
@@ -97,7 +101,7 @@ func (f *Func) CSharp(indent string) (string, error) {
 	}
 
 	var args []string
-	for i, t := range f.Sig.ParamTypes {
+	for i, t := range f.Type.Sig.ParamTypes {
 		args = append(args, fmt.Sprintf("%s local%d", wasmTypeToReturnType(t).CSharp(), i))
 	}
 
@@ -107,12 +111,12 @@ func (f *Func) CSharp(indent string) (string, error) {
 		var idx int
 		for _, e := range f.Body.Locals {
 			for i := 0; i < int(e.Count); i++ {
-				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Sig.ParamTypes)))
+				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Type.Sig.ParamTypes)))
 				idx++
 			}
 		}
 		var err error
-		body, err = opsToCSharp(f.Body.Code, f.Sig, f.Funcs)
+		body, err = opsToCSharp(f.Body.Code, f.Type.Sig, f.Funcs)
 		if err != nil {
 			return "", err
 		}
@@ -213,6 +217,15 @@ func run() error {
 		return err
 	}
 
+	var types []*Type
+	for i, e := range mod.Types.Entries {
+		e := e
+		types = append(types, &Type{
+			Sig:   &e,
+			Index: i,
+		})
+	}
+
 	var ifs []*Func
 	var fs []*Func
 	for i, f := range mod.FunctionIndexSpace {
@@ -220,7 +233,7 @@ func run() error {
 		// TODO: Avoid using FunctionIndexSpace?
 		if f.Name == "" {
 			ifs = append(ifs, &Func{
-				Sig:   &mod.Types.Entries[mod.Import.Entries[i].Type.(wasm.FuncImport).Type],
+				Type:  types[mod.Import.Entries[i].Type.(wasm.FuncImport).Type],
 				Index: i,
 				Name:  mod.Import.Entries[i].FieldName,
 			})
@@ -229,7 +242,7 @@ func run() error {
 
 		f2 := mod.FunctionIndexSpace[i-len(mod.Import.Entries)]
 		fs = append(fs, &Func{
-			Sig:   f2.Sig,
+			Type:  types[mod.Function.Types[i-len(mod.Import.Entries)]],
 			Body:  f2.Body,
 			Index: i,
 			Name:  f.Name,
@@ -257,15 +270,6 @@ func run() error {
 	pkgs, err := packages.Load(nil, pkgname)
 	if err != nil {
 		return err
-	}
-
-	var types []*Type
-	for i, e := range mod.Types.Entries {
-		e := e
-		types = append(types, &Type{
-			Sig:   &e,
-			Index: i,
-		})
 	}
 
 	namespace := namespaceFromPkg(pkgs[0])
@@ -314,14 +318,29 @@ namespace {{.Namespace}}
 
     sealed class Go_{{.Class}}
     {
-{{range $value := .Types}}{{$value.CSharp "        "}}
+        public Go_{{.Class}}()
+        {
+             initializeFuncs_();
+        }
+
+{{range $value := .Globals}}{{$value.CSharp "        "}}
 {{end}}
-        private static readonly uint[][] table = {
+{{range $value := .Funcs}}{{$value.CSharp "        "}}
+{{end}}
+{{range $value := .Types}}{{$value.CSharp "        "}}
+{{end}}        private static readonly uint[][] table_ = {
 {{range $value := .Table}}            new uint[] { {{- range $value2 := $value}}{{$value2}}, {{end}}},
 {{end}}        };
-{{range $value := .Globals}}
-{{$value.CSharp "        "}}{{end}}
-{{range $value := .Funcs}}
-{{$value.CSharp "        "}}{{end}}    }
+
+        private object[] funcs_;
+
+        private void initializeFuncs_()
+        {
+            funcs_ = new object[] {
+{{range $value := .ImportFuncs}}                null,
+{{end}}{{range $value := .Funcs}}                (Type{{.Type.Index}})({{.Identifier}}),
+{{end}}            };
+        }
+    }
 }
 `))

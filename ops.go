@@ -101,36 +101,30 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 		case operators.Call:
 			f := funcs[instr.Immediates[0].(uint32)]
 
-			args := make([]string, len(f.Sig.ParamTypes))
-			for i := range f.Sig.ParamTypes {
-				args[len(f.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", popStack())
+			args := make([]string, len(f.Type.Sig.ParamTypes))
+			for i := range f.Type.Sig.ParamTypes {
+				args[len(f.Type.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", popStack())
 			}
 
 			var ret string
-			if len(f.Sig.ReturnTypes) > 0 {
+			if len(f.Type.Sig.ReturnTypes) > 0 {
 				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
 			}
 
 			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))
 		case operators.CallIndirect:
-			//tpyeid := instr.Immediates[0].(uint32)
+			typeid := instr.Immediates[0].(uint32)
+			_ = typeid
+
+			var ret string
+			/*if typeid {
+				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
+			}*/
+			_ = ret
 
 			idx := popStack()
 			_ = idx
-			//println(idx)
-			/*f := funcs[table[0][idx]]
-	
-			args := make([]string, len(f.Sig.ParamTypes))
-			for i := range f.Sig.ParamTypes {
-				args[len(f.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", popStack())
-			}
-
-			var ret string
-			if len(f.Sig.ReturnTypes) > 0 {
-				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
-			}
-
-			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))*/
+			//body = append(body, fmt.Sprintf("%stable[0][stack%d]();", ret, idx))
 
 		case operators.Drop:
 			popStack()
