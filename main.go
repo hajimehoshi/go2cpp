@@ -107,7 +107,7 @@ func (f *Func) CSharp(indent string) (string, error) {
 		var idx int
 		for _, e := range f.Body.Locals {
 			for i := 0; i < int(e.Count); i++ {
-				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx + len(f.Sig.ParamTypes)))
+				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Sig.ParamTypes)))
 				idx++
 			}
 		}
@@ -154,7 +154,7 @@ type Global struct {
 }
 
 func (g *Global) CSharp(indent string) string {
-	return fmt.Sprintf("%s%s global%d = %d;", indent, wasmTypeToReturnType(g.Type).CSharp(), g.Index, g.Init)
+	return fmt.Sprintf("%sprivate %s global%d = %d;", indent, wasmTypeToReturnType(g.Type).CSharp(), g.Index, g.Init)
 }
 
 func run() error {
@@ -203,7 +203,7 @@ func run() error {
 			continue
 		}
 
-		f2 := mod.FunctionIndexSpace[i - len(mod.Import.Entries)]
+		f2 := mod.FunctionIndexSpace[i-len(mod.Import.Entries)]
 		fs = append(fs, &Func{
 			Sig:   f2.Sig,
 			Body:  f2.Body,
@@ -244,12 +244,14 @@ func run() error {
 		ImportFuncs []*Func
 		Funcs       []*Func
 		Globals     []*Global
+		Table       [][]uint32
 	}{
 		Namespace:   namespace,
 		Class:       class,
 		ImportFuncs: ifs,
 		Funcs:       fs,
 		Globals:     globals,
+		Table:       mod.TableIndexSpace,
 	}); err != nil {
 		return err
 	}
@@ -277,7 +279,10 @@ namespace {{.Namespace}}
 
     sealed class Go_{{.Class}}
     {
-{{- range $value := .Globals}}
+        private static readonly uint[][] table = {
+{{range $value := .Table}}            new uint[] { {{- range $value2 := $value}}{{$value2}}, {{end}}},
+{{end}}        };
+{{range $value := .Globals}}
 {{$value.CSharp "        "}}{{end}}
 {{range $value := .Funcs}}
 {{$value.CSharp "        "}}{{end}}    }
