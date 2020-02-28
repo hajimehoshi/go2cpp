@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
@@ -37,15 +38,15 @@ func (r ReturnType) CSharp() string {
 	}
 }
 
-func opsToCSharp(code []byte, sig *wasm.FunctionSig) ([]string, error) {
+func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func) ([]string, error) {
 	instrs, err := disasm.Disassemble(code)
 	if err != nil {
 		return nil, err
 	}
-	return instrsToCSharp(instrs, sig)
+	return instrsToCSharp(instrs, sig, funcs)
 }
 
-func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, error) {
+func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func) ([]string, error) {
 	var body []string
 	var newIdx int
 	var idxStack []int
@@ -55,6 +56,8 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, err
 		newIdx++
 		return idx
 	}
+
+	// TODO: Replace 'dynamic' with proper types
 
 	for _, instr := range instrs {
 		switch instr.Op.Code {
@@ -82,7 +85,22 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, err
 			// TODO: Implement this.
 
 		case operators.Call:
-			// TODO: Implement this.
+			f := funcs[instr.Immediates[0].(uint32)]
+
+			args := make([]string, len(f.Sig.ParamTypes))
+			for i := range f.Sig.ParamTypes {
+				args[i] = fmt.Sprintf("stack%d", idxStack[len(idxStack)-len(f.Sig.ParamTypes)+i])
+			}
+			idxStack = idxStack[:len(idxStack)-len(f.Sig.ParamTypes)]
+
+			var ret string
+			if len(f.Sig.ReturnTypes) > 0 {
+				idx := nextIdx()
+				ret = fmt.Sprintf("dynamic stack%d = ", idx)
+				idxStack = append(idxStack, idx)
+			}
+
+			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))
 		case operators.CallIndirect:
 			// TODO: Implement this.
 
@@ -94,7 +112,6 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, err
 
 		case operators.GetLocal:
 			idx := nextIdx()
-			// TODO: Use a proper type.
 			body = append(body, fmt.Sprintf("dynamic stack%d = local%d;", idx, instr.Immediates[0]))
 			idxStack = append(idxStack, idx)
 		case operators.SetLocal:
@@ -106,7 +123,6 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, err
 			body = append(body, fmt.Sprintf("local%d = stack%d;", instr.Immediates[0], idx))
 		case operators.GetGlobal:
 			idx := nextIdx()
-			// TODO: Use a proper type.
 			body = append(body, fmt.Sprintf("dynamic stack%d = global%d;", idx, instr.Immediates[0]))
 			idxStack = append(idxStack, idx)
 		case operators.SetGlobal:
@@ -180,25 +196,21 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, err
 
 		case operators.I32Const:
 			idx := nextIdx()
-			// TODO: Use a proper type.
 			body = append(body, fmt.Sprintf("dynamic stack%d = %d;", idx, instr.Immediates[0]))
 			idxStack = append(idxStack, idx)
 		case operators.I64Const:
 			idx := nextIdx()
-			// TODO: Use a proper type.
 			body = append(body, fmt.Sprintf("dynamic stack%d = %d;", idx, instr.Immediates[0]))
 			idxStack = append(idxStack, idx)
 		case operators.F32Const:
 			idx := nextIdx()
 			// TODO: Implement this.
 			// https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.1
-			// TODO: Use a proper type.
 			body = append(body, fmt.Sprintf("dynamic stack%d = 0 /* TODO */;", idx))
 			idxStack = append(idxStack, idx)
 		case operators.F64Const:
 			idx := nextIdx()
 			// TODO: Implement this.
-			// TODO: Use a proper type.
 			body = append(body, fmt.Sprintf("dynamic stack%d = 0 /* TODO */;", idx))
 			idxStack = append(idxStack, idx)
 

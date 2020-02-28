@@ -54,6 +54,7 @@ func namespaceFromPkg(pkg *packages.Package) string {
 }
 
 type Func struct {
+	Funcs []*Func
 	Sig   *wasm.FunctionSig
 	Body  *wasm.FunctionBody
 	Index int
@@ -111,7 +112,7 @@ func (f *Func) CSharp(indent string) (string, error) {
 			}
 		}
 		var err error
-		body, err = opsToCSharp(f.Body.Code, f.Sig)
+		body, err = opsToCSharp(f.Body.Code, f.Sig, f.Funcs)
 		if err != nil {
 			return "", err
 		}
@@ -209,6 +210,13 @@ func run() error {
 			Index: i,
 			Name:  f.Name,
 		})
+	}
+	allfs := append(ifs, fs...)
+	for _, f := range ifs {
+		f.Funcs = allfs
+	}
+	for _, f := range fs {
+		f.Funcs = allfs
 	}
 
 	var globals []*Global
