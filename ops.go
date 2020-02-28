@@ -38,15 +38,12 @@ func (r ReturnType) CSharp() string {
 	}
 }
 
-func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func) ([]string, error) {
+func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Type) ([]string, error) {
 	instrs, err := disasm.Disassemble(code)
 	if err != nil {
 		return nil, err
 	}
-	return instrsToCSharp(instrs, sig, funcs)
-}
 
-func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func) ([]string, error) {
 	var body []string
 	var newIdx int
 	var idxStack []int
@@ -113,18 +110,21 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 
 			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))
 		case operators.CallIndirect:
+			idx := popStack()
 			typeid := instr.Immediates[0].(uint32)
-			_ = typeid
+			t := types[typeid]
+
+			args := make([]string, len(t.Sig.ParamTypes))
+			for i := range t.Sig.ParamTypes {
+				args[len(t.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", popStack())
+			}
 
 			var ret string
-			/*if typeid {
+			if len(t.Sig.ReturnTypes) > 0 {
 				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
-			}*/
-			_ = ret
+			}
 
-			idx := popStack()
-			_ = idx
-			//body = append(body, fmt.Sprintf("%stable[0][stack%d]();", ret, idx))
+			body = append(body, fmt.Sprintf("%s((Type%d)(funcs_[table_[0][stack%d]]))(%s);", ret, typeid, idx, strings.Join(args, ", ")))
 
 		case operators.Drop:
 			popStack()
