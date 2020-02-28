@@ -91,7 +91,12 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 		case operators.BrTable:
 			// TODO: Implement this.
 		case operators.Return:
-			// TODO: Implement this.
+			switch len(sig.ReturnTypes) {
+			case 0:
+				body = append(body, "return;")
+			default:
+				body = append(body, fmt.Sprintf("return stack%d;", idxStack[len(idxStack)-1]))
+			}
 
 		case operators.Call:
 			f := funcs[instr.Immediates[0].(uint32)]
@@ -549,14 +554,12 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig, funcs []*Func)
 			return nil, fmt.Errorf("the stack length must be 0 but %d", len(idxStack))
 		}*/
 	case 1:
-		// TODO: The stack must be exactly 1.
-		/*if len(idxStack) == 0 {
-			return nil, fmt.Errorf("the stack length must be 1 but %d", len(idxStack))
-		}*/
-		if len(idxStack) == 0 {
+		switch len(idxStack) {
+		case 0:
 			body = append(body, `throw new Exception("not reached");`)
-		} else {
-			body = append(body, fmt.Sprintf("return stack%d;", idxStack[0]))
+		default:
+			// TODO: The stack must be exactly 1?
+			body = append(body, fmt.Sprintf("return stack%d;", idxStack[len(idxStack)-1]))
 		}
 	}
 	return body, nil
