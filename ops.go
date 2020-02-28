@@ -72,6 +72,20 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, err
 			// TODO: Implement this.
 		case operators.End:
 			// TODO: Implement this.
+		case operators.Br:
+			// TODO: Implement this.
+		case operators.BrIf:
+			// TODO: Implement this.
+		case operators.BrTable:
+			// TODO: Implement this.
+		case operators.Return:
+			// TODO: Implement this.
+
+		case operators.Call:
+			// TODO: Implement this.
+		case operators.CallIndirect:
+			// TODO: Implement this.
+
 		case operators.Drop:
 			idxStack = idxStack[:len(idxStack)-1]
 		case operators.Select:
@@ -461,8 +475,52 @@ func instrsToCSharp(instrs []disasm.Instr, sig *wasm.FunctionSig) ([]string, err
 		case operators.F64Copysign:
 			// TODO: Implement this
 			idxStack = idxStack[:len(idxStack)-1]
+
+		case operators.I32WrapI64:
+			// TODO: Implement this
+		case operators.I32TruncSF32:
+			// TODO: Implement this
+		case operators.I32TruncUF32:
+			// TODO: Implement this
+		case operators.I32TruncSF64:
+			// TODO: Implement this
+		case operators.I32TruncUF64:
+			// TODO: Implement this
+		case operators.I64ExtendSI32:
+			// TODO: Implement this
+		case operators.I64ExtendUI32:
+			// TODO: Implement this
+		case operators.I64TruncSF32:
+			// TODO: Implement this
+		case operators.I64TruncUF32:
+			// TODO: Implement this
+		case operators.I64TruncSF64:
+			// TODO: Implement this
+		case operators.I64TruncUF64:
+			// TODO: Implement this
+		case operators.F32ConvertSI32:
+			// TODO: Implement this
+		case operators.F32ConvertUI32:
+			// TODO: Implement this
+		case operators.F32ConvertSI64:
+			// TODO: Implement this
+		case operators.F32ConvertUI64:
+			// TODO: Implement this
+		case operators.F32DemoteF64:
+			// TODO: Implement this
+		case operators.F64ConvertSI32:
+			// TODO: Implement this
+		case operators.F64ConvertUI32:
+			// TODO: Implement this
+		case operators.F64ConvertSI64:
+			// TODO: Implement this
+		case operators.F64ConvertUI64:
+			// TODO: Implement this
+		case operators.F64PromoteF32:
+			// TODO: Implement this
+
 		default:
-			body = append(body, fmt.Sprintf("// %v", instr.Op))
+			return nil, fmt.Errorf("unexpected operator: %v", instr.Op)
 		}
 	}
 	switch len(sig.ReturnTypes) {
