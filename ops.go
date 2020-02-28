@@ -412,11 +412,11 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			body = append(body, fmt.Sprintf("int stack%d = (stack%d >= stack%d) ? 1 : 0;", dst, arg0, arg1))
 
 		case operators.I32Clz:
-			// TODO: Implement this
+			return nil, fmt.Errorf("I32Clz is not implemented")
 		case operators.I32Ctz:
-			// TODO: Implement this
+			return nil, fmt.Errorf("I32Ctz is not implemented")
 		case operators.I32Popcnt:
-			// TODO: Implement this
+			return nil, fmt.Errorf("I32Popcnt is not implemented")
 		case operators.I32Add:
 			// TODO: Implement this
 			popStack()
@@ -463,11 +463,11 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			// TODO: Implement this
 			popStack()
 		case operators.I64Clz:
-			// TODO: Implement this
+			return nil, fmt.Errorf("I64Clz is not implemented")
 		case operators.I64Ctz:
-			// TODO: Implement this
+			return nil, fmt.Errorf("I64Ctz is not implemented")
 		case operators.I64Popcnt:
-			// TODO: Implement this
+			return nil, fmt.Errorf("I64Popcnt is not implemented")
 		case operators.I64Add:
 			// TODO: Implement this
 			popStack()
