@@ -130,8 +130,12 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		case operators.Drop:
 			popStack()
 		case operators.Select:
-			// TODO: Implement this.
-			idxStack = idxStack[:len(idxStack)-2]
+			// TODO: Enable this after solving stack issues.
+			/*cond := popStack()
+			idx1 := popStack()
+			idx0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("var stack%d = (stack%d == 0) ? stack%d : stack%d;", dst, instr.Immediates[0], cond, idx0, idx1))*/
 
 		case operators.GetLocal:
 			idx := pushStack()
@@ -224,7 +228,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 
 		case operators.I32Const:
 			idx := pushStack()
-			body = append(body, fmt.Sprintf("dynamic stack%d = %d;", idx, instr.Immediates[0]))
+			body = append(body, fmt.Sprintf("int stack%d = %d;", idx, instr.Immediates[0]))
 		case operators.I64Const:
 			idx := pushStack()
 			body = append(body, fmt.Sprintf("dynamic stack%d = %d;", idx, instr.Immediates[0]))
@@ -232,11 +236,11 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			idx := pushStack()
 			// TODO: Implement this.
 			// https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.1
-			body = append(body, fmt.Sprintf("dynamic stack%d = 0 /* TODO */;", idx))
+			body = append(body, fmt.Sprintf("float stack%d = 0 /* TODO */;", idx))
 		case operators.F64Const:
 			idx := pushStack()
 			// TODO: Implement this.
-			body = append(body, fmt.Sprintf("dynamic stack%d = 0 /* TODO */;", idx))
+			body = append(body, fmt.Sprintf("double stack%d = 0 /* TODO */;", idx))
 
 		case operators.I32Eqz:
 			src := popStack()
