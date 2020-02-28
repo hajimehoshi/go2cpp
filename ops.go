@@ -76,6 +76,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		case operators.Loop:
 			// TODO: Implement this.
 		case operators.If:
+			popStack()
 			// TODO: Implement this.
 		case operators.Else:
 			// TODO: Implement this.
@@ -238,105 +239,173 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			body = append(body, fmt.Sprintf("dynamic stack%d = 0 /* TODO */;", idx))
 
 		case operators.I32Eqz:
-			// TODO: Implement this.
+			src := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d == 0) ? 1 : 0;", dst, src))
 		case operators.I32Eq:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d == stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32Ne:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d != stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32LtS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d < stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32LtU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((uint)stack%d < (uint)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32GtS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d > stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32GtU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((uint)stack%d > (uint)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32LeS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d <= stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32LeU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((uint)stack%d <= (uint)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32GeS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d >= stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I32GeU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((uint)stack%d >= (uint)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64Eqz:
-			// TODO: Implement this.
+			src := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d == 0) ? 1 : 0;", dst, src))
 		case operators.I64Eq:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d == stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64Ne:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d != stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64LtS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d < stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64LtU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((ulong)stack%d < (ulong)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64GtS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d > stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64GtU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((ulong)stack%d > (ulong)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64LeS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d <= stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64LeU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((ulong)stack%d <= (ulong)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64GeS:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d >= stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.I64GeU:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = ((ulong)stack%d >= (ulong)stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F32Eq:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d == stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F32Ne:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d != stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F32Lt:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d < stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F32Gt:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d > stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F32Le:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d <= stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F32Ge:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d >= stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F64Eq:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d == stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F64Ne:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d != stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F64Lt:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d < stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F64Gt:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d > stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F64Le:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d <= stack%d) ? 1 : 0;", dst, src0, src1))
 		case operators.F64Ge:
-			// TODO: Implement this.
-			popStack()
+			src1 := popStack()
+			src0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (stack%d >= stack%d) ? 1 : 0;", dst, src0, src1))
 
 		case operators.I32Clz:
 			// TODO: Implement this
