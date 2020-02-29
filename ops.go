@@ -63,8 +63,6 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		return idxStack[len(idxStack)-1]
 	}
 
-	// TODO: Replace 'dynamic' with proper types
-
 	for _, instr := range instrs {
 		switch instr.Op.Code {
 		case operators.Unreachable:
@@ -106,7 +104,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 
 			var ret string
 			if len(f.Type.Sig.ReturnTypes) > 0 {
-				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
+				ret = fmt.Sprintf("var stack%d = ", pushStack())
 			}
 
 			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))
@@ -122,7 +120,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 
 			var ret string
 			if len(t.Sig.ReturnTypes) > 0 {
-				ret = fmt.Sprintf("dynamic stack%d = ", pushStack())
+				ret = fmt.Sprintf("var stack%d = ", pushStack())
 			}
 
 			body = append(body, fmt.Sprintf("%s((Type%d)(funcs_[table_[0][stack%d]]))(%s);", ret, typeid, idx, strings.Join(args, ", ")))
@@ -139,7 +137,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 
 		case operators.GetLocal:
 			idx := pushStack()
-			body = append(body, fmt.Sprintf("dynamic stack%d = local%d;", idx, instr.Immediates[0]))
+			body = append(body, fmt.Sprintf("var stack%d = local%d;", idx, instr.Immediates[0]))
 		case operators.SetLocal:
 			idx := popStack()
 			body = append(body, fmt.Sprintf("local%d = stack%d;", instr.Immediates[0], idx))
@@ -148,7 +146,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			body = append(body, fmt.Sprintf("local%d = stack%d;", instr.Immediates[0], idx))
 		case operators.GetGlobal:
 			idx := pushStack()
-			body = append(body, fmt.Sprintf("dynamic stack%d = global%d;", idx, instr.Immediates[0]))
+			body = append(body, fmt.Sprintf("var stack%d = global%d;", idx, instr.Immediates[0]))
 		case operators.SetGlobal:
 			idx := popStack()
 			body = append(body, fmt.Sprintf("global%d = stack%d;", instr.Immediates[0], idx))
@@ -231,7 +229,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			body = append(body, fmt.Sprintf("int stack%d = %d;", idx, instr.Immediates[0]))
 		case operators.I64Const:
 			idx := pushStack()
-			body = append(body, fmt.Sprintf("dynamic stack%d = %d;", idx, instr.Immediates[0]))
+			body = append(body, fmt.Sprintf("long stack%d = %d;", idx, instr.Immediates[0]))
 		case operators.F32Const:
 			idx := pushStack()
 			// TODO: Implement this.
@@ -627,37 +625,78 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			dst := pushStack()
 			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)Math.Floor(stack%d));", dst, arg))
 		case operators.I64ExtendSI32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("long stack%d = (long)stack%d;", dst, arg))
 		case operators.I64ExtendUI32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)stack%d);", dst, arg))
 		case operators.I64TruncSF32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("long stack%d = (long)Math.Floor(stack%d);", dst, arg))
 		case operators.I64TruncUF32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)Math.Floor(stack%d));", dst, arg))
 		case operators.I64TruncSF64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("long stack%d = (long)Math.Floor(stack%d);", dst, arg))
 		case operators.I64TruncUF64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)Math.Floor(stack%d));", dst, arg))
 		case operators.F32ConvertSI32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("float stack%d = (float)stack%d;", dst, arg))
 		case operators.F32ConvertUI32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("float stack%d = (float)((uint)stack%d);", dst, arg))
 		case operators.F32ConvertSI64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("float stack%d = (float)stack%d;", dst, arg))
 		case operators.F32ConvertUI64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("float stack%d = (float)((ulong)stack%d);", dst, arg))
 		case operators.F32DemoteF64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("float stack%d = (float)stack%d;", dst, arg))
 		case operators.F64ConvertSI32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("double stack%d = (double)stack%d;", dst, arg))
 		case operators.F64ConvertUI32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("double stack%d = (double)((uint)stack%d);", dst, arg))
 		case operators.F64ConvertSI64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("double stack%d = (double)stack%d;", dst, arg))
 		case operators.F64ConvertUI64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("double stack%d = (double)((long)stack%d);", dst, arg))
 		case operators.F64PromoteF32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("double stack%d = (double)stack%d;", dst, arg))
+
+		case operators.I32ReinterpretF32:
+			return nil, fmt.Errorf("I32ReinterpretF32 is not implemented yet")
+		case operators.I64ReinterpretF64:
+			return nil, fmt.Errorf("I64ReinterpretF64 is not implemented yet")
+		case operators.F32ReinterpretI32:
+			return nil, fmt.Errorf("F32ReinterpretI32 is not implemented yet")
+		case operators.F64ReinterpretI64:
+			return nil, fmt.Errorf("F64ReinterpretI64 is not implemented yet")
 
 		default:
 			return nil, fmt.Errorf("unexpected operator: %v", instr.Op)
