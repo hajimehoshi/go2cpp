@@ -153,12 +153,11 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.Drop:
 			idxStack.Pop()
 		case operators.Select:
-			// TODO: Enable this after solving stack issues.
-			/*cond := idxStack.Pop()
+			cond := idxStack.Pop()
 			idx1 := idxStack.Pop()
 			idx0 := idxStack.Pop()
 			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("var stack%d = (stack%d == 0) ? stack%d : stack%d;", dst, instr.Immediates[0], cond, idx0, idx1))*/
+			body = append(body, fmt.Sprintf("var stack%d = (stack%d != 0) ? stack%d : stack%d;", dst, cond, idx0, idx1))
 
 		case operators.GetLocal:
 			idx := idxStack.Push()
@@ -548,11 +547,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.I64Popcnt:
 			return nil, fmt.Errorf("I64Popcnt is not implemented")
 		case operators.I64Add:
-			/*arg := idxStack.Pop()
+			arg := idxStack.Pop()
 			dst := idxStack.Peep()
-			body = append(body, fmt.Sprintf("stack%d += stack%d;", dst, arg))*/
-			// TODO: Implement this
-			idxStack.Pop()
+			body = append(body, fmt.Sprintf("stack%d += stack%d;", dst, arg))
 		case operators.I64Sub:
 			// TODO: Implement this
 			idxStack.Pop()
