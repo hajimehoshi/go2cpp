@@ -60,6 +60,10 @@ func (s *Stack) Peep() int {
 	return s.stack[len(s.stack)-1]
 }
 
+func (s *Stack) PeepLevel(level int) int {
+	return s.stack[len(s.stack)-1-level]
+}
+
 func (s *Stack) Len() int {
 	return len(s.stack)
 }
@@ -115,7 +119,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			}
 			loopStack = loopStack[:len(loopStack)-1]
 		case operators.Br:
-			// TODO: Implement this.
+			level := instr.Immediates[0].(uint32)
+			body = append(body, fmt.Sprintf("goto label%d;", blockStack.PeepLevel(int(level))))
 		case operators.BrIf:
 			// TODO: Implement this.
 			idxStack.Pop()
