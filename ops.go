@@ -566,40 +566,53 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		case operators.I64Rotr:
 			return nil, fmt.Errorf("I64Rotr is not implemented")
 		case operators.F32Abs:
-			// TODO: Implement this
+			idx := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Abs(stack%[1]d);", idx))
 		case operators.F32Neg:
-			// TODO: Implement this
+			idx := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = -stack%[1]d;", idx))
 		case operators.F32Ceil:
-			// TODO: Implement this
+			idx := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Ceil(stack%[1]d);", idx))
 		case operators.F32Floor:
-			// TODO: Implement this
+			idx := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Floor(stack%[1]d);", idx))
 		case operators.F32Trunc:
-			// TODO: Implement this
+			idx := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Truncate(stack%[1]d);", idx))
 		case operators.F32Nearest:
-			// TODO: Implement this
+			return nil, fmt.Errorf("F32Nearest is not implemented yet")
 		case operators.F32Sqrt:
-			// TODO: Implement this
+			idx := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Sqrt(stack%[1]d);", idx))
 		case operators.F32Add:
-			// TODO: Implement this
-			popStack()
+			arg := popStack()
+			dst := peepStack()
+			body = append(body, fmt.Sprintf("stack%d += stack%d;", dst, arg))
 		case operators.F32Sub:
-			// TODO: Implement this
-			popStack()
+			arg := popStack()
+			dst := peepStack()
+			body = append(body, fmt.Sprintf("stack%d -= stack%d;", dst, arg))
 		case operators.F32Mul:
-			// TODO: Implement this
-			popStack()
+			arg := popStack()
+			dst := peepStack()
+			body = append(body, fmt.Sprintf("stack%d *= stack%d;", dst, arg))
 		case operators.F32Div:
-			// TODO: Implement this
-			popStack()
+			arg := popStack()
+			dst := peepStack()
+			body = append(body, fmt.Sprintf("stack%d /= stack%d;", dst, arg))
 		case operators.F32Min:
-			// TODO: Implement this
-			popStack()
+			arg := popStack()
+			dst := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Min(stack%[1]d, stack%[2]d);", dst, arg))
 		case operators.F32Max:
-			// TODO: Implement this
-			popStack()
+			arg := popStack()
+			dst := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Max(stack%[1]d, stack%[2]d);", dst, arg))
 		case operators.F32Copysign:
-			// TODO: Implement this
-			popStack()
+			arg := popStack()
+			dst := peepStack()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.CopySign(stack%[1]d, stack%[2]d);", dst, arg))
 		case operators.F64Abs:
 			// TODO: Implement this
 		case operators.F64Neg:
@@ -611,7 +624,7 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		case operators.F64Trunc:
 			// TODO: Implement this
 		case operators.F64Nearest:
-			// TODO: Implement this
+			return nil, fmt.Errorf("F64Nearest is not implemented yet")
 		case operators.F64Sqrt:
 			// TODO: Implement this
 		case operators.F64Add:
@@ -643,19 +656,19 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		case operators.I32TruncSF32:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("int stack%d = (int)Math.Floor(stack%d);", dst, arg))
+			body = append(body, fmt.Sprintf("int stack%d = (int)Math.Truncate(stack%d);", dst, arg))
 		case operators.I32TruncUF32:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)Math.Floor(stack%d));", dst, arg))
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)Math.Truncate(stack%d));", dst, arg))
 		case operators.I32TruncSF64:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("int stack%d = (int)Math.Floor(stack%d);", dst, arg))
+			body = append(body, fmt.Sprintf("int stack%d = (int)Math.Truncate(stack%d);", dst, arg))
 		case operators.I32TruncUF64:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)Math.Floor(stack%d));", dst, arg))
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)Math.Truncate(stack%d));", dst, arg))
 		case operators.I64ExtendSI32:
 			arg := popStack()
 			dst := pushStack()
@@ -667,19 +680,19 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		case operators.I64TruncSF32:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("long stack%d = (long)Math.Floor(stack%d);", dst, arg))
+			body = append(body, fmt.Sprintf("long stack%d = (long)Math.Truncate(stack%d);", dst, arg))
 		case operators.I64TruncUF32:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)Math.Floor(stack%d));", dst, arg))
+			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)Math.Truncate(stack%d));", dst, arg))
 		case operators.I64TruncSF64:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("long stack%d = (long)Math.Floor(stack%d);", dst, arg))
+			body = append(body, fmt.Sprintf("long stack%d = (long)Math.Truncate(stack%d);", dst, arg))
 		case operators.I64TruncUF64:
 			arg := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)Math.Floor(stack%d));", dst, arg))
+			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)Math.Truncate(stack%d));", dst, arg))
 		case operators.F32ConvertSI32:
 			arg := popStack()
 			dst := pushStack()
