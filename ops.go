@@ -153,32 +153,74 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 
 		case operators.I32Load:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.F32Load:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("float stack%d = 0 /* TODO */;", idx))
 		case operators.F64Load:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("double stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load8s:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load8u:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load16s:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load16u:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load8s:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load8u:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load16s:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load16u:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load32s:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load32u:
 			// TODO: Implement this.
+			pushStack()
+			idx := popStack()
+			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 
 		case operators.I32Store:
 			// TODO: Implement this.
