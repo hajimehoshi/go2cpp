@@ -57,13 +57,12 @@ type Func struct {
 	Funcs []*Func
 	Types []*Type
 	Type  *Type
-	Body  *wasm.FunctionBody
+	Wasm  wasm.Function
 	Index int
-	Name  string
 }
 
 func (f *Func) Identifier() string {
-	return identifierFromString(f.Name)
+	return identifierFromString(f.Wasm.Name)
 }
 
 var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.OriginalName}}
@@ -92,7 +91,7 @@ func wasmTypeToReturnType(v wasm.ValueType) ReturnType {
 
 func (f *Func) CSharp(indent string) (string, error) {
 	var retType ReturnType
-	switch ts := f.Type.Sig.ReturnTypes; len(ts) {
+	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
 	case 0:
 		retType = ReturnTypeVoid
 	case 1:
@@ -102,22 +101,22 @@ func (f *Func) CSharp(indent string) (string, error) {
 	}
 
 	var args []string
-	for i, t := range f.Type.Sig.ParamTypes {
+	for i, t := range f.Wasm.Sig.ParamTypes {
 		args = append(args, fmt.Sprintf("%s local%d", wasmTypeToReturnType(t).CSharp(), i))
 	}
 
 	var locals []string
 	var body []string
-	if f.Body != nil {
+	if f.Wasm.Body != nil {
 		var idx int
-		for _, e := range f.Body.Locals {
+		for _, e := range f.Wasm.Body.Locals {
 			for i := 0; i < int(e.Count); i++ {
-				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Type.Sig.ParamTypes)))
+				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Wasm.Sig.ParamTypes)))
 				idx++
 			}
 		}
 		var err error
-		body, err = opsToCSharp(f.Body.Code, f.Type.Sig, f.Funcs, f.Types)
+		body, err = f.bodyToCSharp()
 		if err != nil {
 			return "", err
 		}
@@ -133,8 +132,8 @@ func (f *Func) CSharp(indent string) (string, error) {
 		Locals       []string
 		Body         []string
 	}{
-		OriginalName: f.Name,
-		Name:         identifierFromString(f.Name),
+		OriginalName: f.Wasm.Name,
+		Name:         identifierFromString(f.Wasm.Name),
 		Index:        f.Index,
 		ReturnType:   retType.CSharp(),
 		Args:         strings.Join(args, ", "),
@@ -234,19 +233,25 @@ func run() error {
 		// TODO: Avoid using FunctionIndexSpace?
 		if f.Name == "" {
 			ifs = append(ifs, &Func{
-				Type:  types[mod.Import.Entries[i].Type.(wasm.FuncImport).Type],
+				Type: types[mod.Import.Entries[i].Type.(wasm.FuncImport).Type],
+				Wasm: wasm.Function{
+					Sig:  types[mod.Import.Entries[i].Type.(wasm.FuncImport).Type].Sig,
+					Name: mod.Import.Entries[i].FieldName,
+				},
 				Index: i,
-				Name:  mod.Import.Entries[i].FieldName,
 			})
 			continue
 		}
 
 		f2 := mod.FunctionIndexSpace[i-len(mod.Import.Entries)]
 		fs = append(fs, &Func{
-			Type:  types[mod.Function.Types[i-len(mod.Import.Entries)]],
-			Body:  f2.Body,
+			Type: types[mod.Function.Types[i-len(mod.Import.Entries)]],
+			Wasm: wasm.Function{
+				Sig:  types[mod.Function.Types[i-len(mod.Import.Entries)]].Sig,
+				Body: f2.Body,
+				Name: f.Name,
+			},
 			Index: i,
-			Name:  f.Name,
 		})
 	}
 	allfs := append(ifs, fs...)

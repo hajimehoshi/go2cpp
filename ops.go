@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/go-interpreter/wagon/disasm"
-	"github.com/go-interpreter/wagon/wasm"
 	"github.com/go-interpreter/wagon/wasm/operators"
 )
 
@@ -64,7 +63,12 @@ func (s *Stack) Len() int {
 	return len(s.stack)
 }
 
-func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Type) ([]string, error) {
+func (f *Func) bodyToCSharp() ([]string, error) {
+	code := f.Wasm.Body.Code
+	sig := f.Wasm.Sig
+	funcs := f.Funcs
+	types := f.Types
+
 	instrs, err := disasm.Disassemble(code)
 	if err != nil {
 		return nil, err
@@ -101,24 +105,23 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			case 0:
 				body = append(body, "return;")
 			default:
-
 				body = append(body, fmt.Sprintf("return stack%d;", idxStack.Peep()))
 			}
 
 		case operators.Call:
 			f := funcs[instr.Immediates[0].(uint32)]
 
-			args := make([]string, len(f.Type.Sig.ParamTypes))
-			for i := range f.Type.Sig.ParamTypes {
-				args[len(f.Type.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", idxStack.Pop())
+			args := make([]string, len(f.Wasm.Sig.ParamTypes))
+			for i := range f.Wasm.Sig.ParamTypes {
+				args[len(f.Wasm.Sig.ParamTypes)-i-1] = fmt.Sprintf("stack%d", idxStack.Pop())
 			}
 
 			var ret string
-			if len(f.Type.Sig.ReturnTypes) > 0 {
+			if len(f.Wasm.Sig.ReturnTypes) > 0 {
 				ret = fmt.Sprintf("var stack%d = ", idxStack.Push())
 			}
 
-			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Name), strings.Join(args, ", ")))
+			body = append(body, fmt.Sprintf("%s%s(%s);", ret, identifierFromString(f.Wasm.Name), strings.Join(args, ", ")))
 		case operators.CallIndirect:
 			idx := idxStack.Pop()
 			typeid := instr.Immediates[0].(uint32)
