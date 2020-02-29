@@ -107,8 +107,10 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			// TODO: Implement this.
 		case operators.BrIf:
 			// TODO: Implement this.
+			idxStack.Pop()
 		case operators.BrTable:
 			// TODO: Implement this.
+			idxStack.Pop()
 		case operators.Return:
 			switch len(sig.ReturnTypes) {
 			case 0:
@@ -637,19 +639,25 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			dst := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%[1]d = Math.CopySign(stack%[1]d, stack%[2]d);", dst, arg))
 		case operators.F64Abs:
-			// TODO: Implement this
+			idx := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Abs(stack%[1]d);", idx))
 		case operators.F64Neg:
-			// TODO: Implement this
+			idx := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = -stack%[1]d;", idx))
 		case operators.F64Ceil:
-			// TODO: Implement this
+			idx := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Ceil(stack%[1]d);", idx))
 		case operators.F64Floor:
-			// TODO: Implement this
+			idx := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Floor(stack%[1]d);", idx))
 		case operators.F64Trunc:
-			// TODO: Implement this
+			idx := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Truncate(stack%[1]d);", idx))
 		case operators.F64Nearest:
 			return nil, fmt.Errorf("F64Nearest is not implemented yet")
 		case operators.F64Sqrt:
-			// TODO: Implement this
+			idx := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Sqrt(stack%[1]d);", idx))
 		case operators.F64Add:
 			// TODO: Implement this
 			idxStack.Pop()
