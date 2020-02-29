@@ -498,19 +498,17 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			dst := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%d /= stack%d;", dst, arg))
 		case operators.I32DivU:
-			arg1 := idxStack.Pop()
-			arg0 := idxStack.Pop()
-			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d / (uint)stack%d);", dst, arg0, arg1))
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = (int)((uint)stack%[1]d / (uint)stack%[2]d);", dst, arg))
 		case operators.I32RemS:
 			arg := idxStack.Pop()
 			dst := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%d %%= stack%d;", dst, arg))
 		case operators.I32RemU:
-			arg1 := idxStack.Pop()
-			arg0 := idxStack.Pop()
-			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d %% (uint)stack%d);", dst, arg0, arg1))
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = (int)((uint)stack%[1]d %% (uint)stack%[2]d);", dst, arg))
 		case operators.I32And:
 			arg := idxStack.Pop()
 			dst := idxStack.Peep()
@@ -532,10 +530,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			dst := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%d >>= stack%d;", dst, arg))
 		case operators.I32ShrU:
-			arg1 := idxStack.Pop()
-			arg0 := idxStack.Pop()
-			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d >> stack%d);", dst, arg0, arg1))
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = (int)((uint)stack%[1]d >> stack%[2]d);", dst, arg))
 		case operators.I32Rotl:
 			return nil, fmt.Errorf("I32Rotl is not implemented")
 		case operators.I32Rotr:
@@ -563,19 +560,17 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			dst := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%d /= stack%d;", dst, arg))
 		case operators.I64DivU:
-			arg1 := idxStack.Pop()
-			arg0 := idxStack.Pop()
-			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)stack%d / (ulong)stack%d);", dst, arg0, arg1))
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = (long)((ulong)stack%[1]d / (ulong)stack%[2]d);", dst, arg))
 		case operators.I64RemS:
 			arg := idxStack.Pop()
 			dst := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%d %%= stack%d;", dst, arg))
 		case operators.I64RemU:
-			arg1 := idxStack.Pop()
-			arg0 := idxStack.Pop()
-			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)stack%d %% (ulong)stack%d);", dst, arg0, arg1))
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = (long)((ulong)stack%[1]d %% (ulong)stack%[2]d);", dst, arg))
 		case operators.I64And:
 			arg := idxStack.Pop()
 			dst := idxStack.Peep()
@@ -597,10 +592,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			dst := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%d >>= (int)stack%d;", dst, arg))
 		case operators.I64ShrU:
-			arg1 := idxStack.Pop()
-			arg0 := idxStack.Pop()
-			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("long stack%d = (long)((ulong)stack%d >> (int)stack%d);", dst, arg0, arg1))
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = (long)((ulong)stack%[1]d >> (int)stack%[2]d);", dst, arg))
 		case operators.I64Rotl:
 			return nil, fmt.Errorf("I64Rotl is not implemented")
 		case operators.I64Rotr:
