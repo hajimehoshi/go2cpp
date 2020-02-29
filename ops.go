@@ -76,6 +76,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 
 	var body []string
 	idxStack := &Stack{}
+	blockStack := &Stack{}
+	loopStack := []bool{}
 
 	for _, instr := range dis.Code {
 		switch instr.Op.Code {
@@ -87,22 +89,31 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			if instr.Immediates[0] != wasm.BlockTypeEmpty {
 				return nil, fmt.Errorf("'block' taking types is not implemented")
 			}
-			// TODO: Implement this.
+			blockStack.Push()
+			loopStack = append(loopStack, false)
 		case operators.Loop:
 			if instr.Immediates[0] != wasm.BlockTypeEmpty {
 				return nil, fmt.Errorf("'loop' taking types is not implemented")
 			}
-			// TODO: Implement this.
+			idx := blockStack.Push()
+			body = append(body, fmt.Sprintf("label%d:", idx))
+			loopStack = append(loopStack, true)
 		case operators.If:
 			if instr.Immediates[0] != wasm.BlockTypeEmpty {
 				return nil, fmt.Errorf("'if' taking types is not implemented")
 			}
-			idxStack.Pop()
+			blockStack.Push()
+			loopStack = append(loopStack, false)
 			// TODO: Implement this.
+			idxStack.Pop()
 		case operators.Else:
 			// TODO: Implement this.
 		case operators.End:
-			// TODO: Implement this.
+			idx := blockStack.Pop()
+			if !loopStack[len(loopStack)-1] {
+				body = append(body, fmt.Sprintf("label%d:", idx))
+			}
+			loopStack = loopStack[:len(loopStack)-1]
 		case operators.Br:
 			// TODO: Implement this.
 		case operators.BrIf:
@@ -808,5 +819,13 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			body = append(body, fmt.Sprintf("return stack%d;", idxStack.Peep()))
 		}
 	}
+
+	// Indent
+	for i, line := range body {
+		if !strings.HasSuffix(line, ":") {
+			body[i] = "    " + line
+		}
+	}
+
 	return body, nil
 }
