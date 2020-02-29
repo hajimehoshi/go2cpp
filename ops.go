@@ -418,50 +418,74 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 		case operators.I32Popcnt:
 			return nil, fmt.Errorf("I32Popcnt is not implemented")
 		case operators.I32Add:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d + stack%d;", dst, arg0, arg1))
 		case operators.I32Sub:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d - stack%d;", dst, arg0, arg1))
 		case operators.I32Mul:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d * stack%d;", dst, arg0, arg1))
 		case operators.I32DivS:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d / stack%d;", dst, arg0, arg1))
 		case operators.I32DivU:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d / (uint)stack%d);", dst, arg0, arg1))
 		case operators.I32RemS:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d % stack%d;", dst, arg0, arg1))
 		case operators.I32RemU:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d % (uint)stack%d);", dst, arg0, arg1))
 		case operators.I32And:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d & stack%d;", dst, arg0, arg1))
 		case operators.I32Or:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d | stack%d;", dst, arg0, arg1))
 		case operators.I32Xor:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d ^ stack%d;", dst, arg0, arg1))
 		case operators.I32Shl:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d << stack%d;", dst, arg0, arg1))
 		case operators.I32ShrS:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = stack%d >> stack%d;", dst, arg0, arg1))
 		case operators.I32ShrU:
-			// TODO: Implement this
-			popStack()
+			arg1 := popStack()
+			arg0 := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d >> stack%d);", dst, arg0, arg1))
 		case operators.I32Rotl:
-			// TODO: Implement this
-			popStack()
+			return nil, fmt.Errorf("I32Rotl is not implemented")
 		case operators.I32Rotr:
-			// TODO: Implement this
-			popStack()
+			return nil, fmt.Errorf("I32Rotr is not implemented")
 		case operators.I64Clz:
 			return nil, fmt.Errorf("I64Clz is not implemented")
 		case operators.I64Ctz:
@@ -508,11 +532,9 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			// TODO: Implement this
 			popStack()
 		case operators.I64Rotl:
-			// TODO: Implement this
-			popStack()
+			return nil, fmt.Errorf("I64Rotl is not implemented")
 		case operators.I64Rotr:
-			// TODO: Implement this
-			popStack()
+			return nil, fmt.Errorf("I64Rotr is not implemented")
 		case operators.F32Abs:
 			// TODO: Implement this
 		case operators.F32Neg:
@@ -585,15 +607,25 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			popStack()
 
 		case operators.I32WrapI64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)stack%d;", dst, arg))
 		case operators.I32TruncSF32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)Math.Floor(stack%d);", dst, arg))
 		case operators.I32TruncUF32:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)Math.Floor(stack%d));", dst, arg))
 		case operators.I32TruncSF64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)Math.Floor(stack%d);", dst, arg))
 		case operators.I32TruncUF64:
-			// TODO: Implement this
+			arg := popStack()
+			dst := pushStack()
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)Math.Floor(stack%d));", dst, arg))
 		case operators.I64ExtendSI32:
 			// TODO: Implement this
 		case operators.I64ExtendUI32:
