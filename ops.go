@@ -674,26 +674,33 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			idx := idxStack.Peep()
 			body = append(body, fmt.Sprintf("stack%[1]d = Math.Sqrt(stack%[1]d);", idx))
 		case operators.F64Add:
-			// TODO: Implement this
-			idxStack.Pop()
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%d += stack%d;", dst, arg))
 		case operators.F64Sub:
-			// TODO: Implement this
-			idxStack.Pop()
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%d -= stack%d;", dst, arg))
 		case operators.F64Mul:
-			// TODO: Implement this
-			idxStack.Pop()
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%d *= stack%d;", dst, arg))
 		case operators.F64Div:
-			// TODO: Implement this
-			idxStack.Pop()
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%d /= stack%d;", dst, arg))
 		case operators.F64Min:
-			// TODO: Implement this
-			idxStack.Pop()
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Min(stack%[1]d, stack%[2]d);", dst, arg))
 		case operators.F64Max:
-			// TODO: Implement this
-			idxStack.Pop()
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.Max(stack%[1]d, stack%[2]d);", dst, arg))
 		case operators.F64Copysign:
-			// TODO: Implement this
-			idxStack.Pop()
+			arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[1]d = Math.CopySign(stack%[1]d, stack%[2]d);", dst, arg))
 
 		case operators.I32WrapI64:
 			arg := idxStack.Pop()
