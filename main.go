@@ -54,6 +54,7 @@ func namespaceFromPkg(pkg *packages.Package) string {
 }
 
 type Func struct {
+	Mod   *wasm.Module
 	Funcs []*Func
 	Types []*Type
 	Type  *Type
@@ -256,10 +257,12 @@ func run() error {
 	}
 	allfs := append(ifs, fs...)
 	for _, f := range ifs {
+		f.Mod = mod
 		f.Funcs = allfs
 		f.Types = types
 	}
 	for _, f := range fs {
+		f.Mod = mod
 		f.Funcs = allfs
 		f.Types = types
 	}

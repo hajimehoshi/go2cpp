@@ -64,12 +64,11 @@ func (s *Stack) Len() int {
 }
 
 func (f *Func) bodyToCSharp() ([]string, error) {
-	code := f.Wasm.Body.Code
 	sig := f.Wasm.Sig
 	funcs := f.Funcs
 	types := f.Types
 
-	instrs, err := disasm.Disassemble(code)
+	dis, err := disasm.NewDisassembly(f.Wasm, f.Mod)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +76,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	var body []string
 	idxStack := &Stack{}
 
-	for _, instr := range instrs {
+	for _, instr := range dis.Code {
 		switch instr.Op.Code {
 		case operators.Unreachable:
 			body = append(body, `Debug.Assert(false, "not reached");`)
