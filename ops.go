@@ -486,12 +486,12 @@ func opsToCSharp(code []byte, sig *wasm.FunctionSig, funcs []*Func, types []*Typ
 			arg1 := popStack()
 			arg0 := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("int stack%d = stack%d % stack%d;", dst, arg0, arg1))
+			body = append(body, fmt.Sprintf("int stack%d = stack%d %% stack%d;", dst, arg0, arg1))
 		case operators.I32RemU:
 			arg1 := popStack()
 			arg0 := popStack()
 			dst := pushStack()
-			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d % (uint)stack%d);", dst, arg0, arg1))
+			body = append(body, fmt.Sprintf("int stack%d = (int)((uint)stack%d %% (uint)stack%d);", dst, arg0, arg1))
 		case operators.I32And:
 			arg1 := popStack()
 			arg0 := popStack()
