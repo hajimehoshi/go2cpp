@@ -178,73 +178,73 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 
 		case operators.I32Load:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.F32Load:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("float stack%d = 0 /* TODO */;", idx))
 		case operators.F64Load:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("double stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load8s:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load8u:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load16s:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I32Load16u:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("int stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load8s:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load8u:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load16s:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load16u:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load32s:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 		case operators.I64Load32u:
 			// TODO: Implement this.
-			idxStack.Push()
-			idx := idxStack.Pop()
+			idxStack.Pop()
+			idx := idxStack.Push()
 			body = append(body, fmt.Sprintf("long stack%d = 0 /* TODO */;", idx))
 
 		case operators.I32Store:
@@ -548,6 +548,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.I64Popcnt:
 			return nil, fmt.Errorf("I64Popcnt is not implemented")
 		case operators.I64Add:
+			/*arg := idxStack.Pop()
+			dst := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%d += stack%d;", dst, arg))*/
 			// TODO: Implement this
 			idxStack.Pop()
 		case operators.I64Sub:
