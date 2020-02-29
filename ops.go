@@ -154,10 +154,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			idxStack.Pop()
 		case operators.Select:
 			cond := idxStack.Pop()
-			idx1 := idxStack.Pop()
-			idx0 := idxStack.Pop()
-			dst := idxStack.Push()
-			body = append(body, fmt.Sprintf("var stack%d = (stack%d != 0) ? stack%d : stack%d;", dst, cond, idx0, idx1))
+			arg1 := idxStack.Pop()
+			arg0 := idxStack.Peep()
+			body = append(body, fmt.Sprintf("stack%[2]d = (stack%[1]d != 0) ? stack%[2]d : stack%[3]d;", cond, arg0, arg1))
 
 		case operators.GetLocal:
 			idx := idxStack.Push()
