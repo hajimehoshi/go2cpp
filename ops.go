@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-interpreter/wagon/disasm"
+	"github.com/go-interpreter/wagon/wasm"
 	"github.com/go-interpreter/wagon/wasm/operators"
 )
 
@@ -83,10 +84,19 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.Nop:
 			// Do nothing
 		case operators.Block:
+			if instr.Immediates[0] != wasm.BlockTypeEmpty {
+				return nil, fmt.Errorf("'block' taking types is not implemented")
+			}
 			// TODO: Implement this.
 		case operators.Loop:
+			if instr.Immediates[0] != wasm.BlockTypeEmpty {
+				return nil, fmt.Errorf("'loop' taking types is not implemented")
+			}
 			// TODO: Implement this.
 		case operators.If:
+			if instr.Immediates[0] != wasm.BlockTypeEmpty {
+				return nil, fmt.Errorf("'if' taking types is not implemented")
+			}
 			idxStack.Pop()
 			// TODO: Implement this.
 		case operators.Else:
