@@ -225,7 +225,11 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				ret = fmt.Sprintf("var stack%d = ", idxStack.Push())
 			}
 
-			appendBody("%s%s(%s);", ret, identifierFromString(f.Wasm.Name), strings.Join(args, ", "))
+			var imp string
+			if f.Import {
+				imp = "import_."
+			}
+			appendBody("%s%s%s(%s);", ret, imp, identifierFromString(f.Wasm.Name), strings.Join(args, ", "))
 		case operators.CallIndirect:
 			idx := idxStack.Pop()
 			typeid := instr.Immediates[0].(uint32)

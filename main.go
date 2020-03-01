@@ -54,12 +54,13 @@ func namespaceFromPkg(pkg *packages.Package) string {
 }
 
 type Func struct {
-	Mod   *wasm.Module
-	Funcs []*Func
-	Types []*Type
-	Type  *Type
-	Wasm  wasm.Function
-	Index int
+	Mod    *wasm.Module
+	Funcs  []*Func
+	Types  []*Type
+	Type   *Type
+	Wasm   wasm.Function
+	Index  int
+	Import bool
 }
 
 func (f *Func) Identifier() string {
@@ -239,7 +240,8 @@ func run() error {
 					Sig:  types[mod.Import.Entries[i].Type.(wasm.FuncImport).Type].Sig,
 					Name: mod.Import.Entries[i].FieldName,
 				},
-				Index: i,
+				Index:  i,
+				Import: true,
 			})
 			continue
 		}
@@ -331,6 +333,7 @@ namespace {{.Namespace}}
         public Go_{{.Class}}()
         {
              initializeFuncs_();
+             import_ = new Import();
         }
 
 {{range $value := .Globals}}{{$value.CSharp "        "}}
@@ -343,6 +346,7 @@ namespace {{.Namespace}}
 {{end}}        };
 
         private object[] funcs_;
+        private Import import_;
 
         private void initializeFuncs_()
         {
