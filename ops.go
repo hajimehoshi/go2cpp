@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/go-interpreter/wagon/disasm"
@@ -127,6 +128,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	var body []string
 	idxStack := &Stack{}
 	blockStack := &BlockStack{}
+	var tmpidx int
 
 	appendBody := func(str string, args ...interface{}) {
 		str = fmt.Sprintf(str, args...)
@@ -388,13 +390,24 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("long stack%d = %d;", idx, instr.Immediates[0])
 		case operators.F32Const:
 			idx := idxStack.Push()
-			// TODO: Implement this.
-			// https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.1
-			appendBody("float stack%d = 0 /* TODO */;", idx)
+			if v := instr.Immediates[0].(float32); v == 0 {
+				appendBody("float stack%d = 0;", idx)
+			} else {
+				bits := math.Float32bits(v)
+				appendBody("uint tmp%d = %d; // %f", tmpidx, bits, v)
+				appendBody("float stack%d = Unsafe.As<uint, float>(ref tmp%d);", idx, tmpidx)
+				tmpidx++
+			}
 		case operators.F64Const:
 			idx := idxStack.Push()
-			// TODO: Implement this.
-			appendBody("double stack%d = 0 /* TODO */;", idx)
+			if v := instr.Immediates[0].(float64); v == 0 {
+				appendBody("double stack%d = 0;", idx)
+			} else {
+				bits := math.Float64bits(v)
+				appendBody("ulong tmp%d = %d; // %f", tmpidx, bits, v)
+				appendBody("double stack%d = Unsafe.As<ulong, double>(ref tmp%d);", idx, tmpidx)
+				tmpidx++
+			}
 
 		case operators.I32Eqz:
 			arg := idxStack.Pop()
