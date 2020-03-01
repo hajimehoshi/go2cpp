@@ -68,32 +68,50 @@ func (s *Stack) Len() int {
 	return len(s.stack)
 }
 
+type BlockType int
+
+const (
+	BlockTypeBlock BlockType = iota
+	BlockTypeLoop
+	BlockTypeIf
+)
+
 type BlockStack struct {
-	loops []bool
+	types []BlockType
 	s     Stack
 }
 
-func (b *BlockStack) Push(loop bool) int {
-	b.loops = append(b.loops, loop)
+func (b *BlockStack) Push(btype BlockType) int {
+	b.types = append(b.types, btype)
 	return b.s.Push()
 }
 
-func (b *BlockStack) Pop() (int, bool) {
-	loop := b.loops[len(b.loops)-1]
-	b.loops = b.loops[:len(b.loops)-1]
-	return b.s.Pop(), loop
+func (b *BlockStack) Pop() (int, BlockType) {
+	btype := b.types[len(b.types)-1]
+	b.types = b.types[:len(b.types)-1]
+	return b.s.Pop(), btype
 }
 
-func (b *BlockStack) Peep() (int, bool) {
-	return b.s.Peep(), b.loops[len(b.loops)-1]
+func (b *BlockStack) Peep() (int, BlockType) {
+	return b.s.Peep(), b.types[len(b.types)-1]
 }
 
-func (b *BlockStack) PeepLevel(level int) (int, bool) {
-	return b.s.PeepLevel(level), b.loops[len(b.loops)-1-level]
+func (b *BlockStack) PeepLevel(level int) (int, BlockType) {
+	return b.s.PeepLevel(level), b.types[len(b.types)-1-level]
 }
 
 func (b *BlockStack) Len() int {
 	return b.s.Len()
+}
+
+func (b *BlockStack) IndentLevel() int {
+	l := 0
+	for _, t := range b.types {
+		if t == BlockTypeIf {
+			l++
+		}
+	}
+	return l
 }
 
 func (f *Func) bodyToCSharp() ([]string, error) {
@@ -112,14 +130,16 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 
 	appendBody := func(str string, args ...interface{}) {
 		str = fmt.Sprintf(str, args...)
-		level := blockStack.Len() + 1
+		if str == "{" && len(body) > 0 && strings.HasSuffix(body[len(body)-1], "{") {
+			body[len(body)-1] += "{"
+			return
+		}
+
+		level := blockStack.IndentLevel() + 1
 		if strings.HasSuffix(str, ":;") {
 			level--
 		}
-		var indent string
-		if level > 0 {
-			indent = "    " + strings.Repeat(" ", level-1)
-		}
+		indent := strings.Repeat("    ", level)
 		body = append(body, indent+str)
 	}
 
@@ -134,13 +154,13 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				return nil, fmt.Errorf("'block' taking types is not implemented")
 			}
 			appendBody("{")
-			blockStack.Push(false)
+			blockStack.Push(BlockTypeBlock)
 		case operators.Loop:
 			if instr.Immediates[0] != wasm.BlockTypeEmpty {
 				return nil, fmt.Errorf("'loop' taking types is not implemented")
 			}
 			appendBody("{")
-			l := blockStack.Push(true)
+			l := blockStack.Push(BlockTypeLoop)
 			appendBody("label%d:;", l)
 		case operators.If:
 			if instr.Immediates[0] != wasm.BlockTypeEmpty {
@@ -149,15 +169,15 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			idx := idxStack.Pop()
 			appendBody("if (stack%d != 0)", idx)
 			appendBody("{")
-			blockStack.Push(false)
+			blockStack.Push(BlockTypeIf)
 		case operators.Else:
 			appendBody("}")
 			appendBody("else")
 			appendBody("{")
 		case operators.End:
-			idx, loop := blockStack.Pop()
+			idx, btype := blockStack.Pop()
 			appendBody("}")
-			if !loop {
+			if btype != BlockTypeLoop {
 				appendBody("label%d:;", idx)
 			}
 		case operators.Br:
