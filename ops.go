@@ -113,7 +113,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	appendBody := func(str string, args ...interface{}) {
 		str = fmt.Sprintf(str, args...)
 		level := blockStack.Len() + 1
-		if strings.HasSuffix(str, ":") {
+		if strings.HasSuffix(str, ":;") {
 			level--
 		}
 		var indent string
@@ -162,14 +162,26 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			}
 		case operators.Br:
 			level := instr.Immediates[0].(uint32)
-			idx, _ := blockStack.PeepLevel(int(level))
-			appendBody("goto label%d;", idx)
+			l, _ := blockStack.PeepLevel(int(level))
+			appendBody("goto label%d;", l)
 		case operators.BrIf:
-			// TODO: Implement this.
-			idxStack.Pop()
+			level := instr.Immediates[0].(uint32)
+			l, _ := blockStack.PeepLevel(int(level))
+			idx := idxStack.Pop()
+			appendBody("if (stack%d != 0) goto label%d;", idx, l)
 		case operators.BrTable:
-			// TODO: Implement this.
-			idxStack.Pop()
+			idx := idxStack.Pop()
+			appendBody("switch (stack%d)", idx)
+			appendBody("{")
+			len := int(instr.Immediates[0].(uint32))
+			for i := 0; i < len; i++ {
+				level := int(instr.Immediates[1+i].(uint32))
+				l, _ := blockStack.PeepLevel(level)
+				appendBody("case %d: goto label%d;", i, l)
+			}
+			l, _ := blockStack.PeepLevel(int(instr.Immediates[len].(uint32)))
+			appendBody("default: goto label%d;", l)
+			appendBody("}")
 		case operators.Return:
 			switch len(sig.ReturnTypes) {
 			case 0:
@@ -856,8 +868,14 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	case 0:
 		// Do nothing.
 	case 1:
-		// There should be 'return' before the last sentence
-		appendBody(`throw new Exception("not reached");`)
+		appendBody(`throw new Exception("not reached");`)  
+		// TODO: Return an appropriate value
+		/*if idxStack.Len() > 0 {
+			idx := idxStack.Pop()
+			appendBody(`return stack%d;`, idx)
+		} else {
+			appendBody(`throw new Exception("not reached");`)
+		}*/
 	default:
 		return nil, fmt.Errorf("unexpected num of return types: %d", len(sig.ReturnTypes))
 	}
