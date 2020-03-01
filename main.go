@@ -328,11 +328,60 @@ namespace {{.Namespace}}
 {{- range $value := .ImportFuncs}}
 {{$value.CSharp "        "}}{{end}}    }
 
+    sealed class Mem
+    {
+        internal sbyte LoadInt8(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal byte LoadUint8(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal short LoadInt16(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal ushort LoadUint16(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal int LoadInt32(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal uint LoadUint32(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal long LoadInt64(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal float LoadFloat32(int addr)
+        {
+            return 0; // TODO
+        }
+
+        internal double LoadFloat64(int addr)
+        {
+            return 0; // TODO
+        }
+    }
+
     sealed class Go_{{.Class}}
     {
         public Go_{{.Class}}()
         {
              initializeFuncs_();
+             mem_ = new Mem();
              import_ = new Import();
         }
 
@@ -346,6 +395,7 @@ namespace {{.Namespace}}
 {{end}}        };
 
         private object[] funcs_;
+        private Mem mem_;
         private Import import_;
 
         private void initializeFuncs_()
