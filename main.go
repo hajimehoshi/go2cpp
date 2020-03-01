@@ -323,6 +323,7 @@ using System.Runtime.CompilerServices;
 
 namespace {{.Namespace}}
 {
+    // TODO: Implement methods.
     sealed class Import
     {
 {{- range $value := .ImportFuncs}}
@@ -330,6 +331,7 @@ namespace {{.Namespace}}
 
     sealed class Mem
     {
+        // TODO: Initialize memory.
         private byte[] bytes = new byte[4096];
 
         internal int Size
