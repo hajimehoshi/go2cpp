@@ -811,18 +811,16 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	}
 	switch len(sig.ReturnTypes) {
 	case 0:
-		// TODO: Enable this error
-		/*if len(idxStack) != 0 {
-			return nil, fmt.Errorf("the stack length must be 0 but %d", len(idxStack))
-		}*/
+		// Do nothing.
 	case 1:
 		switch idxStack.Len() {
 		case 0:
 			body = append(body, `throw new Exception("not reached");`)
 		default:
-			// TODO: The stack must be exactly 1?
 			body = append(body, fmt.Sprintf("return stack%d;", idxStack.Peep()))
 		}
+	default:
+		return nil, fmt.Errorf("unexpected num of return types: %d", len(sig.ReturnTypes))
 	}
 
 	// Indent
