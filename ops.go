@@ -892,8 +892,10 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		// Do nothing.
 	case 1:
 		if idxStack.Len() > 0 && dis.Code[len(dis.Code)-1].Op.Code != operators.Unreachable {
-			idx := idxStack.Pop()
-			appendBody(`return stack%d;`, idx)
+			if !strings.HasPrefix(strings.TrimSpace(body[len(body)-1]), "return ") {
+				idx := idxStack.Pop()
+				appendBody(`return stack%d;`, idx)
+			}
 		} else {
 			// Throwing an exception might prevent optimization. Use assertion here.
 			appendBody(`Debug.Assert(false, "not reached");`)
