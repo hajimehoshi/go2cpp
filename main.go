@@ -330,6 +330,14 @@ namespace {{.Namespace}}
 
     sealed class Mem
     {
+        internal int Size
+        {
+            get
+            {
+                return 0; // TODO
+            }
+        }
+
         internal sbyte LoadInt8(int addr)
         {
             return 0; // TODO
@@ -373,6 +381,36 @@ namespace {{.Namespace}}
         internal double LoadFloat64(int addr)
         {
             return 0; // TODO
+        }
+
+        internal void StoreInt8(int addr, sbyte val)
+        {
+            // TODO
+        }
+
+        internal void StoreInt16(int addr, short val)
+        {
+            // TODO
+        }
+
+        internal void StoreInt32(int addr, int val)
+        {
+            // TODO
+        }
+
+        internal void StoreInt64(int addr, long val)
+        {
+            // TODO
+        }
+
+        internal void StoreFloat32(int addr, float val)
+        {
+            // TODO
+        }
+
+        internal void StoreFloat64(int addr, double val)
+        {
+            // TODO
         }
     }
 
