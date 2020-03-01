@@ -368,7 +368,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.CurrentMemory:
 			appendBody("int stack%d = mem_.Size;", idxStack.Push())
 		case operators.GrowMemory:
-			// TOOD: Implement this.
+			delta := idxStack.Pop()
+			dst := idxStack.Push()
+			appendBody("int stack%d = mem_.Grow(%d);", dst, delta)
 
 		case operators.I32Const:
 			idx := idxStack.Push()

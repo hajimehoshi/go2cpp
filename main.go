@@ -338,6 +338,11 @@ namespace {{.Namespace}}
             }
         }
 
+        internal int Grow(int delta)
+        {
+            return 0; // TODO
+        }
+
         internal sbyte LoadInt8(int addr)
         {
             return 0; // TODO
