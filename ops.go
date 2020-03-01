@@ -868,14 +868,14 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	case 0:
 		// Do nothing.
 	case 1:
-		appendBody(`throw new Exception("not reached");`)  
-		// TODO: Return an appropriate value
-		/*if idxStack.Len() > 0 {
+		if idxStack.Len() > 0 && dis.Code[len(dis.Code)-1].Op.Code != operators.Unreachable {
 			idx := idxStack.Pop()
 			appendBody(`return stack%d;`, idx)
 		} else {
-			appendBody(`throw new Exception("not reached");`)
-		}*/
+			// Throwing an exception might prevent optimization. Use assertion here.
+			appendBody(`Debug.Assert(false, "not reached");`)
+			appendBody(`return 0;`)
+		}
 	default:
 		return nil, fmt.Errorf("unexpected num of return types: %d", len(sig.ReturnTypes))
 	}
