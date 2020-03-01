@@ -409,32 +409,43 @@ namespace {{.Namespace}}
 
         internal void StoreInt8(int addr, sbyte val)
         {
-            // TODO
+            this.bytes[addr] = (byte)val;
         }
 
         internal void StoreInt16(int addr, short val)
         {
-            // TODO
+            this.bytes[addr] = (byte)val;
+            this.bytes[addr+1] = (byte)(val >> 8);
         }
 
         internal void StoreInt32(int addr, int val)
         {
-            // TODO
+            this.bytes[addr] = (byte)val;
+            this.bytes[addr+1] = (byte)(val >> 8);
+            this.bytes[addr+2] = (byte)(val >> 16);
+            this.bytes[addr+3] = (byte)(val >> 24);
         }
 
         internal void StoreInt64(int addr, long val)
         {
-            // TODO
+            this.bytes[addr] = (byte)val;
+            this.bytes[addr+1] = (byte)(val >> 8);
+            this.bytes[addr+2] = (byte)(val >> 16);
+            this.bytes[addr+3] = (byte)(val >> 24);
+            this.bytes[addr+4] = (byte)(val >> 32);
+            this.bytes[addr+5] = (byte)(val >> 40);
+            this.bytes[addr+6] = (byte)(val >> 48);
+            this.bytes[addr+7] = (byte)(val >> 54);
         }
 
         internal void StoreFloat32(int addr, float val)
         {
-            // TODO
+            this.StoreInt32(addr, Unsafe.As<float, int>(ref val));
         }
 
         internal void StoreFloat64(int addr, double val)
         {
-            // TODO
+            this.StoreInt64(addr, Unsafe.As<double, long>(ref val));
         }
     }
 
