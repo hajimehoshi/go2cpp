@@ -50,6 +50,7 @@ func namespaceFromPkg(pkg *packages.Package) string {
 	for i, t := range ts {
 		ts[i] = identifierFromString(t)
 	}
+	ts = append([]string{"Go2DotNet", "AutoGen"}, ts...)
 	return strings.Join(ts, ".")
 }
 
