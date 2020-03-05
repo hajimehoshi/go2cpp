@@ -74,8 +74,8 @@ var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.Ori
 internal {{.ReturnType}} {{.Name}}({{.Args}})
 {
 {{range .Locals}}    {{.}}
-{{end}}
-{{range .Body}}{{.}}
+{{end}}{{if .Locals}}
+{{end}}{{range .Body}}{{.}}
 {{end}}}`))
 
 func wasmTypeToReturnType(v wasm.ValueType) ReturnType {
@@ -468,7 +468,6 @@ namespace {{.Namespace}}
 
 {{- range $value := .ImportFuncs}}
 {{$value.CSharp "        "}}{{end}}
-
         private Mem mem;
         private RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
     }
