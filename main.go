@@ -165,6 +165,47 @@ func (f *Func) CSharp(indent string, public bool, withBody bool) (string, error)
 	return strings.Join(lines, "\n") + "\n", nil
 }
 
+type Export struct {
+	Funcs []*Func
+	Index int
+	Name  string
+}
+
+func (e *Export) CSharp(indent string) (string, error) {
+	f := e.Funcs[e.Index]
+
+	var ret string
+	var retType ReturnType
+	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
+	case 0:
+		retType = ReturnTypeVoid
+	case 1:
+		ret = "return "
+		retType = wasmTypeToReturnType(ts[0])
+	default:
+		return "", fmt.Errorf("the number of return values must be 0 or 1 but %d", len(ts))
+	}
+
+	var args []string
+	var argsToPass []string
+	for i, t := range f.Wasm.Sig.ParamTypes {
+		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToReturnType(t).CSharp(), i))
+		argsToPass = append(argsToPass, fmt.Sprintf("arg%d", i))
+	}
+
+	str := fmt.Sprintf(`public %s %s(%s)
+{
+    %s%s(%s);
+}
+`, retType.CSharp(), e.Name, strings.Join(args, ", "), ret, identifierFromString(f.Wasm.Name), strings.Join(argsToPass, ", "))
+
+	lines := strings.Split(str, "\n")
+	for i := range lines {
+		lines[i] = indent + lines[i]
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
 type Global struct {
 	Type  wasm.ValueType
 	Index int
@@ -271,7 +312,26 @@ func run() error {
 			Index: i,
 		})
 	}
+
+	var exports []*Export
+	for _, e := range mod.Export.Entries {
+		switch e.Kind {
+		case wasm.ExternalFunction:
+			exports = append(exports, &Export{
+				Index: int(e.Index),
+				Name:  e.FieldStr,
+			})
+		case wasm.ExternalMemory:
+			// Ignore
+		default:
+			return fmt.Errorf("export type %d is not implemented", e.Kind)
+		}
+	}
+
 	allfs := append(ifs, fs...)
+	for _, e := range exports {
+		e.Funcs = allfs
+	}
 	for _, f := range ifs {
 		f.Mod = mod
 		f.Funcs = allfs
@@ -307,6 +367,7 @@ func run() error {
 		Class       string
 		ImportFuncs []*Func
 		Funcs       []*Func
+		Exports     []*Export
 		Globals     []*Global
 		Types       []*Type
 		Table       [][]uint32
@@ -315,6 +376,7 @@ func run() error {
 		Class:       class,
 		ImportFuncs: ifs,
 		Funcs:       fs,
+		Exports:     exports,
 		Globals:     globals,
 		Types:       types,
 		Table:       mod.TableIndexSpace,
@@ -613,18 +675,14 @@ namespace {{.Namespace}}
              import_ = import;
         }
 
+{{range $value := .Exports}}{{$value.CSharp "        "}}
+{{end}}
 {{range $value := .Funcs}}{{$value.CSharp "        " false true}}
 {{end}}
 {{range $value := .Types}}{{$value.CSharp "        "}}
 {{end}}        private static readonly uint[][] table_ = {
 {{range $value := .Table}}            new uint[] { {{- range $value2 := $value}}{{$value2}}, {{end}}},
 {{end}}        };
-
-{{range $value := .Globals}}{{$value.CSharp "        "}}
-{{end}}
-        private object[] funcs_;
-        private Mem mem_;
-        private IImport import_;
 
         private void initializeFuncs_()
         {
@@ -633,6 +691,12 @@ namespace {{.Namespace}}
 {{end}}{{range $value := .Funcs}}                (Type{{.Type.Index}})({{.Identifier}}),
 {{end}}            };
         }
+
+{{range $value := .Globals}}{{$value.CSharp "        "}}
+{{end}}
+        private object[] funcs_;
+        private Mem mem_;
+        private IImport import_;
     }
 }
 `))
