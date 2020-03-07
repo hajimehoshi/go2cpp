@@ -467,7 +467,7 @@ namespace {{.Namespace}}
         internal int LoadInt32(int addr)
         {
             return (int)((uint)this.bytes[addr] |
-                (uint)(this.bytes[addr]) << 8 |
+                (uint)(this.bytes[addr+1]) << 8 |
                 (uint)this.bytes[addr+2] << 16 |
                 (uint)(this.bytes[addr+3]) << 24);
         }
@@ -475,7 +475,7 @@ namespace {{.Namespace}}
         internal uint LoadUint32(int addr)
         {
             return (uint)((uint)this.bytes[addr] |
-                (uint)(this.bytes[addr]) << 8 |
+                (uint)(this.bytes[addr+1]) << 8 |
                 (uint)this.bytes[addr+2] << 16 |
                 (uint)(this.bytes[addr+3]) << 24);
         }
@@ -483,7 +483,7 @@ namespace {{.Namespace}}
         internal long LoadInt64(int addr)
         {
             return (long)((ulong)this.bytes[addr] |
-                (ulong)(this.bytes[addr]) << 8 |
+                (ulong)(this.bytes[addr+1]) << 8 |
                 (ulong)this.bytes[addr+2] << 16 |
                 (ulong)(this.bytes[addr+3]) << 24 |
                 (ulong)(this.bytes[addr+4]) << 32 |
