@@ -37,10 +37,10 @@ var importFuncBodies = map[string]string{
 		const msec = (new Date).getTime();
 		setInt64(sp + 8, msec / 1000);
 		this.mem.setInt32(sp + 16, (msec % 1000) * 1000000, true);
-	},
+	},*/
 
 	// func scheduleTimeoutEvent(delay int64) int32
-	"runtime.scheduleTimeoutEvent": (sp) => {
+	/*"runtime.scheduleTimeoutEvent": (sp) => {
 		const id = this._nextCallbackTimeoutID;
 		this._nextCallbackTimeoutID++;
 		this._scheduledTimeouts.set(id, setTimeout(
@@ -66,9 +66,9 @@ var importFuncBodies = map[string]string{
 	},*/
 
 	// func getRandomData(r []byte)
-	"runtime.getRandomData": `    var slice = mem.LoadSlice(local0 + 8);
+	"runtime.getRandomData": `    var slice = go.mem.LoadSlice(local0 + 8);
     var bytes = new byte[slice.Count];
-    rngCsp.GetBytes(bytes);
+    go.rngCsp.GetBytes(bytes);
     for (int i = 0; i < slice.Count; i++) {
         slice[i] = bytes[i];
     }`,

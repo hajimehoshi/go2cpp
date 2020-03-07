@@ -71,12 +71,12 @@ func (f *Func) Identifier() string {
 
 var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.OriginalName}}
 // Index:        {{.Index}}
-internal {{.ReturnType}} {{.Name}}({{.Args}})
+{{if .WithBody}}{{if .Public}}public{{else}}internal{{end}} {{end}}{{.ReturnType}} {{.Name}}({{.Args}}){{if .WithBody}}
 {
 {{range .Locals}}    {{.}}
 {{end}}{{if .Locals}}
 {{end}}{{range .Body}}{{.}}
-{{end}}}`))
+{{end}}}{{else}};{{end}}`))
 
 func wasmTypeToReturnType(v wasm.ValueType) ReturnType {
 	switch v {
@@ -93,7 +93,7 @@ func wasmTypeToReturnType(v wasm.ValueType) ReturnType {
 	}
 }
 
-func (f *Func) CSharp(indent string) (string, error) {
+func (f *Func) CSharp(indent string, public bool, withBody bool) (string, error) {
 	var retType ReturnType
 	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
 	case 0:
@@ -111,20 +111,22 @@ func (f *Func) CSharp(indent string) (string, error) {
 
 	var locals []string
 	var body []string
-	if f.BodyStr != "" {
-		body = strings.Split(f.BodyStr, "\n")
-	} else if f.Wasm.Body != nil {
-		var idx int
-		for _, e := range f.Wasm.Body.Locals {
-			for i := 0; i < int(e.Count); i++ {
-				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Wasm.Sig.ParamTypes)))
-				idx++
+	if withBody {
+		if f.BodyStr != "" {
+			body = strings.Split(f.BodyStr, "\n")
+		} else if f.Wasm.Body != nil {
+			var idx int
+			for _, e := range f.Wasm.Body.Locals {
+				for i := 0; i < int(e.Count); i++ {
+					locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Wasm.Sig.ParamTypes)))
+					idx++
+				}
 			}
-		}
-		var err error
-		body, err = f.bodyToCSharp()
-		if err != nil {
-			return "", err
+			var err error
+			body, err = f.bodyToCSharp()
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -137,6 +139,8 @@ func (f *Func) CSharp(indent string) (string, error) {
 		Args         string
 		Locals       []string
 		Body         []string
+		Public       bool
+		WithBody     bool
 	}{
 		OriginalName: f.Wasm.Name,
 		Name:         identifierFromString(f.Wasm.Name),
@@ -145,6 +149,8 @@ func (f *Func) CSharp(indent string) (string, error) {
 		Args:         strings.Join(args, ", "),
 		Locals:       locals,
 		Body:         body,
+		Public:       public,
+		WithBody:     withBody,
 	}); err != nil {
 		return "", err
 	}
@@ -459,40 +465,61 @@ namespace {{.Namespace}}
         }
     }
 
-    sealed class Import
+    internal interface IImport
     {
-        public Import(Mem mem)
+{{- range $value := .ImportFuncs}}
+{{$value.CSharp "        " false false}}{{end}}
+    }
+
+    public class Go
+    {
+        class Import : IImport
         {
-            this.mem = mem;
+            internal Import(Go go)
+            {
+                this.go = go;
+            }
+{{range $value := .ImportFuncs}}
+{{$value.CSharp "            " true true}}{{end}}
+            private Go go;
         }
 
-{{- range $value := .ImportFuncs}}
-{{$value.CSharp "        "}}{{end}}
+        public Go()
+        {
+            this.import = new Import(this);
+        }
+
+        public void Run()
+        {
+            this.mem = new Mem();
+        }
+
+        private Import import;
         private Mem mem;
         private RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
     }
 
     sealed class Go_{{.Class}}
     {
-        public Go_{{.Class}}()
+        public Go_{{.Class}}(Mem mem, IImport import)
         {
              initializeFuncs_();
-             mem_ = new Mem();
-             import_ = new Import(mem_);
+             mem_ = mem;
+             import_ = import;
         }
 
-{{range $value := .Globals}}{{$value.CSharp "        "}}
-{{end}}
-{{range $value := .Funcs}}{{$value.CSharp "        "}}
+{{range $value := .Funcs}}{{$value.CSharp "        " false true}}
 {{end}}
 {{range $value := .Types}}{{$value.CSharp "        "}}
 {{end}}        private static readonly uint[][] table_ = {
 {{range $value := .Table}}            new uint[] { {{- range $value2 := $value}}{{$value2}}, {{end}}},
 {{end}}        };
 
+{{range $value := .Globals}}{{$value.CSharp "        "}}
+{{end}}
         private object[] funcs_;
         private Mem mem_;
-        private Import import_;
+        private IImport import_;
 
         private void initializeFuncs_()
         {
