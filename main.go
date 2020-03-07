@@ -400,6 +400,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
 
 namespace {{.Namespace}}
@@ -568,10 +569,10 @@ namespace {{.Namespace}}
         public Go()
         {
             this.import = new Import(this);
-            // this.exitPromise
+            this.exitPromise = new TaskCompletionSource<int>();
         }
 
-        public void Run(string[] args)
+        public async void Run(string[] args)
         {
             this.buf = new List<byte>();
             this.stopwatch = Stopwatch.StartNew();
@@ -620,16 +621,32 @@ namespace {{.Namespace}}
             }
 
             this.inst.run(argc, argv);
-            // TODO: Join
+            if (this.exited)
+            {
+                this.exitPromise.SetResult(0);
+            }
+            await this.exitPromise.Task;
+        }
+
+        private void Exit(int code)
+        {
+            if (code != 0)
+            {
+                Console.Error.WriteLine($"exit code: {code}");
+            }
         }
 
         private void Resume()
         {
-            if (this.exited) {
+            if (this.exited)
+            {
                 throw new Exception("Go program has already exited");
             }
             this.inst.resume();
-            // TODO: Resolve the promise?
+            if (this.exited)
+            {
+                this.exitPromise.SetResult(0);
+            }
         }
 
         private void DebugWrite(IEnumerable<byte> bytes)
@@ -696,6 +713,7 @@ namespace {{.Namespace}}
         private static long nanosecPerTick = (1_000_000_000L) / Stopwatch.Frequency;
 
         private Import import;
+        private TaskCompletionSource<int> exitPromise;
 
         private List<byte> buf;
         private Stopwatch stopwatch;

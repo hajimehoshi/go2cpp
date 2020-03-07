@@ -11,7 +11,7 @@ var importFuncBodies = map[string]string{
     go.goRefCounts = null;
     go.ids = null;
     go.idPool = null;
-    // TODO: Invoke exit function`,
+    go.Exit(code);`,
 
 	// func wasmWrite(fd uintptr, p unsafe.Pointer, n int32)
 	"runtime.wasmWrite": `    var fd = go.mem.LoadInt64(local0 + 8);
