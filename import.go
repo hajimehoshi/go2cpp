@@ -3,26 +3,30 @@
 package main
 
 var importFuncBodies = map[string]string{
-	/*"runtime.wasmExit": (sp) => {
-		const code = this.mem.getInt32(sp + 8, true);
-		this.exited = true;
-		delete this._inst;
-		delete this._values;
-		delete this._goRefCounts;
-		delete this._ids;
-		delete this._idPool;
-		this.exit(code);
-	},
+	// func wasmExit(code int32)
+	"runtime.wasmExit": `    var code = go.mem.LoadInt32(local0 + 8);
+    // TODO: go.exited = true;
+    // TODO: go.inst = null; ?
+    go.values = null;
+    go.goRefCounts = null;
+    go.ids = null;
+    go.idPool = null;
+    // TODO: Invoke exit function`,
 
 	// func wasmWrite(fd uintptr, p unsafe.Pointer, n int32)
-	"runtime.wasmWrite": (sp) => {
-		const fd = getInt64(sp + 8);
-		const p = getInt64(sp + 16);
-		const n = this.mem.getInt32(sp + 24, true);
-		fs.writeSync(fd, new Uint8Array(this._inst.exports.mem.buffer, p, n));
-	},
+	"runtime.wasmWrite": `    var fd = go.mem.LoadInt64(local0 + 8);
+    if (fd != 1 && fd != 2)
+    {
+        throw new NotImplementedException(string.Format("fd for runtime.wasmWrite must be 1 or 2 but {0}", fd));
+    }
+    var p = go.mem.LoadInt64(local0 + 16);
+    var n = go.mem.LoadInt32(local0 + 24);
 
-	// func resetMemoryDataView()
+    // Note that runtime.wasmWrite is used only for print/println so far.
+    // Write the buffer to the standard output regardless of fd.
+    go.DebugWrite(go.mem.LoadSliceDirectly(p, n));`,
+
+	/*// func resetMemoryDataView()
 	"runtime.resetMemoryDataView": (sp) => {
 		this.mem = new DataView(this._inst.exports.mem.buffer);
 	},
