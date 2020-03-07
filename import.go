@@ -26,17 +26,13 @@ var importFuncBodies = map[string]string{
     // Write the buffer to the standard output regardless of fd.
     go.DebugWrite(go.mem.LoadSliceDirectly(p, n));`,
 
-	/*// func resetMemoryDataView()
-	"runtime.resetMemoryDataView": (sp) => {
-		this.mem = new DataView(this._inst.exports.mem.buffer);
-	},
+	// func resetMemoryDataView()
+	"runtime.resetMemoryDataView": `    // Do nothing.`,
 
 	// func nanotime1() int64
-	"runtime.nanotime1": (sp) => {
-		setInt64(sp + 8, (timeOrigin + performance.now()) * 1000000);
-	},
+	"runtime.nanotime1": `    go.mem.StoreInt64(local0 + 8, go.Now());`,
 
-	// func walltime1() (sec int64, nsec int32)
+	/*// func walltime1() (sec int64, nsec int32)
 	"runtime.walltime1": (sp) => {
 		const msec = (new Date).getTime();
 		setInt64(sp + 8, msec / 1000);
@@ -71,8 +67,7 @@ var importFuncBodies = map[string]string{
 
 	// func getRandomData(r []byte)
 	"runtime.getRandomData": `    var slice = go.mem.LoadSlice(local0 + 8);
-    var bytes = new byte[slice.Count];
-    go.rngCsp.GetBytes(bytes);
+    var bytes = go.GetRandomBytes(slice.Count);
     for (int i = 0; i < slice.Count; i++) {
         slice[i] = bytes[i];
     }`,

@@ -501,6 +501,7 @@ namespace {{.Namespace}}
         public void Run()
         {
             this.buf = new List<byte>();
+            this.stopwatch = Stopwatch.StartNew();
             this.mem = new Mem();
             this.values = new Dictionary<int, object>
             {
@@ -531,8 +532,23 @@ namespace {{.Namespace}}
             }
         }
 
+        private long Now()
+        {
+            return this.stopwatch.ElapsedTicks * nanosecPerTick;
+        }
+
+        private byte[] GetRandomBytes(int length)
+        {
+            var bytes = new byte[length];
+            this.rngCsp.GetBytes(bytes);
+            return bytes;
+        }
+
+        private static long nanosecPerTick = (1000L*1000L*1000L) / Stopwatch.Frequency;
+
         private Import import;
         private List<byte> buf;
+        private Stopwatch stopwatch;
         private Mem mem;
         private Dictionary<int, object> values;
         private Dictionary<int, int> goRefCounts;
