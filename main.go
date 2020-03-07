@@ -568,6 +568,7 @@ namespace {{.Namespace}}
         public Go()
         {
             this.import = new Import(this);
+            // this.exitPromise
         }
 
         public void Run(string[] args)
@@ -604,10 +605,11 @@ namespace {{.Namespace}}
                 return ptr;
             };
 
-            int argc = args.Length;
-            IEnumerable<int> argvPtrs = args.Select(arg => strPtr(arg)).Concat(new int[] { 0 });
+            // 'js' is requried as the first argument.
+            int argc = args.Length + 1;
+            IEnumerable<int> argvPtrs = args.Prepend("js").Select(arg => strPtr(arg)).Append(0);
             // TODO: Add environment variables.
-            argvPtrs = argvPtrs.Concat(new int[] { 0 });
+            argvPtrs = argvPtrs.Append(0);
 
             int argv = offset;
             foreach (int ptr in argvPtrs)
@@ -618,8 +620,7 @@ namespace {{.Namespace}}
             }
 
             this.inst.run(argc, argv);
-
-            // TODO: Resolve the promise?
+            // TODO: Join
         }
 
         private void Resume()
