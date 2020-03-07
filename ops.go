@@ -201,7 +201,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				l, _ := blockStack.PeepLevel(level)
 				appendBody("case %d: goto label%d;", i, l)
 			}
-			l, _ := blockStack.PeepLevel(int(instr.Immediates[len].(uint32)))
+			l, _ := blockStack.PeepLevel(int(instr.Immediates[len+1].(uint32)))
 			appendBody("default: goto label%d;", l)
 			appendBody("}")
 		case operators.Return:
