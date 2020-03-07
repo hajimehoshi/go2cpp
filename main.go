@@ -532,9 +532,14 @@ namespace {{.Namespace}}
             }
         }
 
-        private long Now()
+        private long PreciseNowInNanoseconds()
         {
             return this.stopwatch.ElapsedTicks * nanosecPerTick;
+        }
+
+        private double UnixNowInMilliseconds()
+        {
+            return (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalMilliseconds;
         }
 
         private byte[] GetRandomBytes(int length)
@@ -544,7 +549,7 @@ namespace {{.Namespace}}
             return bytes;
         }
 
-        private static long nanosecPerTick = (1000L*1000L*1000L) / Stopwatch.Frequency;
+        private static long nanosecPerTick = (1_000_000_000L) / Stopwatch.Frequency;
 
         private Import import;
         private List<byte> buf;

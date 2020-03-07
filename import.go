@@ -30,14 +30,12 @@ var importFuncBodies = map[string]string{
 	"runtime.resetMemoryDataView": `    // Do nothing.`,
 
 	// func nanotime1() int64
-	"runtime.nanotime1": `    go.mem.StoreInt64(local0 + 8, go.Now());`,
+	"runtime.nanotime1": `    go.mem.StoreInt64(local0 + 8, go.PreciseNowInNanoseconds());`,
 
-	/*// func walltime1() (sec int64, nsec int32)
-	"runtime.walltime1": (sp) => {
-		const msec = (new Date).getTime();
-		setInt64(sp + 8, msec / 1000);
-		this.mem.setInt32(sp + 16, (msec % 1000) * 1000000, true);
-	},*/
+	// func walltime1() (sec int64, nsec int32)
+	"runtime.walltime1": `    var now = go.UnixNowInMilliseconds();
+    go.mem.StoreInt64(local0 + 8, (long)(now / 1000));
+    go.mem.StoreInt32(local0 + 16, (int)((now % 1000) * 1_000_000));`,
 
 	// func scheduleTimeoutEvent(delay int64) int32
 	/*"runtime.scheduleTimeoutEvent": (sp) => {
