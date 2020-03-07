@@ -42,6 +42,9 @@ func identifierFromString(str string) string {
 		}
 		ident += fmt.Sprintf("_%02x", r)
 	}
+	if len(ident) > 512 {
+		ident = ident[:511]
+	}
 	return ident
 }
 
@@ -282,34 +285,47 @@ func run() error {
 	}
 
 	var ifs []*Func
-	var fs []*Func
-	for i, f := range mod.FunctionIndexSpace {
-		// There is a bug that signature and body are shifted (go-interpreter/wagon#190).
-		// TODO: Avoid using FunctionIndexSpace?
-		if f.Name == "" {
-			name := mod.Import.Entries[i].FieldName
-			ifs = append(ifs, &Func{
-				Type: types[mod.Import.Entries[i].Type.(wasm.FuncImport).Type],
-				Wasm: wasm.Function{
-					Sig:  types[mod.Import.Entries[i].Type.(wasm.FuncImport).Type].Sig,
-					Name: name,
-				},
-				Index:   i,
-				Import:  true,
-				BodyStr: importFuncBodies[name],
-			})
-			continue
-		}
-
-		f2 := mod.FunctionIndexSpace[i-len(mod.Import.Entries)]
-		fs = append(fs, &Func{
-			Type: types[mod.Function.Types[i-len(mod.Import.Entries)]],
+	for i, e := range mod.Import.Entries {
+		name := e.FieldName
+		ifs = append(ifs, &Func{
+			Type: types[e.Type.(wasm.FuncImport).Type],
 			Wasm: wasm.Function{
-				Sig:  types[mod.Function.Types[i-len(mod.Import.Entries)]].Sig,
-				Body: f2.Body,
-				Name: f.Name,
+				Sig:  types[e.Type.(wasm.FuncImport).Type].Sig,
+				Name: name,
 			},
-			Index: i,
+			Index:   i,
+			Import:  true,
+			BodyStr: importFuncBodies[name],
+		})
+	}
+
+	// There is a bug that signature and body are shifted (go-interpreter/wagon#190).
+	var names wasm.NameMap
+	if c := mod.Custom(wasm.CustomSectionName); c != nil {
+		var nsec wasm.NameSection
+		if err := nsec.UnmarshalWASM(bytes.NewReader(c.Data)); err != nil {
+			return err
+		}
+		if len(nsec.Types[wasm.NameFunction]) > 0 {
+			sub, err := nsec.Decode(wasm.NameFunction)
+			if err != nil {
+				return err
+			}
+			names = sub.(*wasm.FunctionNames).Names
+		}
+	}
+	var fs []*Func
+	for i, t := range mod.Function.Types {
+		name := names[uint32(i+len(mod.Import.Entries))]
+		body := mod.Code.Bodies[i]
+		fs = append(fs, &Func{
+			Type: types[t],
+			Wasm: wasm.Function{
+				Sig:  types[t].Sig,
+				Body: &body,
+				Name: name,
+			},
+			Index: i + len(mod.Import.Entries),
 		})
 	}
 
