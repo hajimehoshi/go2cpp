@@ -375,6 +375,7 @@ func run() error {
 		Globals     []*Global
 		Types       []*Type
 		Table       [][]uint32
+		InitPageNum int
 		InitMem     []byte
 	}{
 		Namespace:   namespace,
@@ -385,6 +386,7 @@ func run() error {
 		Globals:     globals,
 		Types:       types,
 		Table:       mod.TableIndexSpace,
+		InitPageNum: int(mod.Memory.Entries[0].Limits.Initial),
 		InitMem:     mod.LinearMemoryIndexSpace[0],
 	}); err != nil {
 		return err
@@ -413,9 +415,13 @@ namespace {{.Namespace}}
 {
     sealed class Mem
     {
+        const int PageSize = 64 * 1024;
+
         public Mem()
         {
-            this.bytes = new byte[] { {{- range $value := .InitMem}}{{$value}},{{end -}} };
+            this.bytes = new byte[{{.InitPageNum}} * PageSize];
+            byte[] src = new byte[] { {{- range $value := .InitMem}}{{$value}},{{end -}} };
+            Array.Copy(src, this.bytes, src.Length);
         }
 
         internal int Size
@@ -429,7 +435,12 @@ namespace {{.Namespace}}
         internal int Grow(int delta)
         {
             var prevSize = this.Size;
-            Array.Resize(ref this.bytes, prevSize + delta);
+            var newSize = prevSize + delta;
+            if (newSize % PageSize != 0)
+            {
+                newSize += PageSize - newSize % PageSize;
+            }
+            Array.Resize(ref this.bytes, newSize);
             return prevSize;
         }
 
@@ -582,7 +593,7 @@ namespace {{.Namespace}}
             this.exitPromise = new TaskCompletionSource<int>();
         }
 
-        public async void Run(string[] args)
+        public Task Run(string[] args)
         {
             this.buf = new List<byte>();
             this.stopwatch = Stopwatch.StartNew();
@@ -635,7 +646,7 @@ namespace {{.Namespace}}
             {
                 this.exitPromise.SetResult(0);
             }
-            await this.exitPromise.Task;
+            return this.exitPromise.Task;
         }
 
         private void Exit(int code)

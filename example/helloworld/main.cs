@@ -9,9 +9,8 @@ namespace Go2DotNet.Example.HelloWorld
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("---- start ----");
             Go go = new Go();
-            go.Run(args);
+            go.Run(args).Wait();
         }
     }    
 }
