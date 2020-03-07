@@ -468,7 +468,7 @@ namespace {{.Namespace}}
         {
             return (int)((uint)this.bytes[addr] |
                 (uint)(this.bytes[addr+1]) << 8 |
-                (uint)this.bytes[addr+2] << 16 |
+                (uint)(this.bytes[addr+2]) << 16 |
                 (uint)(this.bytes[addr+3]) << 24);
         }
 
@@ -476,7 +476,7 @@ namespace {{.Namespace}}
         {
             return (uint)((uint)this.bytes[addr] |
                 (uint)(this.bytes[addr+1]) << 8 |
-                (uint)this.bytes[addr+2] << 16 |
+                (uint)(this.bytes[addr+2]) << 16 |
                 (uint)(this.bytes[addr+3]) << 24);
         }
 
@@ -484,7 +484,7 @@ namespace {{.Namespace}}
         {
             return (long)((ulong)this.bytes[addr] |
                 (ulong)(this.bytes[addr+1]) << 8 |
-                (ulong)this.bytes[addr+2] << 16 |
+                (ulong)(this.bytes[addr+2]) << 16 |
                 (ulong)(this.bytes[addr+3]) << 24 |
                 (ulong)(this.bytes[addr+4]) << 32 |
                 (ulong)(this.bytes[addr+5]) << 40 |
