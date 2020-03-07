@@ -17,7 +17,7 @@ var importFuncBodies = map[string]string{
 	"runtime.wasmWrite": `    var fd = go.mem.LoadInt64(local0 + 8);
     if (fd != 1 && fd != 2)
     {
-        throw new NotImplementedException(string.Format("fd for runtime.wasmWrite must be 1 or 2 but {0}", fd));
+        throw new NotImplementedException($"fd for runtime.wasmWrite must be 1 or 2 but {fd}");
     }
     var p = go.mem.LoadInt64(local0 + 16);
     var n = go.mem.LoadInt32(local0 + 24);
