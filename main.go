@@ -71,7 +71,7 @@ func (f *Func) Identifier() string {
 
 var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.OriginalName}}
 // Index:        {{.Index}}
-{{if .WithBody}}{{if .Public}}public{{else}}internal{{end}} {{end}}{{.ReturnType}} {{.Name}}({{.Args}}){{if .WithBody}}
+{{if .WithBody}}{{if .Public}}public{{else}}private{{end}} {{end}}{{.ReturnType}} {{.Name}}({{.Args}}){{if .WithBody}}
 {
 {{range .Locals}}    {{.}}
 {{end}}{{if .Locals}}
