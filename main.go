@@ -354,6 +354,10 @@ func run() error {
 		})
 	}
 
+	if mod.Start != nil {
+		return fmt.Errorf("start section must be nil but not")
+	}
+
 	pkgs, err := packages.Load(nil, pkgname)
 	if err != nil {
 		return err
@@ -371,6 +375,7 @@ func run() error {
 		Globals     []*Global
 		Types       []*Type
 		Table       [][]uint32
+		InitMem     []byte
 	}{
 		Namespace:   namespace,
 		Class:       class,
@@ -380,6 +385,7 @@ func run() error {
 		Globals:     globals,
 		Types:       types,
 		Table:       mod.TableIndexSpace,
+		InitMem:     mod.LinearMemoryIndexSpace[0],
 	}); err != nil {
 		return err
 	}
@@ -407,8 +413,10 @@ namespace {{.Namespace}}
 {
     sealed class Mem
     {
-        // TODO: Initialize memory.
-        private byte[] bytes = new byte[4096];
+        public Mem()
+        {
+            this.bytes = new byte[] { {{- range $value := .InitMem}}{{$value}},{{end -}} };
+        }
 
         internal int Size
         {
@@ -545,6 +553,8 @@ namespace {{.Namespace}}
         {
             return new ArraySegment<byte>(this.bytes, (int)array, len);
         }
+
+        private byte[] bytes;
     }
 
     internal interface IImport
