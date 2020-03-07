@@ -38,30 +38,13 @@ var importFuncBodies = map[string]string{
     go.mem.StoreInt32(local0 + 16, (int)((now % 1000) * 1_000_000));`,
 
 	// func scheduleTimeoutEvent(delay int64) int32
-	/*"runtime.scheduleTimeoutEvent": (sp) => {
-		const id = this._nextCallbackTimeoutID;
-		this._nextCallbackTimeoutID++;
-		this._scheduledTimeouts.set(id, setTimeout(
-			() => {
-				this._resume();
-				while (this._scheduledTimeouts.has(id)) {
-					// for some reason Go failed to register the timeout event, log and try again
-					// (temporary workaround for https://github.com/golang/go/issues/28975)
-					console.warn("scheduleTimeoutEvent: missed timeout event");
-					this._resume();
-				}
-			},
-			getInt64(sp + 8) + 1, // setTimeout has been seen to fire up to 1 millisecond early
-		));
-		this.mem.setInt32(sp + 16, id, true);
-	},
+	"runtime.scheduleTimeoutEvent": `    var interval = go.mem.LoadInt64(local0 + 8);
+    var id = go.SetTimeout((double)interval);
+    go.mem.StoreInt32(local0 + 16, id);`,
 
 	// func clearTimeoutEvent(id int32)
-	"runtime.clearTimeoutEvent": (sp) => {
-		const id = this.mem.getInt32(sp + 8, true);
-		clearTimeout(this._scheduledTimeouts.get(id));
-		this._scheduledTimeouts.delete(id);
-	},*/
+	"runtime.clearTimeoutEvent": `    var id = go.mem.LoadInt32(local0 + 8);
+    go.ClearTimeout(id);`,
 
 	// func getRandomData(r []byte)
 	"runtime.getRandomData": `    var slice = go.mem.LoadSlice(local0 + 8);
@@ -69,5 +52,6 @@ var importFuncBodies = map[string]string{
     for (int i = 0; i < slice.Count; i++) {
         slice[i] = bytes[i];
     }`,
+
 	"debug": `    Console.WriteLine(local0);`,
 }

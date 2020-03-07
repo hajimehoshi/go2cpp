@@ -337,6 +337,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Timers;
 
 namespace {{.Namespace}}
 {
@@ -520,6 +521,11 @@ namespace {{.Namespace}}
             // TODO: Implement this
         }
 
+        private void Resume()
+        {
+            // TODO: Implement this.
+        }
+
         private void DebugWrite(IEnumerable<byte> bytes)
         {
             this.buf.AddRange(bytes);
@@ -542,6 +548,38 @@ namespace {{.Namespace}}
             return (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalMilliseconds;
         }
 
+        private int SetTimeout(double interval)
+        {
+            var id = this.nextCallbackTimeoutId;
+            this.nextCallbackTimeoutId++;
+
+            Timer timer = new Timer(interval);
+            timer.Elapsed += (sender, e) => {
+                this.Resume();
+                while (this.scheduledTimeouts.ContainsKey(id))
+                {
+                    // for some reason Go failed to register the timeout event, log and try again
+                    // (temporary workaround for https://github.com/golang/go/issues/28975)
+                    this.Resume();
+                }
+            };
+            timer.AutoReset = false;
+            timer.Start();
+
+            this.scheduledTimeouts[id] = timer;
+
+            return id;
+        }
+
+        private void ClearTimeout(int id)
+        {
+            if (this.scheduledTimeouts.ContainsKey(id))
+            {
+                this.scheduledTimeouts[id].Stop();
+            }
+            this.scheduledTimeouts.Remove(id);
+        }
+
         private byte[] GetRandomBytes(int length)
         {
             var bytes = new byte[length];
@@ -552,8 +590,12 @@ namespace {{.Namespace}}
         private static long nanosecPerTick = (1_000_000_000L) / Stopwatch.Frequency;
 
         private Import import;
+
         private List<byte> buf;
         private Stopwatch stopwatch;
+
+        private Dictionary<int, Timer> scheduledTimeouts = new Dictionary<int, Timer>();
+        private int nextCallbackTimeoutId = 1;
         private Mem mem;
         private Dictionary<int, object> values;
         private Dictionary<int, int> goRefCounts;
