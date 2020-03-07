@@ -5,8 +5,8 @@ package main
 var importFuncBodies = map[string]string{
 	// func wasmExit(code int32)
 	"runtime.wasmExit": `    var code = go.mem.LoadInt32(local0 + 8);
-    // TODO: go.exited = true;
-    // TODO: go.inst = null; ?
+    go.exited = true;
+    go.inst = null;
     go.values = null;
     go.goRefCounts = null;
     go.ids = null;

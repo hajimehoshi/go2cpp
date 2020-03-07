@@ -575,6 +575,7 @@ namespace {{.Namespace}}
             this.buf = new List<byte>();
             this.stopwatch = Stopwatch.StartNew();
             this.mem = new Mem();
+            this.inst = new Go_{{.Class}}(this.mem, this.import);
             this.values = new Dictionary<int, object>
             {
                 {0, double.NaN},
@@ -588,6 +589,7 @@ namespace {{.Namespace}}
             this.goRefCounts = new Dictionary<int, int>();
             this.ids = new Dictionary<int, int>();
             this.idPool = new HashSet<int>();
+            this.exited = false;
 
             int offset = 4096;
             Func<string, int> strPtr = (string str) => {
@@ -615,15 +617,18 @@ namespace {{.Namespace}}
                 offset += 8;
             }
 
-            var go = new Go_{{.Class}}(this.mem, this.import);
-            go.run(argc, argv);
+            this.inst.run(argc, argv);
 
-            // TODO: Check exited or not.
+            // TODO: Resolve the promise?
         }
 
         private void Resume()
         {
-            // TODO: Implement this.
+            if (this.exited) {
+                throw new Exception("Go program has already exited");
+            }
+            this.inst.resume();
+            // TODO: Resolve the promise?
         }
 
         private void DebugWrite(IEnumerable<byte> bytes)
@@ -696,11 +701,13 @@ namespace {{.Namespace}}
 
         private Dictionary<int, Timer> scheduledTimeouts = new Dictionary<int, Timer>();
         private int nextCallbackTimeoutId = 1;
+        private Go_{{.Class}} inst;
         private Mem mem;
         private Dictionary<int, object> values;
         private Dictionary<int, int> goRefCounts;
         private Dictionary<int, int> ids;
         private HashSet<int> idPool;
+        private bool exited;
         private RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
     }
 
