@@ -13,7 +13,6 @@ import (
 
 	"github.com/pkg/profile"
 	"github.com/go-interpreter/wagon/wasm"
-	"github.com/go-interpreter/wagon/wasm/leb128"
 )
 
 var (
@@ -368,12 +367,12 @@ func run() error {
 
 	var data []Data
 	for _, e := range mod.Data.Entries {
-		offset, err := leb128.ReadVarint32(bytes.NewReader(e.Offset[1:]))
+		offset, err := mod.ExecInitExpr(e.Offset)
 		if err != nil {
 			return err
 		}
 		data = append(data, Data{
-			Offset: int(offset),
+			Offset: int(offset.(int32)),
 			Data:   e.Data,
 		})
 	}
