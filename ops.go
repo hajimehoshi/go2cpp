@@ -78,9 +78,18 @@ const (
 )
 
 type BlockStack struct {
-	types []BlockType
-	index []*Stack
-	s     Stack
+	types     []BlockType
+	index     []*Stack
+	s         Stack
+	tmpindent int
+}
+
+func (b *BlockStack) UnindentTemporarily() {
+	b.tmpindent--
+}
+
+func (b *BlockStack) IndentTemporarily() {
+	b.tmpindent++
 }
 
 func (b *BlockStack) Push(btype BlockType) int {
@@ -123,6 +132,7 @@ func (b *BlockStack) IndentLevel() int {
 			l++
 		}
 	}
+	l += b.tmpindent
 	return l
 }
 
@@ -217,10 +227,11 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("{")
 			blockStack.Push(BlockTypeIf)
 		case operators.Else:
-			// TODO: Better indentation
+			blockStack.UnindentTemporarily()
 			appendBody("}")
 			appendBody("else")
 			appendBody("{")
+			blockStack.IndentTemporarily()
 		case operators.End:
 			idx, btype := blockStack.Pop()
 			if btype == BlockTypeIf {
