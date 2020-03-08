@@ -261,7 +261,7 @@ func run() error {
 	}
 	defer f.Close()
 
-	mod, err := wasm.ReadModule(f, nil)
+	mod, err := wasm.DecodeModule(f)
 	if err != nil {
 		return err
 	}
