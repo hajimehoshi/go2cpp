@@ -283,7 +283,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("{")
 			blockStack.IndentTemporarily()
 		case operators.End:
-			if _, _, ret := blockStack.Peep(); ret != "" {
+			if _, btype, ret := blockStack.Peep(); btype != BlockTypeLoop && ret != "" {
 				idx := blockStack.PopIndex()
 				appendBody("stack%s = stack%s;", ret, idx)
 			}
@@ -295,11 +295,15 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				appendBody("label%d:;", idx)
 			}
 		case operators.Br:
-			// TODO: What if the block returns the value?
+			if _, _, ret := blockStack.Peep(); ret != "" {
+				return nil, fmt.Errorf("br with a returning value is not implemented yet")
+			}
 			level := instr.Immediates[0].(uint32)
 			appendBody(gotoOrReturn(int(level)))
 		case operators.BrIf:
-			// TODO: What if the block returns the value?
+			if _, _, ret := blockStack.Peep(); ret != "" {
+				return nil, fmt.Errorf("br_if with a returning value is not implemented yet")
+			}
 			level := instr.Immediates[0].(uint32)
 			appendBody("if (stack%s != 0)", blockStack.PopIndex())
 			appendBody("{")
@@ -308,7 +312,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			blockStack.UnindentTemporarily()
 			appendBody("}")
 		case operators.BrTable:
-			// TODO: What if the block returns the value?
+			if _, _, ret := blockStack.Peep(); ret != "" {
+				return nil, fmt.Errorf("br_table with a returning value is not implemented yet")
+			}
 			appendBody("switch (stack%s)", blockStack.PopIndex())
 			appendBody("{")
 			len := int(instr.Immediates[0].(uint32))
