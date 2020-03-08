@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using Go2DotNet.AutoGen.github_2ecom.hajimehoshi.go2dotnet.example.helloworld;
+using Go2DotNet.Example.HelloWorld.AutoGen;
 
 namespace Go2DotNet.Example.HelloWorld
 {
