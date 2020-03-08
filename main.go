@@ -11,8 +11,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pkg/profile"
 	"github.com/go-interpreter/wagon/wasm"
+	"github.com/pkg/profile"
 )
 
 var (
@@ -365,6 +365,19 @@ func run() error {
 		return fmt.Errorf("start section must be nil but not")
 	}
 
+	tables := make([][]uint32, len(mod.Table.Entries))
+	for _, e := range mod.Elements.Entries {
+		v, err := mod.ExecInitExpr(e.Offset)
+		if err != nil {
+			return err
+		}
+		offset := v.(int32)
+		if diff := int(offset) + int(len(e.Elems)) - int(len(tables[e.Index])); diff > 0 {
+			tables[e.Index] = append(tables[e.Index], make([]uint32, diff)...)
+		}
+		copy(tables[e.Index][offset:], e.Elems)
+	}
+
 	var data []Data
 	for _, e := range mod.Data.Entries {
 		offset, err := mod.ExecInitExpr(e.Offset)
@@ -384,7 +397,7 @@ func run() error {
 		Exports     []*Export
 		Globals     []*Global
 		Types       []*Type
-		Table       [][]uint32
+		Tables      [][]uint32
 		InitPageNum int
 		Data        []Data
 	}{
@@ -394,7 +407,7 @@ func run() error {
 		Exports:     exports,
 		Globals:     globals,
 		Types:       types,
-		Table:       mod.TableIndexSpace,
+		Tables:      tables,
 		InitPageNum: int(mod.Memory.Entries[0].Limits.Initial),
 		Data:        data,
 	}); err != nil {
@@ -779,7 +792,7 @@ namespace {{.Namespace}}
 {{end}}
 {{range $value := .Types}}{{$value.CSharp "        "}}
 {{end}}        private static readonly uint[][] table_ = {
-{{range $value := .Table}}            new uint[] { {{- range $value2 := $value}}{{$value2}}, {{end}}},
+{{range $value := .Tables}}            new uint[] { {{- range $value2 := $value}}{{$value2}}, {{end}}},
 {{end}}        };
 
         private void initializeFuncs_()
