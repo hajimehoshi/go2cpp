@@ -233,7 +233,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case 0:
 			return "return;"
 		default:
-			return fmt.Sprintf("return stack%s;", blockStack.PopIndex())
+			// TODO: Should this be PopIndex?
+			return fmt.Sprintf("return stack%s;", blockStack.PeepIndex())
 		}
 	}
 
@@ -274,7 +275,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.Else:
 			if _, _, ret := blockStack.Peep(); ret != "" {
 				idx := blockStack.PopIndex()
-				appendBody("stack%s = stack%s", ret, idx)
+				appendBody("stack%s = stack%s;", ret, idx)
 			}
 			blockStack.UnindentTemporarily()
 			appendBody("}")
@@ -284,7 +285,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.End:
 			if _, _, ret := blockStack.Peep(); ret != "" {
 				idx := blockStack.PopIndex()
-				appendBody("stack%s = stack%s", ret, idx)
+				appendBody("stack%s = stack%s;", ret, idx)
 			}
 			idx, btype, _ := blockStack.Pop()
 			if btype == BlockTypeIf {

@@ -839,7 +839,7 @@ namespace {{.Namespace}}
             return (int)deBruijn32tab[(x&-x)*deBruijn32>>(32-5)];
         }
 
-        public static int TrailingZeros(ulong x)
+        public static int TailingZeros(ulong x)
         {
             if (x == 0)
             {
