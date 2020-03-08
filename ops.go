@@ -209,7 +209,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			case 0:
 				appendBody("return;")
 			default:
-				appendBody("return stack%d;", idxStack.Peep())
+				appendBody("return stack%d;", idxStack.Pop())
 			}
 
 		case operators.Call:
