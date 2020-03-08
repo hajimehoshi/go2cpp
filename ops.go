@@ -184,11 +184,6 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 
 	appendBody := func(str string, args ...interface{}) {
 		str = fmt.Sprintf(str, args...)
-		if str == "{" && len(body) > 0 && strings.HasSuffix(body[len(body)-1], "{") {
-			body[len(body)-1] += "{"
-			return
-		}
-
 		level := blockStack.IndentLevel() + 1
 		if strings.HasSuffix(str, ":;") {
 			level--
@@ -207,13 +202,11 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
 				return nil, fmt.Errorf("'block' taking types (%s) is not implemented", t)
 			}
-			appendBody("{")
 			blockStack.Push(BlockTypeBlock)
 		case operators.Loop:
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
 				return nil, fmt.Errorf("'loop' taking types (%s) is not implemented", t)
 			}
-			appendBody("{")
 			l := blockStack.Push(BlockTypeLoop)
 			appendBody("label%d:;", l)
 		case operators.If:
@@ -230,7 +223,9 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("{")
 		case operators.End:
 			idx, btype := blockStack.Pop()
-			appendBody("}")
+			if btype == BlockTypeIf {
+				appendBody("}")
+			}
 			if btype != BlockTypeLoop {
 				appendBody("label%d:;", idx)
 			}
