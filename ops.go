@@ -79,6 +79,7 @@ const (
 
 type BlockStack struct {
 	types     []BlockType
+	rets      []string
 	index     []*Stack
 	s         Stack
 	tmpindent int
@@ -92,29 +93,33 @@ func (b *BlockStack) IndentTemporarily() {
 	b.tmpindent++
 }
 
-func (b *BlockStack) Push(btype BlockType) int {
+func (b *BlockStack) Push(btype BlockType, ret string) int {
 	if b.index == nil {
 		b.index = []*Stack{{}}
 	}
 
 	b.types = append(b.types, btype)
+	b.rets = append(b.rets, ret)
 	b.index = append(b.index, &Stack{})
 	return b.s.Push()
 }
 
-func (b *BlockStack) Pop() (int, BlockType) {
+func (b *BlockStack) Pop() (int, BlockType, string) {
 	if b.index == nil {
 		b.index = []*Stack{{}}
 	}
 
 	btype := b.types[len(b.types)-1]
+	ret := b.rets[len(b.rets)-1]
+
 	b.types = b.types[:len(b.types)-1]
+	b.rets = b.rets[:len(b.rets)-1]
 	b.index = b.index[:len(b.index)-1]
-	return b.s.Pop(), btype
+	return b.s.Pop(), btype, ret
 }
 
-func (b *BlockStack) Peep() (int, BlockType) {
-	return b.s.Peep(), b.types[len(b.types)-1]
+func (b *BlockStack) Peep() (int, BlockType, string) {
+	return b.s.Peep(), b.types[len(b.types)-1], b.rets[len(b.rets)-1]
 }
 
 func (b *BlockStack) PeepLevel(level int) (int, BlockType) {
@@ -209,31 +214,49 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.Nop:
 			// Do nothing
 		case operators.Block:
+			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
-				return nil, fmt.Errorf("'block' taking types (%s) is not implemented", t)
+				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
+				ret = blockStack.PushIndex()
+				appendBody("%s stack%s;", t.CSharp(), ret)
 			}
-			blockStack.Push(BlockTypeBlock)
+			blockStack.Push(BlockTypeBlock, ret)
 		case operators.Loop:
+			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
-				return nil, fmt.Errorf("'loop' taking types (%s) is not implemented", t)
+				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
+				ret = blockStack.PushIndex()
+				appendBody("%s stack%s;", t.CSharp(), ret)
 			}
-			l := blockStack.Push(BlockTypeLoop)
+			l := blockStack.Push(BlockTypeLoop, ret)
 			appendBody("label%d:;", l)
 		case operators.If:
+			cond := blockStack.PopIndex()
+			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
-				return nil, fmt.Errorf("'if' taking types (%s) is not implemented", t)
+				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
+				ret = blockStack.PushIndex()
+				appendBody("%s stack%s;", t.CSharp(), ret)
 			}
-			appendBody("if (stack%s != 0)", blockStack.PopIndex())
+			appendBody("if (stack%s != 0)", cond)
 			appendBody("{")
-			blockStack.Push(BlockTypeIf)
+			blockStack.Push(BlockTypeIf, ret)
 		case operators.Else:
+			if _, _, ret := blockStack.Peep(); ret != "" {
+				idx := blockStack.PopIndex()
+				appendBody("stack%s = stack%s", ret, idx)
+			}
 			blockStack.UnindentTemporarily()
 			appendBody("}")
 			appendBody("else")
 			appendBody("{")
 			blockStack.IndentTemporarily()
 		case operators.End:
-			idx, btype := blockStack.Pop()
+			if _, _, ret := blockStack.Peep(); ret != "" {
+				idx := blockStack.PopIndex()
+				appendBody("stack%s = stack%s", ret, idx)
+			}
+			idx, btype, _ := blockStack.Pop()
 			if btype == BlockTypeIf {
 				appendBody("}")
 			}
