@@ -173,9 +173,11 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("{")
 			blockStack.Push(BlockTypeIf)
 		case operators.Else:
+			blockStack.Pop()
 			appendBody("}")
 			appendBody("else")
 			appendBody("{")
+			blockStack.Push(BlockTypeIf)
 		case operators.End:
 			idx, btype := blockStack.Pop()
 			appendBody("}")
