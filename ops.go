@@ -152,21 +152,21 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.Nop:
 			// Do nothing
 		case operators.Block:
-			if instr.Immediates[0] != wasm.BlockTypeEmpty {
-				return nil, fmt.Errorf("'block' taking types is not implemented")
+			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
+				return nil, fmt.Errorf("'block' taking types (%s) is not implemented", t)
 			}
 			appendBody("{")
 			blockStack.Push(BlockTypeBlock)
 		case operators.Loop:
-			if instr.Immediates[0] != wasm.BlockTypeEmpty {
-				return nil, fmt.Errorf("'loop' taking types is not implemented")
+			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
+				return nil, fmt.Errorf("'loop' taking types (%s) is not implemented", t)
 			}
 			appendBody("{")
 			l := blockStack.Push(BlockTypeLoop)
 			appendBody("label%d:;", l)
 		case operators.If:
-			if instr.Immediates[0] != wasm.BlockTypeEmpty {
-				return nil, fmt.Errorf("'if' taking types is not implemented")
+			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
+				return nil, fmt.Errorf("'if' taking types (%s) is not implemented", t)
 			}
 			idx := idxStack.Pop()
 			appendBody("if (stack%d != 0)", idx)
