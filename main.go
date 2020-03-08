@@ -455,7 +455,7 @@ namespace {{.Namespace}}
         {
             this.bytes = new byte[{{.InitPageNum}} * PageSize];
 {{range $value := .Data}}            Array.Copy(new byte[] { {{- range $value2 := $value.Data}}{{$value2}},{{end}}}, 0, this.bytes, {{$value.Offset}}, {{len $value.Data}});
-{{end}}}
+{{end}}        }
 
         internal int Size
         {
