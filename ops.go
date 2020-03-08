@@ -5,6 +5,8 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/go-interpreter/wagon/disasm"
@@ -184,6 +186,14 @@ func (b *BlockStack) HasIndex() bool {
 }
 
 func (f *Func) bodyToCSharp() ([]string, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			debug.PrintStack()
+			panic(err)
+		}
+	}()
+
 	sig := f.Wasm.Sig
 	funcs := f.Funcs
 	types := f.Types
