@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -390,7 +391,8 @@ func run() error {
 		})
 	}
 
-	if err := csTmpl.Execute(os.Stdout, struct {
+	var buf bytes.Buffer
+	if err := csTmpl.Execute(&buf, struct {
 		Namespace   string
 		ImportFuncs []*Func
 		Funcs       []*Func
@@ -411,6 +413,11 @@ func run() error {
 		InitPageNum: int(mod.Memory.Entries[0].Limits.Initial),
 		Data:        data,
 	}); err != nil {
+		return err
+	}
+
+	// Output the result after everything is finished as IO can be the performance bottleneck.
+	if _, err := io.Copy(os.Stdout, &buf); err != nil {
 		return err
 	}
 
