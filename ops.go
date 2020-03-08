@@ -681,9 +681,11 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("int stack%s = (stack%s >= stack%s) ? 1 : 0;", dst, arg0, arg1)
 
 		case operators.I32Clz:
-			return nil, fmt.Errorf("I32Clz is not implemented")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = Bits.LeadingZeros((uint)stack%[1]s);", idx)
 		case operators.I32Ctz:
-			return nil, fmt.Errorf("I32Ctz is not implemented")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = Bits.TailingZeros((uint)stack%[1]s);", idx)
 		case operators.I32Popcnt:
 			return nil, fmt.Errorf("I32Popcnt is not implemented")
 		case operators.I32Add:
@@ -743,9 +745,11 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.I32Rotr:
 			return nil, fmt.Errorf("I32Rotr is not implemented")
 		case operators.I64Clz:
-			return nil, fmt.Errorf("I64Clz is not implemented")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = (long)Bits.LeadingZeros((ulong)stack%[1]s);", idx)
 		case operators.I64Ctz:
-			return nil, fmt.Errorf("I64Ctz is not implemented")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = (long)Bits.TailingZeros((ulong)stack%[1]s);", idx)
 		case operators.I64Popcnt:
 			return nil, fmt.Errorf("I64Popcnt is not implemented")
 		case operators.I64Add:
