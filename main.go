@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/go-interpreter/wagon/wasm"
+	"github.com/go-interpreter/wagon/wasm/leb128"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -243,6 +244,11 @@ func (t *Type) CSharp(indent string) (string, error) {
 	return fmt.Sprintf("%sprivate delegate %s Type%d(%s);", indent, retType.CSharp(), t.Index, strings.Join(args, ", ")), nil
 }
 
+type Data struct {
+	Offset int
+	Data   []byte
+}
+
 func run() error {
 	tmp, err := ioutil.TempDir("", "go2dotnet-")
 	if err != nil {
@@ -382,6 +388,18 @@ func run() error {
 	namespace := namespaceFromPkg(pkgs[0])
 	class := identifierFromString(pkgs[0].Name)
 
+	var data []Data
+	for _, e := range mod.Data.Entries {
+		offset, err := leb128.ReadVarint32(bytes.NewReader(e.Offset[1:]))
+		if err != nil {
+			return err
+		}
+		data = append(data, Data{
+			Offset: int(offset),
+			Data:   e.Data,
+		})
+	}
+
 	if err := csTmpl.Execute(os.Stdout, struct {
 		Namespace   string
 		Class       string
@@ -392,7 +410,7 @@ func run() error {
 		Types       []*Type
 		Table       [][]uint32
 		InitPageNum int
-		InitMem     []byte
+		Data        []Data
 	}{
 		Namespace:   namespace,
 		Class:       class,
@@ -403,7 +421,7 @@ func run() error {
 		Types:       types,
 		Table:       mod.TableIndexSpace,
 		InitPageNum: int(mod.Memory.Entries[0].Limits.Initial),
-		InitMem:     mod.LinearMemoryIndexSpace[0],
+		Data:        data,
 	}); err != nil {
 		return err
 	}
@@ -436,9 +454,8 @@ namespace {{.Namespace}}
         public Mem()
         {
             this.bytes = new byte[{{.InitPageNum}} * PageSize];
-            byte[] src = new byte[] { {{- range $value := .InitMem}}{{$value}},{{end -}} };
-            Array.Copy(src, this.bytes, src.Length);
-        }
+{{range $value := .Data}}            Array.Copy(new byte[] { {{- range $value2 := $value.Data}}{{$value2}},{{end}}}, 0, this.bytes, {{$value.Offset}}, {{len $value.Data}});
+{{end}}}
 
         internal int Size
         {
