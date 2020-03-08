@@ -63,8 +63,11 @@ func (s *Stack) Peep() int {
 	return s.stack[len(s.stack)-1]
 }
 
-func (s *Stack) PeepLevel(level int) int {
-	return s.stack[len(s.stack)-1-level]
+func (s *Stack) PeepLevel(level int) (int, bool) {
+	if len(s.stack) > level {
+		return s.stack[len(s.stack)-1-level], true
+	}
+	return 0, false
 }
 
 func (s *Stack) Len() int {
@@ -124,8 +127,13 @@ func (b *BlockStack) Peep() (int, BlockType, string) {
 	return b.s.Peep(), b.types[len(b.types)-1], b.rets[len(b.rets)-1]
 }
 
-func (b *BlockStack) PeepLevel(level int) (int, BlockType) {
-	return b.s.PeepLevel(level), b.types[len(b.types)-1-level]
+func (b *BlockStack) PeepLevel(level int) (int, BlockType, bool) {
+	l, ok := b.s.PeepLevel(level)
+	var t BlockType
+	if ok {
+		t = b.types[len(b.types)-1-level]
+	}
+	return l, t, ok
 }
 
 func (b *BlockStack) Len() int {
@@ -217,6 +225,18 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		body = append(body, indent+str)
 	}
 
+	gotoOrReturn := func(level int) string {
+		if l, _, ok := blockStack.PeepLevel(level); ok {
+			return fmt.Sprintf("goto label%d;", l)
+		}
+		switch len(sig.ReturnTypes) {
+		case 0:
+			return "return;"
+		default:
+			return fmt.Sprintf("return stack%s;", blockStack.PopIndex())
+		}
+	}
+
 	for _, instr := range dis.Code {
 		switch instr.Op.Code {
 		case operators.Unreachable:
@@ -274,24 +294,29 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				appendBody("label%d:;", idx)
 			}
 		case operators.Br:
+			// TODO: What if the block returns the value?
 			level := instr.Immediates[0].(uint32)
-			l, _ := blockStack.PeepLevel(int(level))
-			appendBody("goto label%d;", l)
+			appendBody(gotoOrReturn(int(level)))
 		case operators.BrIf:
+			// TODO: What if the block returns the value?
 			level := instr.Immediates[0].(uint32)
-			l, _ := blockStack.PeepLevel(int(level))
-			appendBody("if (stack%s != 0) goto label%d;", blockStack.PopIndex(), l)
+			appendBody("if (stack%s != 0)", blockStack.PopIndex())
+			appendBody("{")
+			blockStack.IndentTemporarily()
+			appendBody(gotoOrReturn(int(level)))
+			blockStack.UnindentTemporarily()
+			appendBody("}")
 		case operators.BrTable:
+			// TODO: What if the block returns the value?
 			appendBody("switch (stack%s)", blockStack.PopIndex())
 			appendBody("{")
 			len := int(instr.Immediates[0].(uint32))
 			for i := 0; i < len; i++ {
 				level := int(instr.Immediates[1+i].(uint32))
-				l, _ := blockStack.PeepLevel(level)
-				appendBody("case %d: goto label%d;", i, l)
+				appendBody("case %d: %s", i, gotoOrReturn(int(level)))
 			}
-			l, _ := blockStack.PeepLevel(int(instr.Immediates[len+1].(uint32)))
-			appendBody("default: goto label%d;", l)
+			level := int(instr.Immediates[len+1].(uint32))
+			appendBody("default: %s", gotoOrReturn(int(level)))
 			appendBody("}")
 		case operators.Return:
 			switch len(sig.ReturnTypes) {
