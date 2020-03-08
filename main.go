@@ -597,6 +597,11 @@ namespace {{.Namespace}}
             this.exitPromise = new TaskCompletionSource<int>();
         }
 
+        public Task Run()
+        {
+            return Run(new string[] { });
+        }
+
         public Task Run(string[] args)
         {
             this.buf = new List<byte>();
