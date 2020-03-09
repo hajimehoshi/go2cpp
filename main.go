@@ -625,6 +625,41 @@ namespace {{.Namespace}}
             private Go go;
         }
 
+        private static double? ToDouble(object value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            switch (Type.GetTypeCode(value.GetType()))
+            {
+            case TypeCode.SByte:
+                return (double)(sbyte)value;
+            case TypeCode.Byte:
+                return (double)(byte)value;
+            case TypeCode.Int16:
+                return (double)(short)value;
+            case TypeCode.UInt16:
+                return (double)(ushort)value;
+            case TypeCode.Int32:
+                return (double)(int)value;
+            case TypeCode.UInt32:
+                return (double)(uint)value;
+            case TypeCode.Int64:
+                return (double)(long)value;
+            case TypeCode.UInt64:
+                return (double)(ulong)value;
+            case TypeCode.Single:
+                return (double)(float)value;
+            case TypeCode.Double:
+                return (double)(double)value;
+            case TypeCode.Decimal:
+                return (double)(decimal)value;
+            }
+            return null;
+        }
+
         public Go()
         {
             this.import = new Import(this);
@@ -649,21 +684,22 @@ namespace {{.Namespace}}
         internal void StoreValue(int addr, object v)
         {
             const int NaNHead = 0x7FF80000;
-            if (v is double)
+            double? d = ToDouble(v);
+            if (d.HasValue)
             {
-                if (double.IsNaN((double)v))
+                if (double.IsNaN(d.Value))
                 {
                     this.mem.StoreInt32(addr + 4, NaNHead);
                     this.mem.StoreInt32(addr, 0);
                     return;
                 }
-                if ((double)v == 0)
+                if (d.Value == 0)
                 {
                     this.mem.StoreInt32(addr + 4, NaNHead);
                     this.mem.StoreInt32(addr, 1);
                     return;
                 }
-                this.mem.StoreFloat64(addr, (double)v);
+                this.mem.StoreFloat64(addr, d.Value);
                 return;
             }
             if (v == JSObject.Undefined)
