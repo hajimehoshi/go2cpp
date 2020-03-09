@@ -402,6 +402,7 @@ func run() error {
 		Tables      [][]uint32
 		InitPageNum int
 		Data        []Data
+		JS          string
 	}{
 		Namespace:   *flagNamespace,
 		ImportFuncs: ifs,
@@ -412,6 +413,7 @@ func run() error {
 		Tables:      tables,
 		InitPageNum: int(mod.Memory.Entries[0].Limits.Initial),
 		Data:        data,
+		JS:          js, // defined at js.go
 	}); err != nil {
 		return err
 	}
@@ -608,46 +610,7 @@ namespace {{.Namespace}}
 {{$value.CSharp "        " false false}}{{end}}
     }
 
-    sealed class JSValue
-    {
-        public static object Undefined = new JSValue("Undefined");
-        public static object Global = new JSValue("Global");
-        public static object Object = new JSValue("Object");
-        public static object Array = new JSValue("Array");
-
-        public static object ReflectGet(object target, string propertyKey)
-        {
-            if (target == Global)
-            {
-                switch (propertyKey)
-                {
-                case "Object":
-                    return Object;
-                case "Array":
-                    return Array;
-                case "process":
-                    // TODO: Implement pseudo process as wasm_exec.js does.
-                    return null;
-                case "fs":
-                    // TODO: Implement pseudo fs as wasm_exec.js does.
-                    return null;
-                }
-            }
-            throw new Exception($"{target}.{propertyKey} not found");
-        }
-
-        public JSValue(string name)
-        {
-            this.name = name;
-        }
-
-        public override string ToString()
-        {
-            return this.name;
-        }
-
-        string name;
-    }
+{{.JS}}
 
     public class Go
     {
@@ -673,7 +636,7 @@ namespace {{.Namespace}}
             double f = this.mem.LoadFloat64(addr);
             if (f == 0)
             {
-                return JSValue.Undefined;
+                return JSObject.Undefined;
             }
             if (!double.IsNaN(f))
             {
@@ -703,7 +666,7 @@ namespace {{.Namespace}}
                 this.mem.StoreFloat64(addr, (double)v);
                 return;
             }
-            if (v == JSValue.Undefined)
+            if (v == JSObject.Undefined)
             {
                 this.mem.StoreFloat64(addr, 0);
                 return;
@@ -771,7 +734,7 @@ namespace {{.Namespace}}
                 {2, null},
                 {3, true},
                 {4, false},
-                {5, JSValue.Global},
+                {5, JSObject.Global},
                 {6, this},
             };
             this.goRefCounts = new Dictionary<int, int>();

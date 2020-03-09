@@ -68,7 +68,7 @@ var importFuncBodies = map[string]string{
 	"syscall/js.stringVal": `    go.StoreValue(local0 + 24, go.mem.LoadString(local0 + 8));`,
 
 	// func valueGet(v ref, p string) ref
-	"syscall/js.valueGet": `    var result = JSValue.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16));
+	"syscall/js.valueGet": `    var result = JSObject.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16));
     local0 = go.inst.getsp();
     go.StoreValue(local0 + 32, result);`,
 	/*(sp) => {
