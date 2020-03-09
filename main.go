@@ -517,7 +517,7 @@ namespace {{.Namespace}}
                 (ulong)(this.bytes[addr+4]) << 32 |
                 (ulong)(this.bytes[addr+5]) << 40 |
                 (ulong)(this.bytes[addr+6]) << 48 |
-                (ulong)(this.bytes[addr+7]) << 54);
+                (ulong)(this.bytes[addr+7]) << 56);
         }
 
         internal float LoadFloat32(int addr)
@@ -560,7 +560,7 @@ namespace {{.Namespace}}
             this.bytes[addr+4] = (byte)(val >> 32);
             this.bytes[addr+5] = (byte)(val >> 40);
             this.bytes[addr+6] = (byte)(val >> 48);
-            this.bytes[addr+7] = (byte)(val >> 54);
+            this.bytes[addr+7] = (byte)(val >> 56);
         }
 
         internal void StoreFloat32(int addr, float val)
