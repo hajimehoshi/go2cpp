@@ -53,5 +53,146 @@ var importFuncBodies = map[string]string{
         slice[i] = bytes[i];
     }`,
 
+	// func finalizeRef(v ref)
+	"syscall/js.finalizeRef": `    int id = (int)go.mem.LoadUint32(local0 + 8);
+    go.goRefCounts[id]--;
+    if (go.goRefCounts[id] == 0)
+    {
+        var v = go.values[id];
+        go.values[id] = null;
+        go.ids.Remove(v);
+        go.idPool.Push(id);
+    }`,
+
+	// func stringVal(value string) ref
+	"syscall/js.stringVal": `    go.StoreValue(local0 + 24, go.mem.LoadString(local0 + 8));`,
+
+	// func valueGet(v ref, p string) ref
+	"syscall/js.valueGet": `    var result = JSValue.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16));
+    local0 = go.inst.getsp();
+    go.StoreValue(local0 + 32, result);`,
+	/*(sp) => {
+						const result = Reflect.get(loadValue(sp + 8), loadString(sp + 16));
+						sp = this._inst.exports.getsp(); // see comment above
+						storeValue(sp + 32, result);
+					},
+
+					// func valueSet(v ref, p string, x ref)
+					"syscall/js.valueSet": (sp) => {
+						Reflect.set(loadValue(sp + 8), loadString(sp + 16), loadValue(sp + 32));
+					},
+
+					// func valueDelete(v ref, p string)
+					"syscall/js.valueDelete": (sp) => {
+						Reflect.deleteProperty(loadValue(sp + 8), loadString(sp + 16));
+					},
+
+					// func valueIndex(v ref, i int) ref
+					"syscall/js.valueIndex": (sp) => {
+						storeValue(sp + 24, Reflect.get(loadValue(sp + 8), getInt64(sp + 16)));
+					},
+
+					// valueSetIndex(v ref, i int, x ref)
+					"syscall/js.valueSetIndex": (sp) => {
+						Reflect.set(loadValue(sp + 8), getInt64(sp + 16), loadValue(sp + 24));
+					},
+
+					// func valueCall(v ref, m string, args []ref) (ref, bool)
+					"syscall/js.valueCall": (sp) => {
+						try {
+							const v = loadValue(sp + 8);
+							const m = Reflect.get(v, loadString(sp + 16));
+							const args = loadSliceOfValues(sp + 32);
+							const result = Reflect.apply(m, v, args);
+							sp = this._inst.exports.getsp(); // see comment above
+							storeValue(sp + 56, result);
+							this.mem.setUint8(sp + 64, 1);
+						} catch (err) {
+							storeValue(sp + 56, err);
+							this.mem.setUint8(sp + 64, 0);
+						}
+					},
+
+					// func valueInvoke(v ref, args []ref) (ref, bool)
+					"syscall/js.valueInvoke": (sp) => {
+						try {
+							const v = loadValue(sp + 8);
+							const args = loadSliceOfValues(sp + 16);
+							const result = Reflect.apply(v, undefined, args);
+							sp = this._inst.exports.getsp(); // see comment above
+							storeValue(sp + 40, result);
+							this.mem.setUint8(sp + 48, 1);
+						} catch (err) {
+							storeValue(sp + 40, err);
+							this.mem.setUint8(sp + 48, 0);
+						}
+					},
+
+					// func valueNew(v ref, args []ref) (ref, bool)
+					"syscall/js.valueNew": (sp) => {
+						try {
+							const v = loadValue(sp + 8);
+							const args = loadSliceOfValues(sp + 16);
+							const result = Reflect.construct(v, args);
+							sp = this._inst.exports.getsp(); // see comment above
+							storeValue(sp + 40, result);
+							this.mem.setUint8(sp + 48, 1);
+						} catch (err) {
+							storeValue(sp + 40, err);
+							this.mem.setUint8(sp + 48, 0);
+						}
+					},
+
+					// func valueLength(v ref) int
+					"syscall/js.valueLength": (sp) => {
+						setInt64(sp + 16, parseInt(loadValue(sp + 8).length));
+					},
+
+					// valuePrepareString(v ref) (ref, int)
+					"syscall/js.valuePrepareString": (sp) => {
+						const str = encoder.encode(String(loadValue(sp + 8)));
+						storeValue(sp + 16, str);
+						setInt64(sp + 24, str.length);
+					},
+
+					// valueLoadString(v ref, b []byte)
+					"syscall/js.valueLoadString": (sp) => {
+						const str = loadValue(sp + 8);
+						loadSlice(sp + 16).set(str);
+					},
+
+					// func valueInstanceOf(v ref, t ref) bool
+					"syscall/js.valueInstanceOf": (sp) => {
+						this.mem.setUint8(sp + 24, loadValue(sp + 8) instanceof loadValue(sp + 16));
+					},
+
+					// func copyBytesToGo(dst []byte, src ref) (int, bool)
+					"syscall/js.copyBytesToGo": (sp) => {
+						const dst = loadSlice(sp + 8);
+						const src = loadValue(sp + 32);
+						if (!(src instanceof Uint8Array)) {
+							this.mem.setUint8(sp + 48, 0);
+							return;
+						}
+						const toCopy = src.subarray(0, dst.length);
+						dst.set(toCopy);
+						setInt64(sp + 40, toCopy.length);
+						this.mem.setUint8(sp + 48, 1);
+					},
+
+					// func copyBytesToJS(dst ref, src []byte) (int, bool)
+					"syscall/js.copyBytesToJS": (sp) => {
+						const dst = loadValue(sp + 8);
+						const src = loadSlice(sp + 16);
+						if (!(dst instanceof Uint8Array)) {
+							this.mem.setUint8(sp + 48, 0);
+							return;
+						}
+						const toCopy = src.subarray(0, dst.length);
+						dst.set(toCopy);
+						setInt64(sp + 40, toCopy.length);
+						this.mem.setUint8(sp + 48, 1);
+					},*/
+
 	"debug": `    Console.WriteLine(local0);`,
 }

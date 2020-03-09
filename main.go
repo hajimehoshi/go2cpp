@@ -593,6 +593,13 @@ namespace {{.Namespace}}
             return new ArraySegment<byte>(this.bytes, (int)array, len);
         }
 
+        internal string LoadString(int addr)
+        {
+            var saddr = this.LoadInt64(addr);
+            var len = this.LoadInt64(addr + 8);
+            return Encoding.UTF8.GetString(this.bytes, (int)saddr, (int)len);
+        }
+
         private byte[] bytes;
     }
 
@@ -600,6 +607,47 @@ namespace {{.Namespace}}
     {
 {{- range $value := .ImportFuncs}}
 {{$value.CSharp "        " false false}}{{end}}
+    }
+
+    sealed class JSValue
+    {
+        public static object Undefined = new JSValue("Undefined");
+        public static object Global = new JSValue("Global");
+        public static object Object = new JSValue("Object");
+        public static object Array = new JSValue("Array");
+
+        public static object ReflectGet(object target, string propertyKey)
+        {
+            if (target == Global)
+            {
+                switch (propertyKey)
+                {
+                case "Object":
+                    return Object;
+                case "Array":
+                    return Array;
+                case "process":
+                    // TODO: Implement pseudo process as wasm_exec.js does.
+                    return null;
+                case "fs":
+                    // TODO: Implement pseudo fs as wasm_exec.js does.
+                    return null;
+                }
+            }
+            throw new Exception($"{target}.{propertyKey} not found");
+        }
+
+        public JSValue(string name)
+        {
+            this.name = name;
+        }
+
+        public override string ToString()
+        {
+            return this.name;
+        }
+
+        string name;
     }
 
     public class Go
@@ -621,6 +669,91 @@ namespace {{.Namespace}}
             this.exitPromise = new TaskCompletionSource<int>();
         }
 
+        internal object LoadValue(int addr)
+        {
+            double f = this.mem.LoadFloat64(addr);
+            if (f == 0)
+            {
+                return JSValue.Undefined;
+            }
+            if (!double.IsNaN(f))
+            {
+                return f;
+            }
+            int id = (int)this.mem.LoadUint32(addr);
+            return this.values[id];
+        }
+
+        internal void StoreValue(int addr, object v)
+        {
+            const int NaNHead = 0x7FF80000;
+            if (v is double)
+            {
+                if (double.IsNaN((double)v))
+                {
+                    this.mem.StoreInt32(addr + 4, NaNHead);
+                    this.mem.StoreInt32(addr, 0);
+                    return;
+                }
+                if ((double)v == 0)
+                {
+                    this.mem.StoreInt32(addr + 4, NaNHead);
+                    this.mem.StoreInt32(addr, 1);
+                    return;
+                }
+                this.mem.StoreFloat64(addr, (double)v);
+                return;
+            }
+            if (v == JSValue.Undefined)
+            {
+                this.mem.StoreFloat64(addr, 0);
+                return;
+            }
+            switch (v)
+            {
+            case null:
+                this.mem.StoreInt32(addr + 4, NaNHead);
+                this.mem.StoreInt32(addr, 2);
+                return;
+            case true:
+                this.mem.StoreInt32(addr + 4, NaNHead);
+                this.mem.StoreInt32(addr, 3);
+                return;
+            case false:
+                this.mem.StoreInt32(addr + 4, NaNHead);
+                this.mem.StoreInt32(addr, 4);
+                return;
+            }
+            int id = 0;
+            if (this.ids.ContainsKey(v))
+            {
+                id = this.ids[v];
+            }
+            else
+            {
+                if (this.idPool.Count > 0)
+                {
+                    id = this.idPool.Pop();
+                }
+                else
+                {
+                    id = this.values.Count;
+                }
+                this.values[id] = v;
+                this.goRefCounts[id] = 0;
+                this.ids[v] = id;
+            }
+            this.goRefCounts[id]++;
+            int typeFlag = 1;
+            if (v is string)
+            {
+                typeFlag = 2;
+            }
+            // TODO: Should we use other typeFlag for other objects?
+            this.mem.StoreInt32(addr + 4, NaNHead | typeFlag);
+            this.mem.StoreInt32(addr, id);
+        }
+
         public Task Run()
         {
             return Run(new string[] { });
@@ -639,12 +772,12 @@ namespace {{.Namespace}}
                 {2, null},
                 {3, true},
                 {4, false},
-                {5, null}, // TODO: Add a pseudo 'global' object.
+                {5, JSValue.Global},
                 {6, this},
             };
             this.goRefCounts = new Dictionary<int, int>();
-            this.ids = new Dictionary<int, int>();
-            this.idPool = new HashSet<int>();
+            this.ids = new Dictionary<object, int>();
+            this.idPool = new Stack<int>();
             this.exited = false;
 
             int offset = 4096;
@@ -778,8 +911,8 @@ namespace {{.Namespace}}
         private Mem mem;
         private Dictionary<int, object> values;
         private Dictionary<int, int> goRefCounts;
-        private Dictionary<int, int> ids;
-        private HashSet<int> idPool;
+        private Dictionary<object, int> ids;
+        private Stack<int> idPool;
         private bool exited;
         private RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
     }
