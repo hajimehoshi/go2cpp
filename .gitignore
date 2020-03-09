@@ -1,3 +1,4 @@
 *~
 *.wasm
+.DS_Store
 gen.cs
