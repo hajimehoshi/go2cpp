@@ -4,9 +4,9 @@ package main
 
 import (
 	"bytes"
+	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -391,8 +391,8 @@ func run() error {
 		})
 	}
 
-	var buf bytes.Buffer
-	if err := csTmpl.Execute(&buf, struct {
+	buf := bufio.NewWriterSize(os.Stdout, 1024 * 1024)
+	if err := csTmpl.Execute(buf, struct {
 		Namespace   string
 		ImportFuncs []*Func
 		Funcs       []*Func
@@ -416,8 +416,7 @@ func run() error {
 		return err
 	}
 
-	// Output the result after everything is finished as IO can be the performance bottleneck.
-	if _, err := io.Copy(os.Stdout, &buf); err != nil {
+	if err := buf.Flush(); err != nil {
 		return err
 	}
 
