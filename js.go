@@ -4,11 +4,15 @@ package main
 
 const js = `    class JSObject
     {
-        public static JSObject Undefined = new JSObjectEmpty("Undefined");
+        public static object Undefined = new object();
         public static JSObject Global = new JSObjectGlobal();
         
         public static object ReflectGet(object target, string key)
         {
+            if (target == Undefined)
+            {
+                throw new Exception("undefined.{key} not found");
+            }
             if (target is JSObject)
             {
                 return ((JSObject)target).Get(key);
