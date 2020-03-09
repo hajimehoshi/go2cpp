@@ -2,7 +2,7 @@
 
 package main
 
-const js = `    abstract class JSObject
+const js = `    class JSObject
     {
         public static JSObject Undefined = new JSObjectEmpty("Undefined");
         public static JSObject Global = new JSObjectGlobal();
@@ -16,7 +16,26 @@ const js = `    abstract class JSObject
             throw new Exception($"{target}.{key} not found");
         }
 
-        public abstract object Get(string key);
+        public virtual object Get(string key)
+        {
+            if (this.values.ContainsKey(key))
+            {
+                return this.values[key];
+            }
+            throw new Exception($"{this}.{key} not found");
+        }
+
+        public void Set(string key, object value)
+        {
+            this.values[key] = value;
+        }
+
+        public override string ToString()
+        {
+            return "(JSObject)";
+        }
+
+        private Dictionary<string, object> values = new Dictionary<string, object>();
     }
 
     class JSObjectEmpty : JSObject
@@ -71,8 +90,24 @@ const js = `    abstract class JSObject
 
     class JSObjectFS : JSObject
     {
+        public JSObjectFS()
+        {
+            this.constants = new JSObject();
+            this.constants.Set("O_WRONLY", -1);
+            this.constants.Set("O_RDWR", -1);
+            this.constants.Set("O_CREAT", -1);
+            this.constants.Set("O_TRUNC", -1);
+            this.constants.Set("O_APPEND", -1);
+            this.constants.Set("O_EXCL", -1);
+        }
+
         public override object Get(string key)
         {
+            switch (key)
+            {
+            case "constants":
+                return this.constants;
+            }
             throw new Exception($"{this}.{key} not found");
         }
 
@@ -80,4 +115,6 @@ const js = `    abstract class JSObject
         {
             return "FS";
         }
+
+        private JSObject constants;
     }`
