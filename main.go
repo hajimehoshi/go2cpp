@@ -748,7 +748,7 @@ namespace {{.Namespace}}
                 typeFlag = 2;
                 // There is no counterpart for Symbol in C#, then typeFlag = 3 is not used.
             }
-            else if (v is JSObject && ((JSObject)v).HasCtor)
+            else if (v is JSObject && ((JSObject)v).IsFunction)
             {
                 typeFlag = 4;
             }

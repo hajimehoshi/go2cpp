@@ -2,20 +2,20 @@
 
 package main
 
-const js = `    public delegate object JSFunc(object[] args);
+const js = `    public delegate object JSFunc(object self, object[] args);
 
     sealed class JSObject
     {
         private const string defaultName = "(JSObject)";
 
-        public static JSObject Undefined = new JSObject("undefined", null, null);
+        public static JSObject Undefined = new JSObject("undefined", null);
         public static JSObject Global;
 
         static JSObject()
         {
-            JSObject obj = new JSObject("Object", null, null);
-            JSObject arr = new JSObject("Array", null, null);
-            JSObject process = new JSObject("process", null, null);
+            JSObject obj = new JSObject("Object", null);
+            JSObject arr = new JSObject("Array", null);
+            JSObject process = new JSObject("process", null);
             JSObject fs = new JSObject("fs", new Dictionary<string, object>()
             {
                 {"constants", new JSObject(defaultName, new Dictionary<string, object>()
@@ -26,9 +26,9 @@ const js = `    public delegate object JSFunc(object[] args);
                         {"O_TRUNC", -1},
                         {"O_APPEND", -1},
                         {"O_EXCL", -1},
-                    }, null)},
-            }, null);
-            JSObject u8 = new JSObject("Uint8Array", null, (object[] args) =>
+                    })},
+            });
+            JSObject u8 = new JSObject("Uint8Array", null, (object self, object[] args) =>
             {
                 if (args.Length == 0)
                 {
@@ -44,7 +44,7 @@ const js = `    public delegate object JSFunc(object[] args);
                     throw new NotImplementedException($"new Uint8Array({args[0]}) is not implemented");
                 }
                 throw new NotImplementedException($"new Uint8Array with {args.Length} args is not implemented");
-            });
+            }, true);
 
             Global = new JSObject("global", new Dictionary<string, object>()
             {
@@ -53,7 +53,7 @@ const js = `    public delegate object JSFunc(object[] args);
                 {"process", process},
                 {"fs", fs},
                 {"Uint8Array", u8},
-            }, null);
+            });
         }
         
         public static object ReflectGet(object target, string key)
@@ -121,21 +121,60 @@ const js = `    public delegate object JSFunc(object[] args);
             }
             if (target is JSObject)
             {
-                return ((JSObject)target).ctor(args);
+                var t = (JSObject)target;
+                if (t.ctor)
+                {
+                    return t.fn(t, args);
+                }
+                else
+                {
+                    throw new Exception($"{t} is not a constructor");
+                }
             }
             throw new NotImplementedException($"new {target}({args}) cannot be called");
         }
 
-        private JSObject(string name, Dictionary<string, object> values, JSFunc ctor)
+        public static object ReflectApply(object target, object self, object[] args)
+        {
+            if (target == Undefined)
+            {
+                throw new Exception($"apply on undefined is forbidden");
+            }
+            if (target == null)
+            {
+                throw new Exception($"apply on null is forbidden");
+            }
+            if (target is JSObject)
+            {
+                var t = (JSObject)target;
+                if (!t.ctor)
+                {
+                    return t.fn(self, args);
+                }
+                else
+                {
+                    throw new Exception($"{t} is a constructor");
+                }
+            }
+            throw new NotImplementedException($"new {target}({args}) cannot be called");
+        }
+
+        private JSObject(string name, Dictionary<string, object> values)
+            : this(name, values, null, false)
+        {
+        }
+
+        private JSObject(string name, Dictionary<string, object> values, JSFunc fn, bool ctor)
         {
             this.name = name;
             this.values = values;
+            this.fn = fn;
             this.ctor = ctor;
         }
 
-        public bool HasCtor
+        public bool IsFunction
         {
-            get { return this.ctor != null; }
+            get { return this.fn != null; }
         }
 
         public object Get(string key)
@@ -172,5 +211,6 @@ const js = `    public delegate object JSFunc(object[] args);
 
         private Dictionary<string, object> values;
         private string name;
-        private JSFunc ctor;
+        private JSFunc fn;
+        private bool ctor = false;
     }`

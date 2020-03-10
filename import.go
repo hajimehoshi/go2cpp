@@ -82,23 +82,16 @@ var importFuncBodies = map[string]string{
 	"syscall/js.valueIndex": `    go.StoreValue(local0 + 24, JSObject.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadInt64(local0 + 16).ToString()));`,
 
 	// valueSetIndex(v ref, i int, x ref)
-	"syscall/js.valueSetIndex": `    JSObject.ReflectSet(go.LoadValue(local0 + 8), go.mem.LoadInt64(local0 + 16).ToString(), go.LoadValue(local0 + 24));`, /*
+	"syscall/js.valueSetIndex": `    JSObject.ReflectSet(go.LoadValue(local0 + 8), go.mem.LoadInt64(local0 + 16).ToString(), go.LoadValue(local0 + 24));`,
 
-					// func valueCall(v ref, m string, args []ref) (ref, bool)
-					"syscall/js.valueCall": (sp) => {
-						try {
-							const v = loadValue(sp + 8);
-							const m = Reflect.get(v, loadString(sp + 16));
-							const args = loadSliceOfValues(sp + 32);
-							const result = Reflect.apply(m, v, args);
-							sp = this._inst.exports.getsp(); // see comment above
-							storeValue(sp + 56, result);
-							this.mem.setUint8(sp + 64, 1);
-						} catch (err) {
-							storeValue(sp + 56, err);
-							this.mem.setUint8(sp + 64, 0);
-						}
-					},*/
+	// func valueCall(v ref, m string, args []ref) (ref, bool)
+    "syscall/js.valueCall": `    var v = go.LoadValue(local0 + 8);
+    var m = JSObject.ReflectGet(v, go.mem.LoadString(local0 + 16));
+    var args = go.LoadSliceOfValues(local0 + 32);
+    var result = JSObject.ReflectApply(m, v, args);
+    local0 = go.inst.getsp();
+    go.StoreValue(local0 + 56, result);
+    go.mem.StoreInt8(local0 + 64, 1);`,
 
 	// func valueInvoke(v ref, args []ref) (ref, bool)
 	"syscall/js.valueInvoke": `    throw new NotImplementedException();`, /*(sp) => {
