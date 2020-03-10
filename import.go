@@ -71,31 +71,18 @@ var importFuncBodies = map[string]string{
 	"syscall/js.valueGet": `    var result = JSObject.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16));
     local0 = go.inst.getsp();
     go.StoreValue(local0 + 32, result);`,
-	/*(sp) => {
-						const result = Reflect.get(loadValue(sp + 8), loadString(sp + 16));
-						sp = this._inst.exports.getsp(); // see comment above
-						storeValue(sp + 32, result);
-					},
 
-					// func valueSet(v ref, p string, x ref)
-					"syscall/js.valueSet": (sp) => {
-						Reflect.set(loadValue(sp + 8), loadString(sp + 16), loadValue(sp + 32));
-					},
+	// func valueSet(v ref, p string, x ref)
+	"syscall/js.valueSet": `    JSObject.ReflectSet(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16), go.LoadValue(local0 + 32));`,
 
-					// func valueDelete(v ref, p string)
-					"syscall/js.valueDelete": (sp) => {
-						Reflect.deleteProperty(loadValue(sp + 8), loadString(sp + 16));
-					},
+	// func valueDelete(v ref, p string)
+	"syscall/js.valueDelete": `    JSObject.ReflectDelete(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16));`,
 
-					// func valueIndex(v ref, i int) ref
-					"syscall/js.valueIndex": (sp) => {
-						storeValue(sp + 24, Reflect.get(loadValue(sp + 8), getInt64(sp + 16)));
-					},
+	// func valueIndex(v ref, i int) ref
+	"syscall/js.valueIndex": `    go.StoreValue(local0 + 24, JSObject.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadInt64(local0 + 16).ToString()));`,
 
-					// valueSetIndex(v ref, i int, x ref)
-					"syscall/js.valueSetIndex": (sp) => {
-						Reflect.set(loadValue(sp + 8), getInt64(sp + 16), loadValue(sp + 24));
-					},
+	// valueSetIndex(v ref, i int, x ref)
+	"syscall/js.valueSetIndex": `    JSObject.ReflectSet(go.LoadValue(local0 + 8), go.mem.LoadInt64(local0 + 16).ToString(), go.LoadValue(local0 + 24));`, /*
 
 					// func valueCall(v ref, m string, args []ref) (ref, bool)
 					"syscall/js.valueCall": (sp) => {
@@ -126,10 +113,23 @@ var importFuncBodies = map[string]string{
 							storeValue(sp + 40, err);
 							this.mem.setUint8(sp + 48, 0);
 						}
-					},
+					},*/
 
-					// func valueNew(v ref, args []ref) (ref, bool)
-					"syscall/js.valueNew": (sp) => {
+	// func valueNew(v ref, args []ref) (ref, bool)
+	"syscall/js.valueNew": `    var v = go.LoadValue(local0 + 8);
+    var args = go.LoadSliceOfValues(local0 + 16);
+    var result = JSObject.ReflectConstruct(v, args);
+    if (result != null)
+    {
+        local0 = go.inst.getsp();
+        go.StoreValue(local0 + 40, result);
+        go.mem.StoreInt8(local0 + 48, 1);
+    }
+    else
+    {
+        go.StoreValue(local0 + 40, null);
+        go.mem.StoreInt8(local0 + 48, 0);
+    }`, /*(sp) => {
 						try {
 							const v = loadValue(sp + 8);
 							const args = loadSliceOfValues(sp + 16);

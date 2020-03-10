@@ -752,6 +752,18 @@ namespace {{.Namespace}}
             this.mem.StoreInt32(addr, id);
         }
 
+        internal object[] LoadSliceOfValues(int addr)
+        {
+            var array = (int)this.mem.LoadInt64(addr);
+            var len = (int)this.mem.LoadInt64(addr + 8);
+            var a = new object[len];
+            for (int i = 0; i < len; i++)
+            {
+                a[i] = this.LoadValue(array + i * 8);
+            }
+            return a.ToArray();
+        }
+
         public Task Run()
         {
             return Run(new string[] { });
