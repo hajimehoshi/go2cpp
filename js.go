@@ -2,7 +2,9 @@
 
 package main
 
-const js = `    sealed class JSObject
+const js = `    public delegate object JSFunc(object[] args);
+
+    sealed class JSObject
     {
         private const string defaultName = "(JSObject)";
 
@@ -26,7 +28,23 @@ const js = `    sealed class JSObject
                         {"O_EXCL", -1},
                     }, null)},
             }, null);
-            JSObject u8 = new JSObject("Uint8Array", null, null);
+            JSObject u8 = new JSObject("Uint8Array", null, (object[] args) =>
+            {
+                if (args.Length == 0)
+                {
+                    return new byte[0];
+                }
+                if (args.Length == 1)
+                {
+                    var len = args[0];
+                    if (len is double)
+                    {
+                        return new byte[(int)(double)len];
+                    }
+                    throw new NotImplementedException($"new Uint8Array({args[0]}) is not implemented");
+                }
+                throw new NotImplementedException($"new Uint8Array with {args.Length} args is not implemented");
+            });
 
             Global = new JSObject("global", new Dictionary<string, object>()
             {
@@ -108,11 +126,16 @@ const js = `    sealed class JSObject
             throw new NotImplementedException($"new {target}({args}) cannot be called");
         }
 
-        private JSObject(string name, Dictionary<string, object> values, Func<object[], object> ctor)
+        private JSObject(string name, Dictionary<string, object> values, JSFunc ctor)
         {
             this.name = name;
             this.values = values;
             this.ctor = ctor;
+        }
+
+        public bool HasCtor
+        {
+            get { return this.ctor != null; }
         }
 
         public object Get(string key)
@@ -149,5 +172,5 @@ const js = `    sealed class JSObject
 
         private Dictionary<string, object> values;
         private string name;
-        private Func<object[], object> ctor;
+        private JSFunc ctor;
     }`

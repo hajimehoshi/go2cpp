@@ -98,10 +98,10 @@ var importFuncBodies = map[string]string{
 							storeValue(sp + 56, err);
 							this.mem.setUint8(sp + 64, 0);
 						}
-					},
+					},*/
 
-					// func valueInvoke(v ref, args []ref) (ref, bool)
-					"syscall/js.valueInvoke": (sp) => {
+	// func valueInvoke(v ref, args []ref) (ref, bool)
+	"syscall/js.valueInvoke": `    throw new NotImplementedException();`, /*(sp) => {
 						try {
 							const v = loadValue(sp + 8);
 							const args = loadSliceOfValues(sp + 16);
@@ -178,21 +178,23 @@ var importFuncBodies = map[string]string{
 						dst.set(toCopy);
 						setInt64(sp + 40, toCopy.length);
 						this.mem.setUint8(sp + 48, 1);
-					},
-
-					// func copyBytesToJS(dst ref, src []byte) (int, bool)
-					"syscall/js.copyBytesToJS": (sp) => {
-						const dst = loadValue(sp + 8);
-						const src = loadSlice(sp + 16);
-						if (!(dst instanceof Uint8Array)) {
-							this.mem.setUint8(sp + 48, 0);
-							return;
-						}
-						const toCopy = src.subarray(0, dst.length);
-						dst.set(toCopy);
-						setInt64(sp + 40, toCopy.length);
-						this.mem.setUint8(sp + 48, 1);
 					},*/
+
+	// func copyBytesToJS(dst ref, src []byte) (int, bool)
+	"syscall/js.copyBytesToJS": `    var dst = go.LoadValue(local0 + 8);
+    var src = go.mem.LoadSlice(local0 + 16);
+    if (!(dst is byte[]))
+    {
+        go.mem.StoreInt8(local0 + 48, 0);
+        return;
+    }
+    var dstbs = (byte[])dst;
+    for (int i = 0; i < dstbs.Length; i++)
+    {
+        dstbs[i] = src[i];
+    }
+    go.mem.StoreInt64(local0 + 40, (long)dstbs.Length);
+    go.mem.StoreInt8(local0 + 48, 1);`,
 
 	"debug": `    Console.WriteLine(local0);`,
 }

@@ -746,8 +746,12 @@ namespace {{.Namespace}}
             if (v is string)
             {
                 typeFlag = 2;
+                // There is no counterpart for Symbol in C#, then typeFlag = 3 is not used.
             }
-            // TODO: Should we use other typeFlag for other objects?
+            else if (v is JSObject && ((JSObject)v).HasCtor)
+            {
+                typeFlag = 4;
+            }
             this.mem.StoreInt32(addr + 4, NaNHead | typeFlag);
             this.mem.StoreInt32(addr, id);
         }
