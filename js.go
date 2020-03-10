@@ -11,21 +11,20 @@ const js = `    public delegate object JSFunc(object self, object[] args);
 
         static JSObject()
         {
-            JSObject obj = new JSObject("Object", null);
+            var rngCsp = new RNGCryptoServiceProvider();
+
             JSObject arr = new JSObject("Array", null);
-            JSObject process = new JSObject("process", null);
-            JSObject fs = new JSObject("fs", new Dictionary<string, object>()
+            // crypto is invoked at runtime/
+            JSObject crypto = new JSObject("crypto", new Dictionary<string, object>()
             {
-                {"constants", new JSObject("", new Dictionary<string, object>()
+                {"getRandomValues", new JSObject("", null, (object self, object[] args) =>
                     {
-                        {"O_WRONLY", -1},
-                        {"O_RDWR", -1},
-                        {"O_CREAT", -1},
-                        {"O_TRUNC", -1},
-                        {"O_APPEND", -1},
-                        {"O_EXCL", -1},
-                    })},
+                        var bs = (byte[])args[0];
+                        rngCsp.GetBytes(bs);
+                        return bs;
+                    }, false)},
             });
+            JSObject obj = new JSObject("Object", null);
             JSObject u8 = new JSObject("Uint8Array", null, (object self, object[] args) =>
             {
                 if (args.Length == 0)
@@ -43,14 +42,28 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 }
                 throw new NotImplementedException($"new Uint8Array with {args.Length} args is not implemented");
             }, true);
+            JSObject fs = new JSObject("fs", new Dictionary<string, object>()
+            {
+                {"constants", new JSObject("", new Dictionary<string, object>()
+                    {
+                        {"O_WRONLY", -1},
+                        {"O_RDWR", -1},
+                        {"O_CREAT", -1},
+                        {"O_TRUNC", -1},
+                        {"O_APPEND", -1},
+                        {"O_EXCL", -1},
+                    })},
+            });
+            JSObject process = new JSObject("process", null);
 
             Global = new JSObject("global", new Dictionary<string, object>()
             {
-                {"Object", obj},
                 {"Array", arr},
-                {"process", process},
-                {"fs", fs},
+                {"Object", obj},
                 {"Uint8Array", u8},
+                {"crypto", crypto},
+                {"fs", fs},
+                {"process", process},
             });
         }
 
