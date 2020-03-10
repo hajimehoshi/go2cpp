@@ -787,7 +787,7 @@ namespace {{.Namespace}}
                 {3, true},
                 {4, false},
                 {5, JSObject.Global},
-                {6, this},
+                {6, JSObject.Go(this)},
             };
             this.goRefCounts = new Dictionary<int, int>();
             this.ids = new Dictionary<object, int>();
@@ -848,6 +848,22 @@ namespace {{.Namespace}}
             {
                 this.exitPromise.SetResult(0);
             }
+        }
+
+        internal JSObject MakeFuncWrapper(int id)
+        {
+            return new JSObject("", null, (object self, object[] args) =>
+            {
+                var evt = new JSObject("", new Dictionary<string, object>()
+                {
+                    {"id", id},
+                    {"this", self},
+                    {"args", args},
+                });
+                this.pendingEvent = evt;
+                this.Resume();
+                return JSObject.ReflectGet(evt, "result");
+            }, false);
         }
 
         private void DebugWrite(IEnumerable<byte> bytes)
@@ -919,6 +935,7 @@ namespace {{.Namespace}}
         private List<byte> buf;
         private Stopwatch stopwatch;
 
+        private JSObject pendingEvent;
         private Dictionary<int, Timer> scheduledTimeouts = new Dictionary<int, Timer>();
         private int nextCallbackTimeoutId = 1;
         private Inst inst;

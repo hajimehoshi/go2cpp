@@ -6,8 +6,6 @@ const js = `    public delegate object JSFunc(object self, object[] args);
 
     sealed class JSObject
     {
-        private const string defaultName = "(JSObject)";
-
         public static JSObject Undefined = new JSObject("undefined", null);
         public static JSObject Global;
 
@@ -18,7 +16,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             JSObject process = new JSObject("process", null);
             JSObject fs = new JSObject("fs", new Dictionary<string, object>()
             {
-                {"constants", new JSObject(defaultName, new Dictionary<string, object>()
+                {"constants", new JSObject("", new Dictionary<string, object>()
                     {
                         {"O_WRONLY", -1},
                         {"O_RDWR", -1},
@@ -55,7 +53,18 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 {"Uint8Array", u8},
             });
         }
-        
+
+        public static JSObject Go(Go go)
+        {
+            return new JSObject("go", new Dictionary<string, object>()
+            {
+                {"_makeFuncWrapper", new JSObject("", null, (object self, object[] args) =>
+                    {
+                         return go.MakeFuncWrapper((int)(double)args[0]);
+                    }, false)},
+            });
+        }
+
         public static object ReflectGet(object target, string key)
         {
             if (target == Undefined)
@@ -159,14 +168,20 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             throw new NotImplementedException($"new {target}({args}) cannot be called");
         }
 
-        private JSObject(string name, Dictionary<string, object> values)
+        public JSObject(string name, Dictionary<string, object> values)
             : this(name, values, null, false)
         {
         }
 
-        private JSObject(string name, Dictionary<string, object> values, JSFunc fn, bool ctor)
+        public JSObject(string name, Dictionary<string, object> values, JSFunc fn, bool ctor)
         {
+            const string defaultName = "(JSObject)";
+
             this.name = name;
+            if (this.name == "")
+            {
+                this.name = defaultName;
+            }
             this.values = values;
             this.fn = fn;
             this.ctor = ctor;
