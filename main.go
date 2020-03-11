@@ -852,9 +852,9 @@ namespace {{.Namespace}}
 
         internal JSObject MakeFuncWrapper(int id)
         {
-            return new JSObject("", null, (object self, object[] args) =>
+            return new JSObject((object self, object[] args) =>
             {
-                var evt = new JSObject("", new Dictionary<string, object>()
+                var evt = new JSObject(new Dictionary<string, object>()
                 {
                     {"id", id},
                     {"this", self},
@@ -863,7 +863,7 @@ namespace {{.Namespace}}
                 this.pendingEvent = evt;
                 this.Resume();
                 return JSObject.ReflectGet(evt, "result");
-            }, false);
+            });
         }
 
         private void DebugWrite(IEnumerable<byte> bytes)

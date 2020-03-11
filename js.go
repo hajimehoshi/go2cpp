@@ -16,12 +16,12 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             JSObject arr = new JSObject("Array", null);
             JSObject crypto = new JSObject("crypto", new Dictionary<string, object>()
             {
-                {"getRandomValues", new JSObject("", null, (object self, object[] args) =>
+                {"getRandomValues", new JSObject((object self, object[] args) =>
                     {
                         var bs = (byte[])args[0];
                         rngCsp.GetBytes(bs);
                         return bs;
-                    }, false)},
+                    })},
             });
             JSObject obj = new JSObject("Object", null);
             JSObject u8 = new JSObject("Uint8Array", null, (object self, object[] args) =>
@@ -43,7 +43,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             }, true);
             JSObject fs = new JSObject("fs", new Dictionary<string, object>()
             {
-                {"constants", new JSObject("", new Dictionary<string, object>()
+                {"constants", new JSObject(new Dictionary<string, object>()
                     {
                         {"O_WRONLY", -1},
                         {"O_RDWR", -1},
@@ -70,10 +70,10 @@ const js = `    public delegate object JSFunc(object self, object[] args);
         {
             return new JSObject("go", new Dictionary<string, object>()
             {
-                {"_makeFuncWrapper", new JSObject("", null, (object self, object[] args) =>
+                {"_makeFuncWrapper", new JSObject((object self, object[] args) =>
                     {
                          return go.MakeFuncWrapper((int)(double)args[0]);
-                    }, false)},
+                    })},
             });
         }
 
@@ -180,8 +180,18 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             throw new NotImplementedException($"new {target}({args}) cannot be called");
         }
 
+        public JSObject(Dictionary<string, object> values)
+            : this("", values, null, false)
+        {
+        }
+
         public JSObject(string name, Dictionary<string, object> values)
             : this(name, values, null, false)
+        {
+        }
+
+        public JSObject(JSFunc fn)
+            : this("", null, fn, false)
         {
         }
 
