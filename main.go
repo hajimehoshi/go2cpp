@@ -3,8 +3,8 @@
 package main
 
 import (
-	"bytes"
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -391,7 +391,7 @@ func run() error {
 		})
 	}
 
-	buf := bufio.NewWriterSize(os.Stdout, 1024 * 1024)
+	buf := bufio.NewWriterSize(os.Stdout, 1024*1024)
 	if err := csTmpl.Execute(buf, struct {
 		Namespace   string
 		ImportFuncs []*Func
