@@ -4,16 +4,157 @@ package main
 
 const js = `    public delegate object JSFunc(object self, object[] args);
 
+    sealed class Writer
+    {
+        public Writer(TextWriter writer)
+        {
+            this.writer = writer;
+        }
+
+        public void Write(IEnumerable<byte> bytes)
+        {
+            this.buf.AddRange(bytes);
+            while (this.buf.Contains((byte)'\n'))
+            {
+                var idx = this.buf.IndexOf((byte)'\n');
+                var str = Encoding.UTF8.GetString(this.buf.GetRange(0, idx).ToArray());
+                this.writer.WriteLine(str);
+                this.buf.RemoveRange(0, idx+1);
+            }
+        }
+
+        private TextWriter writer;
+        private List<byte> buf = new List<byte>();
+    }
+
     sealed class JSObject
     {
-        public static JSObject Undefined = new JSObject("undefined", null);
+        public interface IValues
+        {
+            object Get(string key);
+            void Set(string key, object value);
+            void Remove(string key);
+        }
+
+        private class DictionaryValues : IValues
+        {
+            public DictionaryValues(Dictionary<string, object> dict)
+            {
+                this.dict = dict;
+            }
+
+            public object Get(string key)
+            {
+                if (!this.dict.ContainsKey(key))
+                {
+                    throw new KeyNotFoundException(key);
+                }
+                return this.dict[key];
+            }
+
+            public void Set(string key, object value)
+            {
+                this.dict[key] = value;
+            }
+
+            public void Remove(string key)
+            {
+                this.dict.Remove(key);
+            }
+
+            private Dictionary<string, object> dict;
+        }
+
+        private class FS
+        {
+            public FS()
+            {
+                this.stdout = new Writer(Console.Out);
+                this.stderr = new Writer(Console.Error);
+            }
+
+            public object Write(object self, object[] args)
+            {
+                var fd = (int)ToDouble(args[0]);
+                var buf = (byte[])args[1];
+                var offset = (int)ToDouble(args[2]);
+                var length = (int)ToDouble(args[3]);
+                var position = args[4];
+                var callback = args[5];
+                if (offset != 0 || length != buf.Length)
+                {
+                    ReflectApply(callback, null, new object[] { Enosys("write") });
+                    return null;
+                }
+                if (position != null)
+                {
+                    ReflectApply(callback, null, new object[] { Enosys("write") });
+                    return null;
+                }
+                int n = 0;
+                switch (fd)
+                {
+                case 1:
+                    this.stdout.Write(buf);
+                    break;
+                case 2:
+                    this.stderr.Write(buf);
+                    break;
+                default:
+                    ReflectApply(callback, null, new object[] { Enosys("write") });
+                    break;
+                }
+                ReflectApply(callback, null, new object[] { null, buf.Length });
+                return null;
+            }
+
+            private Writer stdout;
+            private Writer stderr;
+        }
+
+        public static double? ToDouble(object value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            switch (Type.GetTypeCode(value.GetType()))
+            {
+            case TypeCode.SByte:
+                return (double)(sbyte)value;
+            case TypeCode.Byte:
+                return (double)(byte)value;
+            case TypeCode.Int16:
+                return (double)(short)value;
+            case TypeCode.UInt16:
+                return (double)(ushort)value;
+            case TypeCode.Int32:
+                return (double)(int)value;
+            case TypeCode.UInt32:
+                return (double)(uint)value;
+            case TypeCode.Int64:
+                return (double)(long)value;
+            case TypeCode.UInt64:
+                return (double)(ulong)value;
+            case TypeCode.Single:
+                return (double)(float)value;
+            case TypeCode.Double:
+                return (double)(double)value;
+            case TypeCode.Decimal:
+                return (double)(decimal)value;
+            }
+            return null;
+        }
+
+        public static JSObject Undefined = new JSObject("undefined");
         public static JSObject Global;
 
         static JSObject()
         {
             var rngCsp = new RNGCryptoServiceProvider();
 
-            JSObject arr = new JSObject("Array", null);
+            JSObject arr = new JSObject("Array");
             JSObject crypto = new JSObject("crypto", new Dictionary<string, object>()
             {
                 {"getRandomValues", new JSObject((object self, object[] args) =>
@@ -23,7 +164,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                         return bs;
                     })},
             });
-            JSObject obj = new JSObject("Object", null);
+            JSObject obj = new JSObject("Object");
             JSObject u8 = new JSObject("Uint8Array", null, (object self, object[] args) =>
             {
                 if (args.Length == 0)
@@ -41,6 +182,8 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 }
                 throw new NotImplementedException($"new Uint8Array with {args.Length} args is not implemented");
             }, true);
+
+            FS fsimpl = new FS();
             JSObject fs = new JSObject("fs", new Dictionary<string, object>()
             {
                 {"constants", new JSObject(new Dictionary<string, object>()
@@ -52,8 +195,9 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                         {"O_APPEND", -1},
                         {"O_EXCL", -1},
                     })},
+                    {"write", new JSObject(fsimpl.Write)},
             });
-            JSObject process = new JSObject("process", null);
+            JSObject process = new JSObject("process");
 
             Global = new JSObject("global", new Dictionary<string, object>()
             {
@@ -66,14 +210,17 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             });
         }
 
-        public static JSObject Go(Go go)
+        public static JSObject Go(IValues values)
         {
-            return new JSObject("go", new Dictionary<string, object>()
+            return new JSObject("go", values);
+        }
+
+        public static JSObject Enosys(string name)
+        {
+            return new JSObject(new Dictionary<string, object>()
             {
-                {"_makeFuncWrapper", new JSObject((object self, object[] args) =>
-                    {
-                         return go.MakeFuncWrapper((int)(double)args[0]);
-                    })},
+                {"message", $"{name} not implemented"},
+                {"code", "ENOSYS"},
             });
         }
 
@@ -180,13 +327,23 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             throw new NotImplementedException($"new {target}({args}) cannot be called");
         }
 
+        public JSObject(string name)
+            : this("", null, null, false)
+        {
+        }
+
         public JSObject(Dictionary<string, object> values)
-            : this("", values, null, false)
+            : this("", new DictionaryValues(values), null, false)
+        {
+        }
+
+        public JSObject(string name, IValues values)
+            : this(name, values, null, false)
         {
         }
 
         public JSObject(string name, Dictionary<string, object> values)
-            : this(name, values, null, false)
+            : this(name, new DictionaryValues(values), null, false)
         {
         }
 
@@ -195,7 +352,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
         {
         }
 
-        public JSObject(string name, Dictionary<string, object> values, JSFunc fn, bool ctor)
+        public JSObject(string name, IValues values, JSFunc fn, bool ctor)
         {
             const string defaultName = "(JSObject)";
 
@@ -216,9 +373,9 @@ const js = `    public delegate object JSFunc(object self, object[] args);
 
         public object Get(string key)
         {
-            if (this.values != null && this.values.ContainsKey(key))
+            if (this.values != null)
             {
-                return this.values[key];
+                return this.values.Get(key);
             }
             throw new Exception($"{this}.{key} not found");
         }
@@ -227,9 +384,9 @@ const js = `    public delegate object JSFunc(object self, object[] args);
         {
             if (this.values == null)
             {
-                this.values = new Dictionary<string, object>();
+                this.values = new DictionaryValues(new Dictionary<string, object>());
             }
-            this.values[key] = value;
+            this.values.Set(key, value);
         }
 
         public void Delete(string key)
@@ -246,7 +403,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             return this.name;
         }
 
-        private Dictionary<string, object> values;
+        private IValues values;
         private string name;
         private JSFunc fn;
         private bool ctor = false;
