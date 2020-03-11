@@ -14,7 +14,6 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             var rngCsp = new RNGCryptoServiceProvider();
 
             JSObject arr = new JSObject("Array", null);
-            // crypto is invoked at runtime/
             JSObject crypto = new JSObject("crypto", new Dictionary<string, object>()
             {
                 {"getRandomValues", new JSObject("", null, (object self, object[] args) =>
