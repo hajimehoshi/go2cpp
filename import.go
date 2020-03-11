@@ -122,26 +122,12 @@ var importFuncBodies = map[string]string{
     {
         go.StoreValue(local0 + 40, null);
         go.mem.StoreInt8(local0 + 48, 0);
-    }`, /*(sp) => {
-						try {
-							const v = loadValue(sp + 8);
-							const args = loadSliceOfValues(sp + 16);
-							const result = Reflect.construct(v, args);
-							sp = this._inst.exports.getsp(); // see comment above
-							storeValue(sp + 40, result);
-							this.mem.setUint8(sp + 48, 1);
-						} catch (err) {
-							storeValue(sp + 40, err);
-							this.mem.setUint8(sp + 48, 0);
-						}
-					},
+    }`,
 
-					// func valueLength(v ref) int
-					"syscall/js.valueLength": (sp) => {
-						setInt64(sp + 16, parseInt(loadValue(sp + 8).length));
-					},
+	// func valueLength(v ref) int
+	"syscall/js.valueLength": `    go.mem.StoreInt64(local0 + 16, ((Array)go.LoadValue(local0 + 8)).Length);`,
 
-					// valuePrepareString(v ref) (ref, int)
+					/*// valuePrepareString(v ref) (ref, int)
 					"syscall/js.valuePrepareString": (sp) => {
 						const str = encoder.encode(String(loadValue(sp + 8)));
 						storeValue(sp + 16, str);

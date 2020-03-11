@@ -238,6 +238,15 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             {
                 return ((JSObject)target).Get(key);
             }
+            if (target is object[])
+            {
+                int idx = 0;
+                if (int.TryParse(key, out idx))
+                {
+                    object[] arr = (object[])target;
+                    return arr[idx];
+                }
+            }
             throw new Exception($"{target}.{key} not found");
         }
 
