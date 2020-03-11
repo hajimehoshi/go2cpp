@@ -1,4 +1,6 @@
 *~
 *.wasm
 .DS_Store
+bin/
 gen.cs
+obj/
