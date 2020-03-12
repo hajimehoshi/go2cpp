@@ -719,7 +719,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Bits.TailingZeros((uint)stack%[1]s);", idx)
 		case operators.I32Popcnt:
-			return nil, fmt.Errorf("I32Popcnt is not implemented")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = Bits.OnesCount((uint)stack%[1]s);", idx)
 		case operators.I32Add:
 			arg := blockStack.PopIndex()
 			dst := blockStack.PeepIndex()
@@ -773,9 +774,13 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			dst := blockStack.PeepIndex()
 			appendBody("stack%[1]s = (int)((uint)stack%[1]s >> stack%[2]s);", dst, arg)
 		case operators.I32Rotl:
-			return nil, fmt.Errorf("I32Rotl is not implemented")
+			arg := blockStack.PopIndex()
+			dst := blockStack.PeepIndex()
+			appendBody("stack%[1]s = (int)Bits.RotateLeft((uint)stack%[1]s, (int)stack%[2]s);", dst, arg)
 		case operators.I32Rotr:
-			return nil, fmt.Errorf("I32Rotr is not implemented")
+			arg := blockStack.PopIndex()
+			dst := blockStack.PeepIndex()
+			appendBody("stack%[1]s = (int)Bits.RotateLeft((uint)stack%[1]s, -(int)stack%[2]s);", dst, arg)
 		case operators.I64Clz:
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = (long)Bits.LeadingZeros((ulong)stack%[1]s);", idx)
@@ -783,7 +788,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = (long)Bits.TailingZeros((ulong)stack%[1]s);", idx)
 		case operators.I64Popcnt:
-			return nil, fmt.Errorf("I64Popcnt is not implemented")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = (long)Bits.OnesCount((ulong)stack%[1]s);", idx)
 		case operators.I64Add:
 			arg := blockStack.PopIndex()
 			dst := blockStack.PeepIndex()
@@ -837,9 +843,13 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			dst := blockStack.PeepIndex()
 			appendBody("stack%[1]s = (long)((ulong)stack%[1]s >> (int)stack%[2]s);", dst, arg)
 		case operators.I64Rotl:
-			return nil, fmt.Errorf("I64Rotl is not implemented")
+			arg := blockStack.PopIndex()
+			dst := blockStack.PeepIndex()
+			appendBody("stack%[1]s = (long)Bits.RotateLeft((ulong)stack%[1]s, (int)stack%[2]s);", dst, arg)
 		case operators.I64Rotr:
-			return nil, fmt.Errorf("I64Rotr is not implemented")
+			arg := blockStack.PopIndex()
+			dst := blockStack.PeepIndex()
+			appendBody("stack%[1]s = (long)Bits.RotateLeft((ulong)stack%[1]s, -(int)stack%[2]s);", dst, arg)
 		case operators.F32Abs:
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Abs(stack%[1]s);", idx)
