@@ -10,7 +10,7 @@ namespace Go2DotNet.Example.Goroutines
         static void Main(string[] args)
         {
             Go go = new Go();
-            go.Run();
+            go.Run(args);
         }
     }    
 }

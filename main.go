@@ -777,7 +777,7 @@ namespace {{.Namespace}}
 
         public void Run()
         {
-            Run(new string[] { });
+            Run(new string[] { "js" });
         }
 
         public void Run(string[] args)
@@ -815,10 +815,16 @@ namespace {{.Namespace}}
             };
 
             // 'js' is requried as the first argument.
-            int argc = args.Length + 1;
-            IEnumerable<int> argvPtrs = args.Prepend("js").Select(arg => strPtr(arg)).Append(0);
+            args[0] = "js";
+            int argc = args.Length;
+            List<int> argvPtrs = new List<int>();
+            foreach (string arg in args)
+            {
+                argvPtrs.Add(strPtr(arg));
+            }
+            argvPtrs.Add(0);
             // TODO: Add environment variables.
-            argvPtrs = argvPtrs.Append(0);
+            argvPtrs.Add(0);
 
             int argv = offset;
             foreach (int ptr in argvPtrs)
