@@ -26,7 +26,7 @@ func main() {
 	}()
 	go func() {
 		for {
-			time.Sleep(time.Second)
+			time.Sleep(3 * time.Second)
 			close(ch3)
 		}
 	}()

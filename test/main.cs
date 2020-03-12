@@ -10,7 +10,7 @@ namespace Go2DotNet.Test
         static void Main(string[] args)
         {
             Go go = new Go();
-            go.Run().Wait();
+            go.Run();
         }
     }    
 }
