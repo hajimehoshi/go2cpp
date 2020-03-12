@@ -848,7 +848,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("stack%[1]s = -stack%[1]s;", idx)
 		case operators.F32Ceil:
 			idx := blockStack.PeepIndex()
-			appendBody("stack%[1]s = Math.Ceil(stack%[1]s);", idx)
+			appendBody("stack%[1]s = Math.Ceiling(stack%[1]s);", idx)
 		case operators.F32Floor:
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Floor(stack%[1]s);", idx)
@@ -856,7 +856,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Truncate(stack%[1]s);", idx)
 		case operators.F32Nearest:
-			return nil, fmt.Errorf("F32Nearest is not implemented yet")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = Math.Round(stack%[1]s);", idx)
 		case operators.F32Sqrt:
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Sqrt(stack%[1]s);", idx)
@@ -896,7 +897,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("stack%[1]s = -stack%[1]s;", idx)
 		case operators.F64Ceil:
 			idx := blockStack.PeepIndex()
-			appendBody("stack%[1]s = Math.Ceil(stack%[1]s);", idx)
+			appendBody("stack%[1]s = Math.Ceiling(stack%[1]s);", idx)
 		case operators.F64Floor:
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Floor(stack%[1]s);", idx)
@@ -904,7 +905,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Truncate(stack%[1]s);", idx)
 		case operators.F64Nearest:
-			return nil, fmt.Errorf("F64Nearest is not implemented yet")
+			idx := blockStack.PeepIndex()
+			appendBody("stack%[1]s = Math.Round(stack%[1]s);", idx)
 		case operators.F64Sqrt:
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Sqrt(stack%[1]s);", idx)
