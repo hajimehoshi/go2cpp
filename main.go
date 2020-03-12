@@ -1036,10 +1036,10 @@ namespace {{.Namespace}}
             const ulong m0 = 0x5555555555555555ul;
             const ulong m1 = 0x3333333333333333ul;
             const ulong m2 = 0x0f0f0f0f0f0f0f0ful;
+            const ulong m  = 0xfffffffffffffffful;
 
-            const ulong m = (1ul<<64) - 1;
-            x = (x>>1)&(m0&m) + x&(m0&m);
-            x = (x>>2)&(m1&m) + x&(m1&m);
+            x = ((x>>1)&(m0&m)) + (x&(m0&m));
+            x = ((x>>2)&(m1&m)) + (x&(m1&m));
             x = ((x>>4) + x) & (m2 & m);
             x += x >> 8;
             x += x >> 16;
@@ -1080,17 +1080,17 @@ namespace {{.Namespace}}
         private static int Len(ulong x)
         {
             int n = 0;
-            if (x >= 1<<32)
+            if (x >= 1ul<<32)
             {
                 x >>= 32;
                 n = 32;
             }
-            if (x >= 1<<16)
+            if (x >= 1ul<<16)
             {
                 x >>= 16;
                 n += 16;
             }
-            if (x >= 1<<8)
+            if (x >= 1ul<<8)
             {
                 x >>= 8;
                 n += 8;
