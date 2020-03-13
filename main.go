@@ -458,19 +458,14 @@ namespace {{.Namespace}}
         {
             get
             {
-                return this.bytes.Length;
+                return this.bytes.Length / PageSize;
             }
         }
 
         internal int Grow(int delta)
         {
             var prevSize = this.Size;
-            var newSize = prevSize + delta;
-            if (newSize % PageSize != 0)
-            {
-                newSize += PageSize - newSize % PageSize;
-            }
-            Array.Resize(ref this.bytes, newSize);
+            Array.Resize(ref this.bytes, (prevSize + delta) * PageSize);
             return prevSize;
         }
 
