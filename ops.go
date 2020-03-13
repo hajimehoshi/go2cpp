@@ -521,7 +521,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("int stack%s = %d;", idx, instr.Immediates[0])
 		case operators.I64Const:
 			idx := blockStack.PushIndex()
-			appendBody("long stack%s = %d;", idx, instr.Immediates[0])
+			appendBody("long stack%s = %dL;", idx, instr.Immediates[0])
 		case operators.F32Const:
 			idx := blockStack.PushIndex()
 			if v := instr.Immediates[0].(float32); v == 0 {
@@ -538,7 +538,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				appendBody("double stack%s = 0;", idx)
 			} else {
 				bits := math.Float64bits(v)
-				appendBody("ulong tmp%d = %d; // %f", tmpidx, bits, v)
+				appendBody("ulong tmp%d = %dUL; // %f", tmpidx, bits, v)
 				appendBody("double stack%s = Unsafe.As<ulong, double>(ref tmp%d);", idx, tmpidx)
 				tmpidx++
 			}
