@@ -976,7 +976,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.I64ExtendUI32:
 			arg := blockStack.PopIndex()
 			dst := blockStack.PushIndex()
-			appendBody("long stack%s = (long)((ulong)stack%s);", dst, arg)
+			appendBody("long stack%s = (long)((uint)stack%s);", dst, arg)
 		case operators.I64TruncSF32:
 			arg := blockStack.PopIndex()
 			dst := blockStack.PushIndex()
