@@ -241,7 +241,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	for _, instr := range dis.Code {
 		switch instr.Op.Code {
 		case operators.Unreachable:
-			appendBody(`Debug.Assert(false, "not reached");`)
+			appendBody(`Debug.Fail("not reached");`)
 		case operators.Nop:
 			// Do nothing
 		case operators.Block:
@@ -1058,7 +1058,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			}
 		} else {
 			// Throwing an exception might prevent optimization. Use assertion here.
-			appendBody(`Debug.Assert(false, "not reached");`)
+			appendBody(`Debug.Fail("not reached");`)
 			appendBody(`return 0;`)
 		}
 	default:
