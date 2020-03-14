@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+#pragma warning disable 649
+
 using System;
 using Go2DotNet.Example.Binding.AutoGen;
 
@@ -7,14 +9,15 @@ namespace Go2DotNet.Example.Binding
 {
     class External
     {
-        internal static int StaticField = 1;
+        // All numerics from Go are treated as double due to syscall/js.
+        internal static double StaticField;
 
-        internal static int StaticProperty
+        internal static double StaticProperty
         {
             get { return staticProperty; }
             set { staticProperty = value; }
         }
-        static int staticProperty = 2;
+        static double staticProperty;
 
         public static void StaticMethod(string arg)
         {

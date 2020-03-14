@@ -123,12 +123,25 @@ const js = `    public delegate object JSFunc(object self, object[] args);
 
             public void Set(string key, object value)
             {
-                throw new NotImplementedException();
+                BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+                FieldInfo field = this.type.GetField(key, flags);
+                if (field != null)
+                {
+                    field.SetValue(null, value);
+                    return;
+                }
+                PropertyInfo prop = this.type.GetProperty(key, flags);
+                if (prop != null)
+                {
+                    prop.SetValue(null, value);
+                    return;
+                }
+                throw new Exception($"setting {key} on {type} is forbidden");
             }
 
             public void Remove(string key)
             {
-                throw new Exception($"removing ${key} on a CSharpRootValue is forbidden");
+                throw new Exception($"removing ${key} on a CSharpTypeValue is forbidden");
             }
 
             private Type type;
