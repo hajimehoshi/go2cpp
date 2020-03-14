@@ -25,4 +25,7 @@ jobs:
     - name: Run tests
       run: |
         cd test
+        ./run.sh fmt -test.v -test.run=^Test
+        ./run.sh math -test.v -test.run=^Test
         ./run.sh math/bits -test.v -test.run=^Test
+        ./run.sh sort -test.v -test.run=^Test
