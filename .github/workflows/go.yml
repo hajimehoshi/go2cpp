@@ -31,5 +31,5 @@ jobs:
         ./run.sh sort -test.v -test.run=^Test
 
     - name: Test binding
-    　working-directory: test/binding
+      working-directory: test/binding
       run: ./run.sh
