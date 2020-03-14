@@ -27,7 +27,12 @@ const js = `    public delegate object JSFunc(object self, object[] args);
         private List<byte> buf = new List<byte>();
     }
 
-    sealed class JSObject
+    public interface IInvokable
+    {
+        object Invoke(object[] args);
+    }
+
+    sealed class JSObject : IInvokable
     {
         public interface IValues
         {
@@ -546,6 +551,19 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 return;
             }
             this.values.Remove(key);
+        }
+
+        public object Invoke(object[] args)
+        {
+            if (this.fn == null)
+            {
+                throw new Exception($"{this} is not invokable since ${this} is not a function");
+            }
+            if (this.ctor)
+            {
+                throw new Exception($"{this} is not invokable since ${this} is a constructor");
+            }
+            return this.fn(null, args);
         }
 
         public override string ToString()

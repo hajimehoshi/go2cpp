@@ -44,10 +44,9 @@ namespace Go2DotNet.Example.Binding
             Console.WriteLine($"str: {this.str}, num: {this.num}");
         }
 
-        internal object InvokeGo(object a, string arg)
+        internal object InvokeGo(IInvokable a, string arg)
         {
-            // TODO: Better interface for a function.
-            return Go2DotNet.Example.Binding.AutoGen.JSObject.ReflectApply(a, null, new object[] { arg });
+            return a.Invoke(new object[] { arg });
         }
 
         private string str;
