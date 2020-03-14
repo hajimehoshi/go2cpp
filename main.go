@@ -481,52 +481,79 @@ namespace {{.Namespace}}
 
         internal short LoadInt16(int addr)
         {
-            return (short)((ushort)this.bytes[addr] | (ushort)(this.bytes[addr+1]) << 8);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    return *(short*)ptr;
+                }
+            }
         }
 
         internal ushort LoadUint16(int addr)
         {
-            return (ushort)((ushort)this.bytes[addr] | (ushort)(this.bytes[addr+1]) << 8);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    return *(ushort*)ptr;
+                }
+            }
         }
 
         internal int LoadInt32(int addr)
         {
-            return (int)((uint)this.bytes[addr] |
-                (uint)(this.bytes[addr+1]) << 8 |
-                (uint)(this.bytes[addr+2]) << 16 |
-                (uint)(this.bytes[addr+3]) << 24);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    return *(int*)ptr;
+                }
+            }
         }
 
         internal uint LoadUint32(int addr)
         {
-            return (uint)((uint)this.bytes[addr] |
-                (uint)(this.bytes[addr+1]) << 8 |
-                (uint)(this.bytes[addr+2]) << 16 |
-                (uint)(this.bytes[addr+3]) << 24);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    return *(uint*)ptr;
+                }
+            }
         }
 
         internal long LoadInt64(int addr)
         {
-            return (long)((ulong)this.bytes[addr] |
-                (ulong)(this.bytes[addr+1]) << 8 |
-                (ulong)(this.bytes[addr+2]) << 16 |
-                (ulong)(this.bytes[addr+3]) << 24 |
-                (ulong)(this.bytes[addr+4]) << 32 |
-                (ulong)(this.bytes[addr+5]) << 40 |
-                (ulong)(this.bytes[addr+6]) << 48 |
-                (ulong)(this.bytes[addr+7]) << 56);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    return *(long*)ptr;
+                }
+            }
         }
 
         internal float LoadFloat32(int addr)
         {
-            int bits = LoadInt32(addr);
-            return Unsafe.As<int, float>(ref bits);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    return *(float*)ptr;
+                }
+            }
         }
 
         internal double LoadFloat64(int addr)
         {
-            long bits = LoadInt64(addr);
-            return Unsafe.As<long, double>(ref bits);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    return *(double*)ptr;
+                }
+            }
         }
 
         internal void StoreInt8(int addr, sbyte val)
@@ -536,46 +563,62 @@ namespace {{.Namespace}}
 
         internal void StoreInt16(int addr, short val)
         {
-            this.bytes[addr] = (byte)val;
-            this.bytes[addr+1] = (byte)(val >> 8);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    *(short*)ptr = val;
+                }
+            }
         }
 
         internal void StoreInt32(int addr, int val)
         {
-            this.bytes[addr] = (byte)val;
-            this.bytes[addr+1] = (byte)(val >> 8);
-            this.bytes[addr+2] = (byte)(val >> 16);
-            this.bytes[addr+3] = (byte)(val >> 24);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    *(int*)ptr = val;
+                }
+            }
         }
 
         internal void StoreInt64(int addr, long val)
         {
-            this.bytes[addr] = (byte)val;
-            this.bytes[addr+1] = (byte)(val >> 8);
-            this.bytes[addr+2] = (byte)(val >> 16);
-            this.bytes[addr+3] = (byte)(val >> 24);
-            this.bytes[addr+4] = (byte)(val >> 32);
-            this.bytes[addr+5] = (byte)(val >> 40);
-            this.bytes[addr+6] = (byte)(val >> 48);
-            this.bytes[addr+7] = (byte)(val >> 56);
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    *(long*)ptr = val;
+                }
+            }
         }
 
         internal void StoreFloat32(int addr, float val)
         {
-            this.StoreInt32(addr, Unsafe.As<float, int>(ref val));
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    *(float*)ptr = val;
+                }
+            }
         }
 
         internal void StoreFloat64(int addr, double val)
         {
-            this.StoreInt64(addr, Unsafe.As<double, long>(ref val));
+            unsafe
+            {
+                fixed (byte* ptr = &this.bytes[addr])
+                {
+                    *(double*)ptr = val;
+                }
+            }
         }
 
         internal void StoreBytes(int addr, byte[] bytes)
         {
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                this.bytes[addr+i] = bytes[i];
-            }
+            Array.Copy(bytes, 0, this.bytes, addr, bytes.Length);
         }
 
         internal ArraySegment<byte> LoadSlice(int addr)
