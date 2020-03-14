@@ -436,7 +436,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -811,7 +810,7 @@ namespace {{.Namespace}}
             {
                 a[i] = this.LoadValue(array + i * 8);
             }
-            return a.ToArray();
+            return a;
         }
 
         public void Run()
