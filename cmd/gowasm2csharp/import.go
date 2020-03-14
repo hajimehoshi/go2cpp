@@ -120,20 +120,21 @@ var importFuncBodies = map[string]string{
 	// func valueLength(v ref) int
 	"syscall/js.valueLength": `    go.mem.StoreInt64(local0 + 16, ((Array)go.LoadValue(local0 + 8)).Length);`,
 
-	/*// valuePrepareString(v ref) (ref, int)
-	"syscall/js.valuePrepareString": (sp) => {
-		const str = encoder.encode(String(loadValue(sp + 8)));
-		storeValue(sp + 16, str);
-		setInt64(sp + 24, str.length);
-	},
+	// valuePrepareString(v ref) (ref, int)
+	"syscall/js.valuePrepareString": `    byte[] str = Encoding.UTF8.GetBytes(go.LoadValue(local0 + 8).ToString());
+    go.StoreValue(local0 + 16, str);
+    go.mem.StoreInt64(local0 + 24, str.Length);`,
 
 	// valueLoadString(v ref, b []byte)
-	"syscall/js.valueLoadString": (sp) => {
-		const str = loadValue(sp + 8);
-		loadSlice(sp + 16).set(str);
-	},
+	"syscall/js.valueLoadString": `    byte[] src = (byte[])go.LoadValue(local0 + 8);
+    ArraySegment<byte> dst = go.mem.LoadSlice(local0 + 16);
+    int len = Math.Min(dst.Count, src.Length);
+    for (int i = 0; i < len; i++)
+    {
+        dst[i] = src[i];
+    }`,
 
-	// func valueInstanceOf(v ref, t ref) bool
+	/*// func valueInstanceOf(v ref, t ref) bool
 	"syscall/js.valueInstanceOf": (sp) => {
 		this.mem.setUint8(sp + 24, loadValue(sp + 8) instanceof loadValue(sp + 16));
 	},

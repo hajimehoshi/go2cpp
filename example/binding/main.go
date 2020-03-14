@@ -26,4 +26,11 @@ func main() {
 
 	inst.Call("InstanceMethod")
 	inst.Get("InstanceMethod").Invoke()
+
+	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		println(args[0].Type())
+		return args[0].String() + "!"
+	})
+	defer f.Release()
+	println(inst.Call("InvokeGo", f, "passed argument").String())
 }

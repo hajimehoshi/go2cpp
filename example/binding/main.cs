@@ -39,9 +39,15 @@ namespace Go2DotNet.Example.Binding
         }
         private double instanceProperty;
 
-        public void InstanceMethod()
+        internal void InstanceMethod()
         {
             Console.WriteLine($"str: {this.str}, num: {this.num}");
+        }
+
+        internal object InvokeGo(object a, string arg)
+        {
+            // TODO: Better interface for a function.
+            return Go2DotNet.Example.Binding.AutoGen.JSObject.ReflectApply(a, null, new object[] { arg });
         }
 
         private string str;
