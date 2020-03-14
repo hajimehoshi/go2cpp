@@ -7,7 +7,7 @@ using Go2DotNet.Example.Binding.AutoGen;
 
 namespace Go2DotNet.Example.Binding
 {
-    class External
+    public class External
     {
         // All numerics from Go are treated as double due to syscall/js.
         internal static double StaticField;
@@ -19,10 +19,33 @@ namespace Go2DotNet.Example.Binding
         }
         static double staticProperty;
 
-        public static void StaticMethod(string arg)
+        internal static void StaticMethod(string arg)
         {
-            Console.WriteLine(arg);
+            Console.WriteLine($"arg: {arg}");
         }
+
+        public External(string str, double num)
+        {
+            this.str = str;
+            this.num = num;
+        }
+
+        internal double InstanceField;
+
+        internal double InstanceProperty
+        {
+            get { return instanceProperty; }
+            set { instanceProperty = value; }
+        }
+        private double instanceProperty;
+
+        public void InstanceMethod()
+        {
+            Console.WriteLine($"str: {this.str}, num: {this.num}");
+        }
+
+        private string str;
+        private double num;
     }
 
     class Program

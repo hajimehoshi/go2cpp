@@ -74,9 +74,11 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 {
                     return null;
                 }
-                return new JSObject(type.ToString(), new CSharpTypeValues(type), (object self, object[] args) =>
+                return new JSObject(key, new CSharpTypeValues(type), (object self, object[] args) =>
                 {
-                    return Activator.CreateInstance(type, args);
+                    BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+                    object inst = Activator.CreateInstance(type, flags, null, args, null, null);
+                    return new JSObject(key, new CSharpInstanceValues(inst));
                 }, true);
             }
 
@@ -145,6 +147,62 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             }
 
             private Type type;
+        }
+
+        private class CSharpInstanceValues : IValues
+        {
+            public CSharpInstanceValues(object obj)
+            {
+                this.obj = obj;
+            }
+
+            public object Get(string key)
+            {
+                BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+                FieldInfo field = this.obj.GetType().GetField(key, flags);
+                if (field != null)
+                {
+                    return field.GetValue(this.obj);
+                }
+                PropertyInfo prop = this.obj.GetType().GetProperty(key, flags);
+                if (prop != null)
+                {
+                    return prop.GetValue(this.obj);
+                }
+                MethodInfo method = this.obj.GetType().GetMethod(key, flags);
+                if (method != null)
+                {
+                    return new JSObject(key, null, (object self, object[] args) => {
+                        return method.Invoke(this.obj, args);
+                    }, false);
+                }
+                return null;
+            }
+
+            public void Set(string key, object value)
+            {
+                BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+                FieldInfo field = this.obj.GetType().GetField(key, flags);
+                if (field != null)
+                {
+                    field.SetValue(this.obj, value);
+                    return;
+                }
+                PropertyInfo prop = this.obj.GetType().GetProperty(key, flags);
+                if (prop != null)
+                {
+                    prop.SetValue(this.obj, value);
+                    return;
+                }
+                throw new Exception($"setting {key} on {obj} is forbidden");
+            }
+
+            public void Remove(string key)
+            {
+                throw new Exception($"removing ${key} on a CSharpInstanceValue is forbidden");
+            }
+
+            private object obj;
         }
 
         private class FS
