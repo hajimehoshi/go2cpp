@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	ext := js.Global().Get("c#").Get("Go2DotNet.Example.Binding.External")
+	ext := js.Global().Get(".net").Get("Go2DotNet.Example.Binding.External")
 
 	ext.Set("StaticField", 1)
 	ext.Set("StaticProperty", 2)
@@ -25,4 +25,5 @@ func main() {
 	println(inst.Get("InstanceProperty").Int())
 
 	inst.Call("InstanceMethod")
+	inst.Get("InstanceMethod").Invoke()
 }

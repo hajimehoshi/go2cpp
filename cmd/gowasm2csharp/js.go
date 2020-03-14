@@ -65,7 +65,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             private Dictionary<string, object> dict;
         }
 
-        private class CSharpRootValues : IValues
+        private class DotNetRootValues : IValues
         {
             public object Get(string key)
             {
@@ -74,28 +74,28 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 {
                     return null;
                 }
-                return new JSObject(key, new CSharpTypeValues(type), (object self, object[] args) =>
+                return new JSObject(key, new DotNetTypeValues(type), (object self, object[] args) =>
                 {
                     BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
                     object inst = Activator.CreateInstance(type, flags, null, args, null, null);
-                    return new JSObject(key, new CSharpInstanceValues(inst));
+                    return new JSObject(key, new DotNetInstanceValues(inst));
                 }, true);
             }
 
             public void Set(string key, object value)
             {
-                throw new Exception($"setting ${key} on a CSharpRootValue is forbidden");
+                throw new Exception($"setting ${key} on a DotNetRootValue is forbidden");
             }
 
             public void Remove(string key)
             {
-                throw new Exception($"removing ${key} on a CSharpRootValue is forbidden");
+                throw new Exception($"removing ${key} on a DotNetRootValue is forbidden");
             }
         }
 
-        private class CSharpTypeValues : IValues
+        private class DotNetTypeValues : IValues
         {
-            public CSharpTypeValues(Type type)
+            public DotNetTypeValues(Type type)
             {
                 this.type = type;
             }
@@ -143,15 +143,15 @@ const js = `    public delegate object JSFunc(object self, object[] args);
 
             public void Remove(string key)
             {
-                throw new Exception($"removing ${key} on a CSharpTypeValue is forbidden");
+                throw new Exception($"removing ${key} on a DotNetTypeValue is forbidden");
             }
 
             private Type type;
         }
 
-        private class CSharpInstanceValues : IValues
+        private class DotNetInstanceValues : IValues
         {
-            public CSharpInstanceValues(object obj)
+            public DotNetInstanceValues(object obj)
             {
                 this.obj = obj;
             }
@@ -199,7 +199,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
 
             public void Remove(string key)
             {
-                throw new Exception($"removing ${key} on a CSharpInstanceValue is forbidden");
+                throw new Exception($"removing ${key} on a DotNetInstanceValue is forbidden");
             }
 
             private object obj;
@@ -347,7 +347,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 {"crypto", crypto},
                 {"fs", fs},
                 {"process", process},
-                {"c#", new JSObject("c#", new CSharpRootValues())},
+                {".net", new JSObject(".net", new DotNetRootValues())},
             });
         }
 
