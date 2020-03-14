@@ -65,6 +65,75 @@ const js = `    public delegate object JSFunc(object self, object[] args);
             private Dictionary<string, object> dict;
         }
 
+        private class CSharpRootValues : IValues
+        {
+            public object Get(string key)
+            {
+                Type type = Type.GetType(key);
+                if (type == null)
+                {
+                    return null;
+                }
+                return new JSObject(type.ToString(), new CSharpTypeValues(type), (object self, object[] args) =>
+                {
+                    return Activator.CreateInstance(type, args);
+                }, true);
+            }
+
+            public void Set(string key, object value)
+            {
+                throw new Exception($"setting ${key} on a CSharpRootValue is forbidden");
+            }
+
+            public void Remove(string key)
+            {
+                throw new Exception($"removing ${key} on a CSharpRootValue is forbidden");
+            }
+        }
+
+        private class CSharpTypeValues : IValues
+        {
+            public CSharpTypeValues(Type type)
+            {
+                this.type = type;
+            }
+
+            public object Get(string key)
+            {
+                BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+                FieldInfo field = this.type.GetField(key, flags);
+                if (field != null)
+                {
+                    return field.GetValue(null);
+                }
+                PropertyInfo prop = this.type.GetProperty(key, flags);
+                if (prop != null)
+                {
+                    return prop.GetValue(null);
+                }
+                MethodInfo method = this.type.GetMethod(key, flags);
+                if (method != null)
+                {
+                    return new JSObject(key, null, (object self, object[] args) => {
+                        return method.Invoke(null, args);
+                    }, false);
+                }
+                return null;
+            }
+
+            public void Set(string key, object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Remove(string key)
+            {
+                throw new Exception($"removing ${key} on a CSharpRootValue is forbidden");
+            }
+
+            private Type type;
+        }
+
         private class FS
         {
             public FS()
@@ -207,6 +276,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                 {"crypto", crypto},
                 {"fs", fs},
                 {"process", process},
+                {"c#", new JSObject("c#", new CSharpRootValues())},
             });
         }
 

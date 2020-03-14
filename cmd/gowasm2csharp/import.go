@@ -94,19 +94,12 @@ var importFuncBodies = map[string]string{
     go.mem.StoreInt8(local0 + 64, 1);`,
 
 	// func valueInvoke(v ref, args []ref) (ref, bool)
-	"syscall/js.valueInvoke": `    throw new NotImplementedException();`, /*(sp) => {
-		try {
-			const v = loadValue(sp + 8);
-			const args = loadSliceOfValues(sp + 16);
-			const result = Reflect.apply(v, undefined, args);
-			sp = this._inst.exports.getsp(); // see comment above
-			storeValue(sp + 40, result);
-			this.mem.setUint8(sp + 48, 1);
-		} catch (err) {
-			storeValue(sp + 40, err);
-			this.mem.setUint8(sp + 48, 0);
-		}
-	},*/
+	"syscall/js.valueInvoke": `    var v = go.LoadValue(local0 + 8);
+    var args = go.LoadSliceOfValues(local0 + 16);
+    var result = JSObject.ReflectApply(v, JSObject.Undefined, args);
+    local0 = go.inst.getsp();
+    go.StoreValue(local0 + 40, result);
+    go.mem.StoreInt8(local0 + 48, 1);`,
 
 	// func valueNew(v ref, args []ref) (ref, bool)
 	"syscall/js.valueNew": `    var v = go.LoadValue(local0 + 8);
