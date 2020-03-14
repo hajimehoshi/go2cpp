@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using Go2DotNet.Test.AutoGen;
+using Go2DotNet.Test.StdLib.AutoGen;
 
-namespace Go2DotNet.Test
+namespace Go2DotNet.Test.StdLib
 {
     class Program
     {

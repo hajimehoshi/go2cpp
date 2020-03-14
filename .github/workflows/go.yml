@@ -22,8 +22,8 @@ jobs:
       with:
         dotnet-version: '3.1.102'
 
-    - name: Test stdlibs
-      working-directory: test
+    - name: Test stdlib
+      working-directory: test/stdlib
       run: |
         ./run.sh fmt -test.v -test.run=^Test
         ./run.sh math -test.v -test.run=^Test
