@@ -23,13 +23,13 @@ jobs:
         dotnet-version: '3.1.102'
 
     - name: Test stdlibs
+      working-directory: test
       run: |
         ./run.sh fmt -test.v -test.run=^Test
         ./run.sh math -test.v -test.run=^Test
         ./run.sh math/bits -test.v -test.run=^Test
         ./run.sh sort -test.v -test.run=^Test
-      working-directory: test
 
     - name: Test binding
-      run: ./run.sh
     　working-directory: test/binding
+      run: ./run.sh
