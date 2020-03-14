@@ -28,7 +28,7 @@ jobs:
         ./run.sh math -test.v -test.run=^Test
         ./run.sh math/bits -test.v -test.run=^Test
         ./run.sh sort -test.v -test.run=^Test
-    　working-directory: test
+      working-directory: test
 
     - name: Test binding
       run: ./run.sh
