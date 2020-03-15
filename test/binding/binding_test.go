@@ -54,3 +54,19 @@ func TestFunc(t *testing.T) {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 }
+
+func TestFuncNoArgs(t *testing.T) {
+	cls := js.Global().Get(".net").Get("Go2DotNet.Test.Binding.Testing")
+	inst := cls.New("", 0)
+
+	a := 0
+	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		a = 1
+		return nil
+	})
+	defer f.Release()
+	inst.Call("InvokeGoWithoutArgs", f)
+	if got, want := a, 1; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}

@@ -914,7 +914,7 @@ namespace {{.Namespace}}
                 {
                     {"id", id},
                     {"this", self},
-                    {"args", args},
+                    {"args", args ?? new object[0]},
                 });
                 this.pendingEvent = evt;
                 this.Resume();

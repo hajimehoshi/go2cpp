@@ -49,6 +49,11 @@ namespace Go2DotNet.Test.Binding
             return a.Invoke(new object[] { arg });
         }
 
+        internal object InvokeGoWithoutArgs(IInvokable a)
+        {
+            return a.Invoke(null);
+        }
+
         private string str;
         private double num;
     }
