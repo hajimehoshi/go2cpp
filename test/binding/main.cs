@@ -54,6 +54,11 @@ namespace Go2DotNet.Test.Binding
             return a.Invoke(null);
         }
 
+        internal double InvokeGoAndReturnDouble(IInvokable a)
+        {
+            return (double)a.Invoke(null);
+        }
+
         private string str;
         private double num;
     }

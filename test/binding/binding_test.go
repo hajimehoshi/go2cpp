@@ -70,3 +70,16 @@ func TestFuncNoArgs(t *testing.T) {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 }
+
+func TestFuncReturningZero(t *testing.T) {
+	cls := js.Global().Get(".net").Get("Go2DotNet.Test.Binding.Testing")
+	inst := cls.New("", 0)
+
+	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return 0
+	})
+	defer f.Release()
+	if got, want := inst.Call("InvokeGoAndReturnDouble", f).Int(), 0; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}

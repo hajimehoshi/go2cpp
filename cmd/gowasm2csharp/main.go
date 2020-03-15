@@ -827,7 +827,7 @@ namespace {{.Namespace}}
             this.values = new Dictionary<int, object>
             {
                 {0, double.NaN},
-                {1, 0},
+                {1, 0.0},
                 {2, null},
                 {3, true},
                 {4, false},
