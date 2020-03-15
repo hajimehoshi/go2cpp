@@ -58,9 +58,8 @@ namespace Go2DotNet.Example.MonoGame
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            this.onDraw.Invoke(null);
+            int v = (int)(double)this.onDraw.Invoke(null);
+            GraphicsDevice.Clear(new Color(v, v, v));
 
             base.Draw(gameTime);
         }

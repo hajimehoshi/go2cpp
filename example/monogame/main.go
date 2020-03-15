@@ -8,24 +8,34 @@ import (
 	"syscall/js"
 )
 
-func update() {
-	println("update")
+type game struct {
+	counter int
 }
 
-func draw() {
-	println("draw")
+func (g *game) update() {
+	g.counter += 2
+	if g.counter >= 256 {
+		g.counter = 0
+	}
+}
+
+func (g *game) draw() int {
+	return g.counter
 }
 
 func main() {
+	g := &game{}
+
 	updatef := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		update()
+		g.update()
 		return nil
 	})
 	defer updatef.Release()
+
 	drawf := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		draw()
-		return nil
+		return g.draw()
 	})
 	defer drawf.Release()
+
 	js.Global().Get(".net").Get("Go2DotNet.Example.MonoGame.GoGameRunner").Call("Run", updatef, drawf);
 }
