@@ -12,7 +12,7 @@ namespace Go2DotNet.Example.Binding
         internal static void CallTwice(IInvokable a)
         {
             a.Invoke(null);
-            //a.Invoke(null);
+            a.Invoke(null);
         }
     }
 
