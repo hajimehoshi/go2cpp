@@ -247,7 +247,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                     break;
                 default:
                     ReflectApply(callback, null, new object[] { Enosys("write") });
-                    break;
+                    return null;
                 }
                 ReflectApply(callback, null, new object[] { null, buf.Length });
                 return null;
