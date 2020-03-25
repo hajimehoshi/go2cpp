@@ -340,7 +340,7 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                         {"O_APPEND", -1},
                         {"O_EXCL", -1},
                     })},
-                    {"write", new JSObject(fsimpl.Write)},
+                {"write", new JSObject(fsimpl.Write)},
             });
             JSObject process = new JSObject("process", new Dictionary<string, object>()
             {
