@@ -342,7 +342,11 @@ const js = `    public delegate object JSFunc(object self, object[] args);
                     })},
                     {"write", new JSObject(fsimpl.Write)},
             });
-            JSObject process = new JSObject("process");
+            JSObject process = new JSObject("process", new Dictionary<string, object>()
+            {
+                {"pid", -1},
+                {"ppid", -1},
+            });
 
             Global = new JSObject("global", new Dictionary<string, object>()
             {
