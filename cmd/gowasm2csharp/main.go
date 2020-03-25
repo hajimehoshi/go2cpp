@@ -815,7 +815,7 @@ namespace {{.Namespace}}
 
         public void Run()
         {
-            Run(new string[] { "js" });
+            Run(new string[0]);
         }
 
         public void Run(string[] args)
@@ -853,7 +853,14 @@ namespace {{.Namespace}}
             };
 
             // 'js' is requried as the first argument.
-            args[0] = "js";
+            if (args.Length == 0)
+            {
+                args = new string[] { "js" };
+            }
+            else
+            {
+                args[0] = "js";
+            }
             int argc = args.Length;
             List<int> argvPtrs = new List<int>();
             foreach (string arg in args)
