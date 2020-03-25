@@ -3,12 +3,12 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -391,8 +391,21 @@ func run() error {
 		})
 	}
 
-	buf := bufio.NewWriterSize(os.Stdout, 1024*1024)
-	if err := csTmpl.Execute(buf, struct {
+	const dir = "autogen"
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	out, err := os.Create(filepath.Join(dir, "Go.cs"))
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if err := csTmpl.Execute(out, struct {
 		Namespace   string
 		ImportFuncs []*Func
 		Funcs       []*Func
@@ -415,10 +428,6 @@ func run() error {
 		Data:        data,
 		JS:          js, // defined at js.go
 	}); err != nil {
-		return err
-	}
-
-	if err := buf.Flush(); err != nil {
 		return err
 	}
 

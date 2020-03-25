@@ -2,6 +2,6 @@
 *.wasm
 .DS_Store
 .vs
+autogen/
 bin/
-gen.cs
 obj/
