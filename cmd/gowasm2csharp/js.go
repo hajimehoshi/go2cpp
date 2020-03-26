@@ -16,9 +16,9 @@ func writeJSCS(dir string, namespace string) error {
 	defer f.Close()
 
 	if err := jsTmpl.Execute(f, struct {
-		Namespace   string
+		Namespace string
 	}{
-		Namespace:   namespace,
+		Namespace: namespace,
 	}); err != nil {
 		return err
 	}

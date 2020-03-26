@@ -16,9 +16,9 @@ func writeBitsCS(dir string, namespace string) error {
 	defer f.Close()
 
 	if err := bitsTmpl.Execute(f, struct {
-		Namespace   string
+		Namespace string
 	}{
-		Namespace:   namespace,
+		Namespace: namespace,
 	}); err != nil {
 		return err
 	}

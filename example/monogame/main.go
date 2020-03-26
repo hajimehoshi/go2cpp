@@ -37,5 +37,5 @@ func main() {
 	})
 	defer drawf.Release()
 
-	js.Global().Get(".net").Get("Go2DotNet.Example.MonoGame.GoGameRunner").Call("Run", updatef, drawf);
+	js.Global().Get(".net").Get("Go2DotNet.Example.MonoGame.GoGameRunner").Call("Run", updatef, drawf)
 }
