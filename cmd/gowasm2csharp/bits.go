@@ -8,7 +8,7 @@ import (
 	"text/template"
 )
 
-func writeBitsCs(dir string, namespace string) error {
+func writeBitsCS(dir string, namespace string) error {
 	f, err := os.Create(filepath.Join(dir, "Bits.cs"))
 	if err != nil {
 		return err

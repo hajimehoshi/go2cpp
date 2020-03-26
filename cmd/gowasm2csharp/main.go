@@ -411,7 +411,6 @@ func run() error {
 			Globals     []*Global
 			Types       []*Type
 			Tables      [][]uint32
-			JS          string
 		}{
 			Namespace:   *flagNamespace,
 			ImportFuncs: ifs,
@@ -420,17 +419,19 @@ func run() error {
 			Globals:     globals,
 			Types:       types,
 			Tables:      tables,
-			JS:          js, // defined at js.go
 		}); err != nil {
 			return err
 		}
 		return nil
 	})
 	g.Go(func() error {
-		return writeMemCs(dir, *flagNamespace, int(mod.Memory.Entries[0].Limits.Initial), data)
+		return writeBitsCS(dir, *flagNamespace)
 	})
 	g.Go(func() error {
-		return writeBitsCs(dir, *flagNamespace)
+		return writeJSCS(dir, *flagNamespace)
+	})
+	g.Go(func() error {
+		return writeMemCS(dir, *flagNamespace, int(mod.Memory.Entries[0].Limits.Initial), data)
 	})
 
 	if err := g.Wait(); err != nil {
@@ -450,8 +451,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -464,8 +463,6 @@ namespace {{.Namespace}}
 {{- range $value := .ImportFuncs}}
 {{$value.CSharp "        " false false}}{{end}}
     }
-
-{{.JS}}
 
     public class Go
     {

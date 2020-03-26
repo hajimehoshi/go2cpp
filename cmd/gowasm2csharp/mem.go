@@ -13,7 +13,7 @@ type Data struct {
 	Data   []byte
 }
 
-func writeMemCs(dir string, namespace string, initPageNum int, data []Data) error {
+func writeMemCS(dir string, namespace string, initPageNum int, data []Data) error {
 	f, err := os.Create(filepath.Join(dir, "Mem.cs"))
 	if err != nil {
 		return err
