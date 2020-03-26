@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -10,26 +11,39 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func writeInstCS(dir string, namespace string, importFuncs, funcs []*Func, exports []*Export, globals []*Global, types []*Type, tables [][]uint32) error {
-	var g errgroup.Group
-	g.Go(func() error {
-		f, err := os.Create(filepath.Join(dir, "Inst.cs"))
-		if err != nil {
-			return err
-		}
-		defer f.Close()
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
 
-		if err := instTmpl.Execute(f, struct {
-			Namespace string
-			Funcs     []*Func
-		}{
-			Namespace: namespace,
-			Funcs:     funcs,
-		}); err != nil {
-			return err
-		}
-		return nil
-	})
+func writeInstCS(dir string, namespace string, importFuncs, funcs []*Func, exports []*Export, globals []*Global, types []*Type, tables [][]uint32) error {
+	const groupSize = 64
+
+	var g errgroup.Group
+	for i := 0; i < (len(funcs)-1)/groupSize+1; i++ {
+		i := i
+		fs := funcs[groupSize*i : min(groupSize*(i+1), len(funcs))]
+		g.Go(func() error {
+			f, err := os.Create(filepath.Join(dir, fmt.Sprintf("Inst.Funcs%d.cs", i)))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			if err := instTmpl.Execute(f, struct {
+				Namespace string
+				Funcs     []*Func
+			}{
+				Namespace: namespace,
+				Funcs:     fs,
+			}); err != nil {
+				return err
+			}
+			return nil
+		})
+	}
 	g.Go(func() error {
 		f, err := os.Create(filepath.Join(dir, "Inst.Exports.cs"))
 		if err != nil {
