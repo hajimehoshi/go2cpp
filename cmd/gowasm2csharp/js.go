@@ -341,15 +341,6 @@ namespace {{.Namespace}}
             var rngCsp = new RNGCryptoServiceProvider();
 
             JSObject arr = new JSObject("Array");
-            JSObject crypto = new JSObject("crypto", new Dictionary<string, object>()
-            {
-                {"getRandomValues", new JSObject((object self, object[] args) =>
-                    {
-                        var bs = (byte[])args[0];
-                        rngCsp.GetBytes(bs);
-                        return bs;
-                    })},
-            });
             JSObject obj = new JSObject("Object");
             JSObject u8 = new JSObject("Uint8Array", null, (object self, object[] args) =>
             {
@@ -368,6 +359,45 @@ namespace {{.Namespace}}
                 }
                 throw new NotImplementedException($"new Uint8Array with {args.Length} args is not implemented");
             }, true);
+
+            JSObject crypto = new JSObject("crypto", new Dictionary<string, object>()
+            {
+                {"getRandomValues", new JSObject((object self, object[] args) =>
+                    {
+                        var bs = (byte[])args[0];
+                        rngCsp.GetBytes(bs);
+                        return bs;
+                    })},
+            });
+
+            JSObject console = new JSObject("console", new Dictionary<string, object>()
+            {
+                {"error", new JSObject((object self, object[] args) =>
+                    {
+                        Console.Error.WriteLine(string.Join(" ", args));
+                        return null;
+                    })},
+                {"debug", new JSObject((object self, object[] args) =>
+                    {
+                        Console.Error.WriteLine(string.Join(" ", args));
+                        return null;
+                    })},
+                {"info", new JSObject((object self, object[] args) =>
+                    {
+                        Console.Out.WriteLine(string.Join(" ", args));
+                        return null;
+                    })},
+                {"log", new JSObject((object self, object[] args) =>
+                    {
+                        Console.Out.WriteLine(string.Join(" ", args));
+                        return null;
+                    })},
+                {"warn", new JSObject((object self, object[] args) =>
+                    {
+                        Console.Error.WriteLine(string.Join(" ", args));
+                        return null;
+                    })},
+            });
 
             FS fsimpl = new FS();
             JSObject fs = new JSObject("fs", new Dictionary<string, object>()
@@ -394,6 +424,7 @@ namespace {{.Namespace}}
                 {"Array", arr},
                 {"Object", obj},
                 {"Uint8Array", u8},
+                {"console", console},
                 {"crypto", crypto},
                 {"fs", fs},
                 {"process", process},
