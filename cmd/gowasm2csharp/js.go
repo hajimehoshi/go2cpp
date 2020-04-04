@@ -208,12 +208,20 @@ namespace {{.Namespace}}
                 {
                     return prop.GetValue(this.obj);
                 }
-                MethodInfo method = this.obj.GetType().GetMethod(key, flags);
-                if (method != null)
+                try
                 {
-                    return new JSObject(key, null, (object self, object[] args) => {
-                        return method.Invoke(this.obj, args);
-                    }, false);
+                    MethodInfo method = this.obj.GetType().GetMethod(key, flags);
+                    if (method != null)
+                    {
+                        return new JSObject(key, null, (object self, object[] args) => {
+                            return method.Invoke(this.obj, args);
+                        }, false);
+                    }
+                }
+                catch (AmbiguousMatchException e)
+                {
+                    Console.Error.WriteLine($"Method {key} is ambiguous due to overloads.");
+                    throw e;
                 }
                 return null;
             }
