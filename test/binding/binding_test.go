@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"syscall/js"
 	"testing"
 )
@@ -80,6 +81,25 @@ func TestFuncReturningZero(t *testing.T) {
 	})
 	defer f.Release()
 	if got, want := inst.Call("InvokeGoAndReturnDouble", f).Int(), 0; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}
+
+func TestCopyBytes(t *testing.T) {
+	cls := js.Global().Get(".net").Get("Go2DotNet.Test.Binding.Testing")
+	inst := cls.New("", 0)
+
+	bs := []byte{1, 2, 3}
+	arr := js.Global().Get("Uint8Array").New(len(bs))
+	if got, want := js.CopyBytesToJS(arr, bs), 3; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+	arr2 := inst.Call("DoubleBytes", arr)
+	bs2 := make([]byte, arr2.Length())
+	if got, want := js.CopyBytesToGo(bs2, arr2), 3; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+	if got, want := bs2, []byte{2, 4, 6}; !bytes.Equal(got, want) {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 }

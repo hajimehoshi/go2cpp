@@ -137,21 +137,23 @@ var importFuncBodies = map[string]string{
 	/*// func valueInstanceOf(v ref, t ref) bool
 	"syscall/js.valueInstanceOf": (sp) => {
 		this.mem.setUint8(sp + 24, loadValue(sp + 8) instanceof loadValue(sp + 16));
-	},
+	},*/
 
 	// func copyBytesToGo(dst []byte, src ref) (int, bool)
-	"syscall/js.copyBytesToGo": (sp) => {
-		const dst = loadSlice(sp + 8);
-		const src = loadValue(sp + 32);
-		if (!(src instanceof Uint8Array)) {
-			this.mem.setUint8(sp + 48, 0);
-			return;
-		}
-		const toCopy = src.subarray(0, dst.length);
-		dst.set(toCopy);
-		setInt64(sp + 40, toCopy.length);
-		this.mem.setUint8(sp + 48, 1);
-	},*/
+	"syscall/js.copyBytesToGo": `    var dst = go.mem.LoadSlice(local0 + 8);
+    var src = go.LoadValue(local0 + 32);
+    if (!(src is byte[]))
+    {
+        go.mem.StoreInt8(local0 + 48, 0);
+        return;
+    }
+    var srcbs = (byte[])src;
+    for (int i = 0; i < dst.Count; i++)
+    {
+        dst[i] = srcbs[i];
+    }
+    go.mem.StoreInt64(local0 + 40, (long)dst.Count);
+    go.mem.StoreInt8(local0 + 48, 1);`,
 
 	// func copyBytesToJS(dst ref, src []byte) (int, bool)
 	"syscall/js.copyBytesToJS": `    var dst = go.LoadValue(local0 + 8);

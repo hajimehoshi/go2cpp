@@ -59,6 +59,16 @@ namespace Go2DotNet.Test.Binding
             return (double)a.Invoke(null);
         }
 
+        internal byte[] DoubleBytes(byte[] bytes)
+        {
+            byte[] newBytes = new byte[bytes.Length];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                newBytes[i] = (byte)(bytes[i] * 2);
+            }
+            return newBytes;
+        }
+
         private string str;
         private double num;
     }
