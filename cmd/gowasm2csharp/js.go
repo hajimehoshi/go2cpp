@@ -145,12 +145,12 @@ namespace {{.Namespace}}
                 FieldInfo field = this.type.GetField(key, flags);
                 if (field != null)
                 {
-                    return field.GetValue(null);
+                    return WrapObjectIfNeeded(field.GetValue(null));
                 }
                 PropertyInfo prop = this.type.GetProperty(key, flags);
                 if (prop != null)
                 {
-                    return prop.GetValue(null);
+                    return WrapObjectIfNeeded(prop.GetValue(null));
                 }
                 try
                 {
@@ -158,7 +158,7 @@ namespace {{.Namespace}}
                     if (method != null)
                     {
                         return new JSObject(key, null, (object self, object[] args) => {
-                            return method.Invoke(null, args);
+                            return WrapObjectIfNeeded(method.Invoke(null, args));
                         }, false);
                     }
                 }
@@ -209,12 +209,12 @@ namespace {{.Namespace}}
                 FieldInfo field = this.obj.GetType().GetField(key, flags);
                 if (field != null)
                 {
-                    return field.GetValue(this.obj);
+                    return WrapObjectIfNeeded(field.GetValue(this.obj));
                 }
                 PropertyInfo prop = this.obj.GetType().GetProperty(key, flags);
                 if (prop != null)
                 {
-                    return prop.GetValue(this.obj);
+                    return WrapObjectIfNeeded(prop.GetValue(this.obj));
                 }
                 try
                 {
@@ -222,7 +222,7 @@ namespace {{.Namespace}}
                     if (method != null)
                     {
                         return new JSObject(key, null, (object self, object[] args) => {
-                            return method.Invoke(this.obj, args);
+                            return WrapObjectIfNeeded(method.Invoke(this.obj, args));
                         }, false);
                     }
                 }
@@ -339,6 +339,36 @@ namespace {{.Namespace}}
                 return (double)(decimal)value;
             }
             return null;
+        }
+
+        private static object WrapObjectIfNeeded(object value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            switch (Type.GetTypeCode(value.GetType()))
+            {
+            case TypeCode.SByte:
+            case TypeCode.Byte:
+            case TypeCode.Int16:
+            case TypeCode.UInt16:
+            case TypeCode.Int32:
+            case TypeCode.UInt32:
+            case TypeCode.Int64:
+            case TypeCode.UInt64:
+            case TypeCode.Single:
+            case TypeCode.Double:
+            case TypeCode.Decimal:
+            case TypeCode.String:
+                return value;
+            }
+            if (value is byte[])
+            {
+                return value;
+            }
+            return new JSObject(new DotNetInstanceValues(value));
         }
 
         public static JSObject Undefined = new JSObject("undefined");
@@ -529,14 +559,11 @@ namespace {{.Namespace}}
             if (target is JSObject)
             {
                 var t = (JSObject)target;
-                if (t.ctor)
-                {
-                    return t.fn(t, args);
-                }
-                else
+                if (!t.ctor)
                 {
                     throw new Exception($"{t} is not a constructor");
                 }
+                return t.fn(t, args);
             }
             throw new NotImplementedException($"new {target}({args}) cannot be called");
         }
@@ -554,16 +581,13 @@ namespace {{.Namespace}}
             if (target is JSObject)
             {
                 var t = (JSObject)target;
-                if (!t.ctor)
-                {
-                    return t.fn(self, args);
-                }
-                else
+                if (t.ctor)
                 {
                     throw new Exception($"{t} is a constructor");
                 }
+                return t.fn(self, args);
             }
-            throw new NotImplementedException($"new {target}({args}) cannot be called");
+            throw new NotImplementedException($"{target}({args}) cannot be called");
         }
 
         public JSObject(string name)
@@ -573,6 +597,11 @@ namespace {{.Namespace}}
 
         public JSObject(Dictionary<string, object> values)
             : this("", new DictionaryValues(values), null, false)
+        {
+        }
+
+        public JSObject(IValues values)
+            : this("", values, null, false)
         {
         }
 

@@ -103,3 +103,19 @@ func TestCopyBytes(t *testing.T) {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 }
+
+func TestReturnInstance(t *testing.T) {
+	cls := js.Global().Get(".net").Get("Go2DotNet.Test.Binding.Testing")
+	if got, want := cls.Call("StaticMethodToReturnInstance", "foo", 1).Call("InstanceMethod", "bar").String(), "str: foo, num: 1, arg: bar"; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+
+	inst := cls.New("foo", 1)
+	inst2 := inst.Call("Clone")
+
+	if got, want := inst2.Call("InstanceMethod", "bar").String(), "str: foo, num: 1, arg: bar"; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+
+	// TODO: Add tests fields and properties to treat instances.
+}

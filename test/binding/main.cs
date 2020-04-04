@@ -24,6 +24,11 @@ namespace Go2DotNet.Test.Binding
             return arg + " and C#";
         }
 
+        internal static Testing StaticMethodToReturnInstance(string str, double num)
+        {
+            return new Testing(str, num);
+        }
+
         public Testing(string str, double num)
         {
             this.str = str;
@@ -67,6 +72,11 @@ namespace Go2DotNet.Test.Binding
                 newBytes[i] = (byte)(bytes[i] * 2);
             }
             return newBytes;
+        }
+
+        internal Testing Clone()
+        {
+            return new Testing(this.str, this.num);
         }
 
         private string str;
