@@ -203,6 +203,11 @@ namespace {{.Namespace}}
                 this.obj = obj;
             }
 
+            public object InternalObject
+            {
+                get { return this.obj; }
+            }
+
             public object Get(string key)
             {
                 BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
@@ -369,6 +374,36 @@ namespace {{.Namespace}}
                 return value;
             }
             return new JSObject(new DotNetInstanceValues(value));
+        }
+
+        private static object[] UnwrapObjectsIfNeeded(object[] values)
+        {
+            if (values == null)
+            {
+                return null;
+            }
+
+            object[] result = new object[values.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                object value = values[i];
+                if (value == null)
+                {
+                    result[i] = null;
+                    continue;
+                }
+                if (value is JSObject)
+                {
+                    JSObject jsobj = (JSObject)value;
+                    if (jsobj.values is DotNetInstanceValues)
+                    {
+                        result[i] = ((DotNetInstanceValues)jsobj.values).InternalObject;
+                        continue;
+                    }
+                }
+                result[i] = value;
+            }
+            return result;
         }
 
         public static JSObject Undefined = new JSObject("undefined");
@@ -563,7 +598,7 @@ namespace {{.Namespace}}
                 {
                     throw new Exception($"{t} is not a constructor");
                 }
-                return t.fn(t, args);
+                return t.fn(t, UnwrapObjectsIfNeeded(args));
             }
             throw new NotImplementedException($"new {target}({args}) cannot be called");
         }
@@ -585,7 +620,7 @@ namespace {{.Namespace}}
                 {
                     throw new Exception($"{t} is a constructor");
                 }
-                return t.fn(self, args);
+                return t.fn(self, UnwrapObjectsIfNeeded(args));
             }
             throw new NotImplementedException($"{target}({args}) cannot be called");
         }
@@ -676,7 +711,7 @@ namespace {{.Namespace}}
             {
                 throw new Exception($"{this} is not invokable since ${this} is a constructor");
             }
-            return this.fn(null, args);
+            return this.fn(null, UnwrapObjectsIfNeeded(args));
         }
 
         public override string ToString()

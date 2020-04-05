@@ -79,6 +79,12 @@ namespace Go2DotNet.Test.Binding
             return new Testing(this.str, this.num);
         }
 
+        internal void CopyFrom(Testing rhs)
+        {
+            this.str = rhs.str;
+            this.num = rhs.num;
+        }
+
         private string str;
         private double num;
     }
