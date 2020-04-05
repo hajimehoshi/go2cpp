@@ -74,6 +74,8 @@ namespace Go2DotNet.Test.Binding
             return newBytes;
         }
 
+        internal Testing InstanceObjectProperty { get; set; }
+
         internal Testing Clone()
         {
             return new Testing(this.str, this.num);

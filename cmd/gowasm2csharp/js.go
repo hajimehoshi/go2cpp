@@ -176,13 +176,13 @@ namespace {{.Namespace}}
                 FieldInfo field = this.type.GetField(key, flags);
                 if (field != null)
                 {
-                    field.SetValue(null, value);
+                    field.SetValue(null, UnwrapObjectIfNeeded(value));
                     return;
                 }
                 PropertyInfo prop = this.type.GetProperty(key, flags);
                 if (prop != null)
                 {
-                    prop.SetValue(null, value);
+                    prop.SetValue(null, UnwrapObjectIfNeeded(value));
                     return;
                 }
                 throw new Exception($"setting {key} on {type} is forbidden");
@@ -245,13 +245,13 @@ namespace {{.Namespace}}
                 FieldInfo field = this.obj.GetType().GetField(key, flags);
                 if (field != null)
                 {
-                    field.SetValue(this.obj, value);
+                    field.SetValue(this.obj, UnwrapObjectIfNeeded(value));
                     return;
                 }
                 PropertyInfo prop = this.obj.GetType().GetProperty(key, flags);
                 if (prop != null)
                 {
-                    prop.SetValue(this.obj, value);
+                    prop.SetValue(this.obj, UnwrapObjectIfNeeded(value));
                     return;
                 }
                 throw new Exception($"setting {key} on {obj} is forbidden");
@@ -376,6 +376,24 @@ namespace {{.Namespace}}
             return new JSObject(new DotNetInstanceValues(value));
         }
 
+        private static object UnwrapObjectIfNeeded(object value)
+        {
+            if (value == null)
+            {
+                return value;
+            }
+
+            if (value is JSObject)
+            {
+                JSObject jsobj = (JSObject)value;
+                if (jsobj.values is DotNetInstanceValues)
+                {
+                    return ((DotNetInstanceValues)jsobj.values).InternalObject;
+                }
+            }
+            return value;
+        }
+
         private static object[] UnwrapObjectsIfNeeded(object[] values)
         {
             if (values == null)
@@ -386,22 +404,7 @@ namespace {{.Namespace}}
             object[] result = new object[values.Length];
             for (int i = 0; i < values.Length; i++)
             {
-                object value = values[i];
-                if (value == null)
-                {
-                    result[i] = null;
-                    continue;
-                }
-                if (value is JSObject)
-                {
-                    JSObject jsobj = (JSObject)value;
-                    if (jsobj.values is DotNetInstanceValues)
-                    {
-                        result[i] = ((DotNetInstanceValues)jsobj.values).InternalObject;
-                        continue;
-                    }
-                }
-                result[i] = value;
+                result[i] = UnwrapObjectIfNeeded(values[i]);
             }
             return result;
         }

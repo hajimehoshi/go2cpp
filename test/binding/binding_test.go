@@ -123,5 +123,11 @@ func TestReturnAndPassInstance(t *testing.T) {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 
+	inst3.Set("InstanceObjectProperty", inst)
+	inst = inst3.Get("InstanceObjectProperty")
+	if got, want := inst.Call("InstanceMethod", "bar").String(), "str: foo, num: 1, arg: bar"; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+
 	// TODO: Add tests fields and properties to treat instances.
 }
