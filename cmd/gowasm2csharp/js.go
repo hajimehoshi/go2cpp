@@ -475,6 +475,12 @@ namespace {{.Namespace}}
                     })},
             });
 
+            JSObject fetch = new JSObject((object self, object[] args) =>
+            {
+                // TODO: Implement this.
+                return null;
+            });
+
             FS fsimpl = new FS();
             JSObject fs = new JSObject("fs", new Dictionary<string, object>()
             {
@@ -502,6 +508,7 @@ namespace {{.Namespace}}
                 {"Uint8Array", u8},
                 {"console", console},
                 {"crypto", crypto},
+                {"fetch", fetch},
                 {"fs", fs},
                 {"process", process},
                 {".net", new JSObject(".net", new DotNetRootValues())},
