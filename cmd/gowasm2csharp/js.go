@@ -86,7 +86,7 @@ namespace {{.Namespace}}
             {
                 if (!this.dict.ContainsKey(key))
                 {
-                    throw new KeyNotFoundException(key);
+                    return null;
                 }
                 return this.dict[key];
             }
