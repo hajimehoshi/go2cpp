@@ -34,6 +34,16 @@ namespace Go2DotNet.Test.Binding
             return val;
         }
 
+        internal static object Null()
+        {
+            return null;
+        }
+
+        internal static double NaN()
+        {
+            return double.NaN;
+        }
+
         public Testing(string str, double num)
         {
             this.str = str;
