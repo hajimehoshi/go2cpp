@@ -29,6 +29,11 @@ namespace Go2DotNet.Test.Binding
             return new Testing(str, num);
         }
 
+        internal static bool Bool(bool val)
+        {
+            return val;
+        }
+
         public Testing(string str, double num)
         {
             this.str = str;

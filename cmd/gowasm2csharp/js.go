@@ -366,6 +366,7 @@ namespace {{.Namespace}}
             case TypeCode.Single:
             case TypeCode.Double:
             case TypeCode.Decimal:
+            case TypeCode.Boolean:
             case TypeCode.String:
                 return value;
             }

@@ -131,3 +131,13 @@ func TestReturnAndPassInstance(t *testing.T) {
 
 	// TODO: Add tests fields and properties to treat instances.
 }
+
+func TestBool(t *testing.T) {
+	cls := js.Global().Get(".net").Get("Go2DotNet.Test.Binding.Testing")
+	if got, want := cls.Call("Bool", true).Bool(), true; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+	if got, want := cls.Call("Bool", false).Bool(), false; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}
