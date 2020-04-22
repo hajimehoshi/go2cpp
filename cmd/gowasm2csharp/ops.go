@@ -529,7 +529,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			} else {
 				bits := math.Float32bits(v)
 				appendBody("uint tmp%d = %d; // %f", tmpidx, bits, v)
-				appendBody("float stack%s = Unsafe.As<uint, float>(ref tmp%d);", idx, tmpidx)
+				appendBody("float stack%s;", idx)
+				appendBody("unsafe { stack%s = *(float*)(&tmp%d); };", idx, tmpidx)
 				tmpidx++
 			}
 		case operators.F64Const:
@@ -539,7 +540,8 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			} else {
 				bits := math.Float64bits(v)
 				appendBody("ulong tmp%d = %dUL; // %f", tmpidx, bits, v)
-				appendBody("double stack%s = Unsafe.As<ulong, double>(ref tmp%d);", idx, tmpidx)
+				appendBody("double stack%s;", idx)
+				appendBody("unsafe { stack%s = *(double*)(&tmp%d); };", idx, tmpidx)
 				tmpidx++
 			}
 
