@@ -50,7 +50,7 @@ var importFuncBodies = map[string]string{
 	"runtime.getRandomData": `    var slice = go.mem.LoadSlice(local0 + 8);
     var bytes = go.GetRandomBytes(slice.Count);
     for (int i = 0; i < slice.Count; i++) {
-        slice[i] = bytes[i];
+        slice.Array[slice.Offset + i] = bytes[i];
     }`,
 
 	// func finalizeRef(v ref)
@@ -127,11 +127,11 @@ var importFuncBodies = map[string]string{
 
 	// valueLoadString(v ref, b []byte)
 	"syscall/js.valueLoadString": `    byte[] src = (byte[])go.LoadValue(local0 + 8);
-    ArraySegment<byte> dst = go.mem.LoadSlice(local0 + 16);
+    var dst = go.mem.LoadSlice(local0 + 16);
     int len = Math.Min(dst.Count, src.Length);
     for (int i = 0; i < len; i++)
     {
-        dst[i] = src[i];
+        dst.Array[dst.Offset + i] = src[i];
     }`,
 
 	/*// func valueInstanceOf(v ref, t ref) bool
@@ -150,7 +150,7 @@ var importFuncBodies = map[string]string{
     var srcbs = (byte[])src;
     for (int i = 0; i < dst.Count; i++)
     {
-        dst[i] = srcbs[i];
+        dst.Array[dst.Offset + i] = srcbs[i];
     }
     go.mem.StoreInt64(local0 + 40, (long)dst.Count);
     go.mem.StoreInt8(local0 + 48, 1);`,
@@ -166,7 +166,7 @@ var importFuncBodies = map[string]string{
     var dstbs = (byte[])dst;
     for (int i = 0; i < dstbs.Length; i++)
     {
-        dstbs[i] = src[i];
+        dstbs[i] = src.Array[src.Offset + i];
     }
     go.mem.StoreInt64(local0 + 40, (long)dstbs.Length);
     go.mem.StoreInt8(local0 + 48, 1);`,
