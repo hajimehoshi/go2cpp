@@ -129,6 +129,26 @@ namespace {{.Namespace}}
 {
     sealed partial class Inst
     {
+        private static float CopySign(float x, float y)
+        {
+            const uint sign = 1u << 31;
+            unsafe
+            {
+                uint r = (*(uint*)(&x) & ~sign) | (*(uint*)(&y) & sign);
+                return *(float*)(&r);
+            }
+        }
+
+        private static double CopySign(double x, double y)
+        {
+            const ulong sign = 1ul << 63;
+            unsafe
+            {
+                ulong r = (*(ulong*)(&x) & ~sign) | (*(ulong*)(&y) & sign);
+                return *(double*)(&r);
+            }
+        }
+
         public Inst(Mem mem, IImport import)
         {
              initializeFuncs_();

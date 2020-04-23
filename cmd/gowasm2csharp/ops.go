@@ -900,7 +900,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.F32Copysign:
 			arg := blockStack.PopIndex()
 			dst := blockStack.PeepIndex()
-			appendBody("stack%[1]s = Math.CopySign(stack%[1]s, stack%[2]s);", dst, arg)
+			appendBody("stack%[1]s = CopySign(stack%[1]s, stack%[2]s);", dst, arg)
 		case operators.F64Abs:
 			idx := blockStack.PeepIndex()
 			appendBody("stack%[1]s = Math.Abs(stack%[1]s);", idx)
@@ -949,7 +949,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 		case operators.F64Copysign:
 			arg := blockStack.PopIndex()
 			dst := blockStack.PeepIndex()
-			appendBody("stack%[1]s = Math.CopySign(stack%[1]s, stack%[2]s);", dst, arg)
+			appendBody("stack%[1]s = CopySign(stack%[1]s, stack%[2]s);", dst, arg)
 
 		case operators.I32WrapI64:
 			arg := blockStack.PopIndex()
