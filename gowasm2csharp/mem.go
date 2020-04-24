@@ -8,12 +8,12 @@ import (
 	"text/template"
 )
 
-type Data struct {
+type wasmData struct {
 	Offset int
 	Data   []byte
 }
 
-func writeMemCS(dir string, namespace string, initPageNum int, data []Data) error {
+func writeMemCS(dir string, namespace string, initPageNum int, data []wasmData) error {
 	f, err := os.Create(filepath.Join(dir, "Mem.cs"))
 	if err != nil {
 		return err
@@ -23,7 +23,7 @@ func writeMemCS(dir string, namespace string, initPageNum int, data []Data) erro
 	if err := memTmpl.Execute(f, struct {
 		Namespace   string
 		InitPageNum int
-		Data        []Data
+		Data        []wasmData
 	}{
 		Namespace:   namespace,
 		InitPageNum: initPageNum,

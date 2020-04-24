@@ -14,104 +14,104 @@ import (
 	"github.com/go-interpreter/wagon/wasm/operators"
 )
 
-type ReturnType int
+type returnType int
 
 const (
-	ReturnTypeVoid ReturnType = iota
-	ReturnTypeI32
-	ReturnTypeI64
-	ReturnTypeF32
-	ReturnTypeF64
+	returnTypeVoid returnType = iota
+	returnTypeI32
+	returnTypeI64
+	returnTypeF32
+	returnTypeF64
 )
 
-func (r ReturnType) CSharp() string {
+func (r returnType) CSharp() string {
 	switch r {
-	case ReturnTypeVoid:
+	case returnTypeVoid:
 		return "void"
-	case ReturnTypeI32:
+	case returnTypeI32:
 		return "int"
-	case ReturnTypeI64:
+	case returnTypeI64:
 		return "long"
-	case ReturnTypeF32:
+	case returnTypeF32:
 		return "float"
-	case ReturnTypeF64:
+	case returnTypeF64:
 		return "double"
 	default:
 		panic("not reached")
 	}
 }
 
-type Stack struct {
+type stack struct {
 	newIdx int
 	stack  []int
 }
 
-func (s *Stack) Push() int {
+func (s *stack) Push() int {
 	idx := s.newIdx
 	s.stack = append(s.stack, idx)
 	s.newIdx++
 	return idx
 }
 
-func (s *Stack) Pop() int {
+func (s *stack) Pop() int {
 	idx := s.stack[len(s.stack)-1]
 	s.stack = s.stack[:len(s.stack)-1]
 	return idx
 }
 
-func (s *Stack) Peep() int {
+func (s *stack) Peep() int {
 	return s.stack[len(s.stack)-1]
 }
 
-func (s *Stack) PeepLevel(level int) (int, bool) {
+func (s *stack) PeepLevel(level int) (int, bool) {
 	if len(s.stack) > level {
 		return s.stack[len(s.stack)-1-level], true
 	}
 	return 0, false
 }
 
-func (s *Stack) Len() int {
+func (s *stack) Len() int {
 	return len(s.stack)
 }
 
-type BlockType int
+type blockType int
 
 const (
-	BlockTypeBlock BlockType = iota
-	BlockTypeLoop
-	BlockTypeIf
+	blockTypeBlock blockType = iota
+	blockTypeLoop
+	blockTypeIf
 )
 
-type BlockStack struct {
-	types     []BlockType
+type blockStack struct {
+	types     []blockType
 	rets      []string
-	index     []*Stack
-	s         Stack
+	index     []*stack
+	s         stack
 	tmpindent int
 }
 
-func (b *BlockStack) UnindentTemporarily() {
+func (b *blockStack) UnindentTemporarily() {
 	b.tmpindent--
 }
 
-func (b *BlockStack) IndentTemporarily() {
+func (b *blockStack) IndentTemporarily() {
 	b.tmpindent++
 }
 
-func (b *BlockStack) Push(btype BlockType, ret string) int {
+func (b *blockStack) Push(btype blockType, ret string) int {
 	if b.index == nil {
-		b.index = []*Stack{{}}
+		b.index = []*stack{{}}
 	}
 
 	b.types = append(b.types, btype)
 	b.rets = append(b.rets, ret)
-	b.index = append(b.index, &Stack{})
+	b.index = append(b.index, &stack{})
 	return b.s.Push()
 }
 
-func (b *BlockStack) Pop() (int, BlockType, string) {
+func (b *blockStack) Pop() (int, blockType, string) {
 	if b.index == nil {
-		b.index = []*Stack{{}}
+		b.index = []*stack{{}}
 	}
 
 	btype := b.types[len(b.types)-1]
@@ -123,27 +123,27 @@ func (b *BlockStack) Pop() (int, BlockType, string) {
 	return b.s.Pop(), btype, ret
 }
 
-func (b *BlockStack) Peep() (int, BlockType, string) {
+func (b *blockStack) Peep() (int, blockType, string) {
 	return b.s.Peep(), b.types[len(b.types)-1], b.rets[len(b.rets)-1]
 }
 
-func (b *BlockStack) PeepLevel(level int) (int, BlockType, bool) {
+func (b *blockStack) PeepLevel(level int) (int, blockType, bool) {
 	l, ok := b.s.PeepLevel(level)
-	var t BlockType
+	var t blockType
 	if ok {
 		t = b.types[len(b.types)-1-level]
 	}
 	return l, t, ok
 }
 
-func (b *BlockStack) Len() int {
+func (b *blockStack) Len() int {
 	return b.s.Len()
 }
 
-func (b *BlockStack) IndentLevel() int {
+func (b *blockStack) IndentLevel() int {
 	l := 0
 	for _, t := range b.types {
-		if t == BlockTypeIf {
+		if t == blockTypeIf {
 			l++
 		}
 	}
@@ -151,9 +151,9 @@ func (b *BlockStack) IndentLevel() int {
 	return l
 }
 
-func (b *BlockStack) PushIndex() string {
+func (b *blockStack) PushIndex() string {
 	if b.index == nil {
-		b.index = []*Stack{{}}
+		b.index = []*stack{{}}
 	}
 	idx := b.index[len(b.index)-1].Push()
 	if b.s.Len() > 0 {
@@ -162,9 +162,9 @@ func (b *BlockStack) PushIndex() string {
 	return fmt.Sprintf("%d", idx)
 }
 
-func (b *BlockStack) PopIndex() string {
+func (b *blockStack) PopIndex() string {
 	if b.index == nil {
-		b.index = []*Stack{{}}
+		b.index = []*stack{{}}
 	}
 
 	idx := b.index[len(b.index)-1].Pop()
@@ -174,9 +174,9 @@ func (b *BlockStack) PopIndex() string {
 	return fmt.Sprintf("%d", idx)
 }
 
-func (b *BlockStack) PeepIndex() string {
+func (b *blockStack) PeepIndex() string {
 	if b.index == nil {
-		b.index = []*Stack{{}}
+		b.index = []*stack{{}}
 	}
 
 	idx := b.index[len(b.index)-1].Peep()
@@ -186,14 +186,14 @@ func (b *BlockStack) PeepIndex() string {
 	return fmt.Sprintf("%d", idx)
 }
 
-func (b *BlockStack) HasIndex() bool {
+func (b *blockStack) HasIndex() bool {
 	if len(b.index) == 0 {
 		return false
 	}
 	return b.index[len(b.index)-1].Len() > 0
 }
 
-func (f *Func) bodyToCSharp() ([]string, error) {
+func (f *wasmFunc) bodyToCSharp() ([]string, error) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -212,7 +212,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 	}
 
 	var body []string
-	blockStack := &BlockStack{}
+	blockStack := &blockStack{}
 	var tmpidx int
 
 	appendBody := func(str string, args ...interface{}) {
@@ -251,7 +251,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				ret = blockStack.PushIndex()
 				appendBody("%s stack%s;", t.CSharp(), ret)
 			}
-			blockStack.Push(BlockTypeBlock, ret)
+			blockStack.Push(blockTypeBlock, ret)
 		case operators.Loop:
 			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
@@ -259,7 +259,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 				ret = blockStack.PushIndex()
 				appendBody("%s stack%s;", t.CSharp(), ret)
 			}
-			l := blockStack.Push(BlockTypeLoop, ret)
+			l := blockStack.Push(blockTypeLoop, ret)
 			appendBody("label%d:;", l)
 		case operators.If:
 			cond := blockStack.PopIndex()
@@ -271,7 +271,7 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			}
 			appendBody("if (stack%s != 0)", cond)
 			appendBody("{")
-			blockStack.Push(BlockTypeIf, ret)
+			blockStack.Push(blockTypeIf, ret)
 		case operators.Else:
 			if _, _, ret := blockStack.Peep(); ret != "" {
 				idx := blockStack.PopIndex()
@@ -283,15 +283,15 @@ func (f *Func) bodyToCSharp() ([]string, error) {
 			appendBody("{")
 			blockStack.IndentTemporarily()
 		case operators.End:
-			if _, btype, ret := blockStack.Peep(); btype != BlockTypeLoop && ret != "" {
+			if _, btype, ret := blockStack.Peep(); btype != blockTypeLoop && ret != "" {
 				idx := blockStack.PopIndex()
 				appendBody("stack%s = stack%s;", ret, idx)
 			}
 			idx, btype, _ := blockStack.Pop()
-			if btype == BlockTypeIf {
+			if btype == blockTypeIf {
 				appendBody("}")
 			}
-			if btype != BlockTypeLoop {
+			if btype != blockTypeLoop {
 				appendBody("label%d:;", idx)
 			}
 		case operators.Br:

@@ -18,7 +18,7 @@ func min(a, b int) int {
 	return b
 }
 
-func writeInstCS(dir string, namespace string, importFuncs, funcs []*Func, exports []*Export, globals []*Global, types []*Type, tables [][]uint32) error {
+func writeInstCS(dir string, namespace string, importFuncs, funcs []*wasmFunc, exports []*wasmExport, globals []*wasmGlobal, types []*wasmType, tables [][]uint32) error {
 	const groupSize = 64
 
 	var g errgroup.Group
@@ -34,7 +34,7 @@ func writeInstCS(dir string, namespace string, importFuncs, funcs []*Func, expor
 
 			if err := instTmpl.Execute(f, struct {
 				Namespace string
-				Funcs     []*Func
+				Funcs     []*wasmFunc
 			}{
 				Namespace: namespace,
 				Funcs:     fs,
@@ -53,7 +53,7 @@ func writeInstCS(dir string, namespace string, importFuncs, funcs []*Func, expor
 
 		if err := instExportsTmpl.Execute(f, struct {
 			Namespace string
-			Exports   []*Export
+			Exports   []*wasmExport
 		}{
 			Namespace: namespace,
 			Exports:   exports,
@@ -71,11 +71,11 @@ func writeInstCS(dir string, namespace string, importFuncs, funcs []*Func, expor
 
 		if err := instInitTmpl.Execute(f, struct {
 			Namespace   string
-			ImportFuncs []*Func
-			Funcs       []*Func
-			Types       []*Type
+			ImportFuncs []*wasmFunc
+			Funcs       []*wasmFunc
+			Types       []*wasmType
 			Tables      [][]uint32
-			Globals     []*Global
+			Globals     []*wasmGlobal
 		}{
 			Namespace:   namespace,
 			ImportFuncs: importFuncs,

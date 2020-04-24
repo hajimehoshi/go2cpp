@@ -41,18 +41,18 @@ func identifierFromString(str string) string {
 	return ident
 }
 
-type Func struct {
+type wasmFunc struct {
 	Mod     *wasm.Module
-	Funcs   []*Func
-	Types   []*Type
-	Type    *Type
+	Funcs   []*wasmFunc
+	Types   []*wasmType
+	Type    *wasmType
 	Wasm    wasm.Function
 	Index   int
 	Import  bool
 	BodyStr string
 }
 
-func (f *Func) Identifier() string {
+func (f *wasmFunc) Identifier() string {
 	return identifierFromString(f.Wasm.Name)
 }
 
@@ -65,26 +65,26 @@ var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.Ori
 {{end}}{{range .Body}}{{.}}
 {{end}}}{{else}};{{end}}`))
 
-func wasmTypeToReturnType(v wasm.ValueType) ReturnType {
+func wasmTypeToReturnType(v wasm.ValueType) returnType {
 	switch v {
 	case wasm.ValueTypeI32:
-		return ReturnTypeI32
+		return returnTypeI32
 	case wasm.ValueTypeI64:
-		return ReturnTypeI64
+		return returnTypeI64
 	case wasm.ValueTypeF32:
-		return ReturnTypeF32
+		return returnTypeF32
 	case wasm.ValueTypeF64:
-		return ReturnTypeF64
+		return returnTypeF64
 	default:
 		panic("not reached")
 	}
 }
 
-func (f *Func) CSharp(indent string, public bool, withBody bool) (string, error) {
-	var retType ReturnType
+func (f *wasmFunc) CSharp(indent string, public bool, withBody bool) (string, error) {
+	var retType returnType
 	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
 	case 0:
-		retType = ReturnTypeVoid
+		retType = returnTypeVoid
 	case 1:
 		retType = wasmTypeToReturnType(ts[0])
 	default:
@@ -152,20 +152,20 @@ func (f *Func) CSharp(indent string, public bool, withBody bool) (string, error)
 	return strings.Join(lines, "\n") + "\n", nil
 }
 
-type Export struct {
-	Funcs []*Func
+type wasmExport struct {
+	Funcs []*wasmFunc
 	Index int
 	Name  string
 }
 
-func (e *Export) CSharp(indent string) (string, error) {
+func (e *wasmExport) CSharp(indent string) (string, error) {
 	f := e.Funcs[e.Index]
 
 	var ret string
-	var retType ReturnType
+	var retType returnType
 	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
 	case 0:
-		retType = ReturnTypeVoid
+		retType = returnTypeVoid
 	case 1:
 		ret = "return "
 		retType = wasmTypeToReturnType(ts[0])
@@ -193,26 +193,26 @@ func (e *Export) CSharp(indent string) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
-type Global struct {
+type wasmGlobal struct {
 	Type  wasm.ValueType
 	Index int
 	Init  int
 }
 
-func (g *Global) CSharp(indent string) string {
+func (g *wasmGlobal) CSharp(indent string) string {
 	return fmt.Sprintf("%sprivate %s global%d = %d;", indent, wasmTypeToReturnType(g.Type).CSharp(), g.Index, g.Init)
 }
 
-type Type struct {
+type wasmType struct {
 	Sig   *wasm.FunctionSig
 	Index int
 }
 
-func (t *Type) CSharp(indent string) (string, error) {
-	var retType ReturnType
+func (t *wasmType) CSharp(indent string) (string, error) {
+	var retType returnType
 	switch ts := t.Sig.ReturnTypes; len(ts) {
 	case 0:
-		retType = ReturnTypeVoid
+		retType = returnTypeVoid
 	case 1:
 		retType = wasmTypeToReturnType(ts[0])
 	default:
@@ -245,19 +245,19 @@ func Generate(wasmFile string, namespace string) error {
 		return err
 	}
 
-	var types []*Type
+	var types []*wasmType
 	for i, e := range mod.Types.Entries {
 		e := e
-		types = append(types, &Type{
+		types = append(types, &wasmType{
 			Sig:   &e,
 			Index: i,
 		})
 	}
 
-	var ifs []*Func
+	var ifs []*wasmFunc
 	for i, e := range mod.Import.Entries {
 		name := e.FieldName
-		ifs = append(ifs, &Func{
+		ifs = append(ifs, &wasmFunc{
 			Type: types[e.Type.(wasm.FuncImport).Type],
 			Wasm: wasm.Function{
 				Sig:  types[e.Type.(wasm.FuncImport).Type].Sig,
@@ -284,11 +284,11 @@ func Generate(wasmFile string, namespace string) error {
 			names = sub.(*wasm.FunctionNames).Names
 		}
 	}
-	var fs []*Func
+	var fs []*wasmFunc
 	for i, t := range mod.Function.Types {
 		name := names[uint32(i+len(mod.Import.Entries))]
 		body := mod.Code.Bodies[i]
-		fs = append(fs, &Func{
+		fs = append(fs, &wasmFunc{
 			Type: types[t],
 			Wasm: wasm.Function{
 				Sig:  types[t].Sig,
@@ -299,11 +299,11 @@ func Generate(wasmFile string, namespace string) error {
 		})
 	}
 
-	var exports []*Export
+	var exports []*wasmExport
 	for _, e := range mod.Export.Entries {
 		switch e.Kind {
 		case wasm.ExternalFunction:
-			exports = append(exports, &Export{
+			exports = append(exports, &wasmExport{
 				Index: int(e.Index),
 				Name:  e.FieldStr,
 			})
@@ -329,11 +329,11 @@ func Generate(wasmFile string, namespace string) error {
 		f.Types = types
 	}
 
-	var globals []*Global
+	var globals []*wasmGlobal
 	for i, e := range mod.Global.Globals {
 		// TODO: Consider mutability.
 		// TODO: Use e.Type.Init.
-		globals = append(globals, &Global{
+		globals = append(globals, &wasmGlobal{
 			Type:  e.Type.Type,
 			Index: i,
 			Init:  0,
@@ -357,13 +357,13 @@ func Generate(wasmFile string, namespace string) error {
 		copy(tables[e.Index][offset:], e.Elems)
 	}
 
-	var data []Data
+	var data []wasmData
 	for _, e := range mod.Data.Entries {
 		offset, err := mod.ExecInitExpr(e.Offset)
 		if err != nil {
 			return err
 		}
-		data = append(data, Data{
+		data = append(data, wasmData{
 			Offset: int(offset.(int32)),
 			Data:   e.Data,
 		})
@@ -387,7 +387,7 @@ func Generate(wasmFile string, namespace string) error {
 
 		if err := goTmpl.Execute(out, struct {
 			Namespace   string
-			ImportFuncs []*Func
+			ImportFuncs []*wasmFunc
 		}{
 			Namespace:   namespace,
 			ImportFuncs: ifs,
