@@ -5,7 +5,6 @@ package gowasm2csharp
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -228,12 +227,6 @@ func (t *wasmType) CSharp(indent string) (string, error) {
 }
 
 func Generate(wasmFile string, namespace string) error {
-	tmp, err := ioutil.TempDir("", "go2dotnet-")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmp)
-
 	f, err := os.Open(wasmFile)
 	if err != nil {
 		return err
