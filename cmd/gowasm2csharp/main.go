@@ -4,6 +4,8 @@ package main
 
 import (
 	"flag"
+	"log"
+	"os"
 
 	"github.com/pkg/profile"
 
@@ -21,7 +23,16 @@ func main() {
 	if *flagProfile {
 		defer profile.Start().Stop()
 	}
-	if err := gowasm2csharp.Generate(*flagWasm, *flagNamespace); err != nil {
-		panic(err)
+
+	outDir := "autogen"
+	if err := os.RemoveAll(outDir); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := gowasm2csharp.Generate(outDir, *flagWasm, *flagNamespace); err != nil {
+		log.Fatal(err)
 	}
 }

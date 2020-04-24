@@ -226,7 +226,7 @@ func (t *wasmType) CSharp(indent string) (string, error) {
 	return fmt.Sprintf("%sprivate delegate %s Type%d(%s);", indent, retType.CSharp(), t.Index, strings.Join(args, ", ")), nil
 }
 
-func Generate(wasmFile string, namespace string) error {
+func Generate(outDir string, wasmFile string, namespace string) error {
 	f, err := os.Open(wasmFile)
 	if err != nil {
 		return err
@@ -362,17 +362,9 @@ func Generate(wasmFile string, namespace string) error {
 		})
 	}
 
-	const dir = "autogen"
-	if err := os.RemoveAll(dir); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-
 	var g errgroup.Group
 	g.Go(func() error {
-		out, err := os.Create(filepath.Join(dir, "Go.cs"))
+		out, err := os.Create(filepath.Join(outDir, "Go.cs"))
 		if err != nil {
 			return err
 		}
@@ -390,16 +382,16 @@ func Generate(wasmFile string, namespace string) error {
 		return nil
 	})
 	g.Go(func() error {
-		return writeBitsCS(dir, namespace)
+		return writeBitsCS(outDir, namespace)
 	})
 	g.Go(func() error {
-		return writeJSCS(dir, namespace)
+		return writeJSCS(outDir, namespace)
 	})
 	g.Go(func() error {
-		return writeInstCS(dir, namespace, ifs, fs, exports, globals, types, tables)
+		return writeInstCS(outDir, namespace, ifs, fs, exports, globals, types, tables)
 	})
 	g.Go(func() error {
-		return writeMemCS(dir, namespace, int(mod.Memory.Entries[0].Limits.Initial), data)
+		return writeMemCS(outDir, namespace, int(mod.Memory.Entries[0].Limits.Initial), data)
 	})
 
 	if err := g.Wait(); err != nil {
