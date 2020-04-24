@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package gowasm2csharp
 
 var importFuncBodies = map[string]string{
 	// func wasmExit(code int32)
