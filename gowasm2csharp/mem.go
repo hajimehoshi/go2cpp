@@ -20,6 +20,29 @@ func writeMemCS(dir string, namespace string, initPageNum int, data []wasmData) 
 	}
 	defer f.Close()
 
+	// Avoid too long arrays (#12).
+	var processed []wasmData
+	for _, d := range data {
+		offset := d.Offset
+		bs := d.Data
+		for {
+			n := 1024
+			if n > len(bs) {
+				n = len(bs)
+			}
+			head, tail := bs[:n], bs[n:]
+			processed = append(processed, wasmData{
+				Offset: offset,
+				Data:   head,
+			})
+			offset += n
+			bs = tail
+			if len(bs) == 0 {
+				break
+			}
+		}
+	}
+
 	if err := memTmpl.Execute(f, struct {
 		Namespace   string
 		InitPageNum int
@@ -27,7 +50,7 @@ func writeMemCS(dir string, namespace string, initPageNum int, data []wasmData) 
 	}{
 		Namespace:   namespace,
 		InitPageNum: initPageNum,
-		Data:        data,
+		Data:        processed,
 	}); err != nil {
 		return err
 	}
