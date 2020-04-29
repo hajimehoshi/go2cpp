@@ -99,10 +99,6 @@ func (b *blockStack) IndentTemporarily() {
 }
 
 func (b *blockStack) Push(btype blockType, ret string) int {
-	if b.index == nil {
-		b.index = []*stack{{}}
-	}
-
 	b.types = append(b.types, btype)
 	b.rets = append(b.rets, ret)
 	b.index = append(b.index, &stack{})
@@ -110,10 +106,6 @@ func (b *blockStack) Push(btype blockType, ret string) int {
 }
 
 func (b *blockStack) Pop() (int, blockType, string) {
-	if b.index == nil {
-		b.index = []*stack{{}}
-	}
-
 	btype := b.types[len(b.types)-1]
 	ret := b.rets[len(b.rets)-1]
 
@@ -163,10 +155,6 @@ func (b *blockStack) PushStackVar() string {
 }
 
 func (b *blockStack) PopStackVar() string {
-	if b.index == nil {
-		b.index = []*stack{{}}
-	}
-
 	idx := b.index[len(b.index)-1].Pop()
 	if b.s.Len() > 0 {
 		return fmt.Sprintf("stack%d_%d", b.s.Peep(), idx)
@@ -175,10 +163,6 @@ func (b *blockStack) PopStackVar() string {
 }
 
 func (b *blockStack) PeepStackVar() string {
-	if b.index == nil {
-		b.index = []*stack{{}}
-	}
-
 	idx := b.index[len(b.index)-1].Peep()
 	if b.s.Len() > 0 {
 		return fmt.Sprintf("stack%d_%d", b.s.Peep(), idx)
