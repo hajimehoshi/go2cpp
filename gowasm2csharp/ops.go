@@ -1014,7 +1014,7 @@ func (f *wasmFunc) bodyToCSharp() ([]string, error) {
 		case operators.F64ConvertUI64:
 			arg := blockStack.PopStackVar()
 			dst := blockStack.PushStackVar()
-			appendBody("double %s = (double)((long)%s);", dst, arg)
+			appendBody("double %s = (double)((ulong)%s);", dst, arg)
 		case operators.F64PromoteF32:
 			arg := blockStack.PopStackVar()
 			dst := blockStack.PushStackVar()
