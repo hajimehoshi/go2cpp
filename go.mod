@@ -1,4 +1,4 @@
-module github.com/hajimehoshi/go2dotnet
+module github.com/hajimehoshi/go2cpp
 
 go 1.13
 

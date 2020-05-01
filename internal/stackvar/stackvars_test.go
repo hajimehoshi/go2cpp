@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/hajimehoshi/go2dotnet/internal/stackvar"
+	. "github.com/hajimehoshi/go2cpp/internal/stackvar"
 )
 
 func TestPushPop(t *testing.T) {

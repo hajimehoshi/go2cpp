@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package gowasm2csharp
+package gowasm2cpp
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/go-interpreter/wagon/wasm"
 	"github.com/go-interpreter/wagon/wasm/operators"
 
-	"github.com/hajimehoshi/go2dotnet/internal/stackvar"
+	"github.com/hajimehoshi/go2cpp/internal/stackvar"
 )
 
 type returnType int

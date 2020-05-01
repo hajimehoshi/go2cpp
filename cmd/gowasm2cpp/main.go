@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/profile"
 
-	"github.com/hajimehoshi/go2dotnet/gowasm2csharp"
+	"github.com/hajimehoshi/go2cpp/gowasm2cpp"
 )
 
 var (
@@ -28,7 +28,7 @@ func main() {
 	if err := os.MkdirAll(*flagOut, 0755); err != nil {
 		log.Fatal(err)
 	}
-	if err := gowasm2csharp.Generate(*flagOut, *flagWasm, *flagNamespace); err != nil {
+	if err := gowasm2cpp.Generate(*flagOut, *flagWasm, *flagNamespace); err != nil {
 		log.Fatal(err)
 	}
 }
