@@ -1,4 +1,5 @@
 *~
+*.o
 *.wasm
 .DS_Store
 .vs

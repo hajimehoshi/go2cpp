@@ -389,7 +389,7 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 		return writeBits(outDir, namespace)
 	})
 	g.Go(func() error {
-		return writeJSCS(outDir, namespace)
+		return writeJS(outDir, namespace)
 	})
 	g.Go(func() error {
 		return writeInstCS(outDir, namespace, ifs, fs, exports, globals, types, tables)
