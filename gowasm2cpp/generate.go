@@ -40,6 +40,10 @@ func identifierFromString(str string) string {
 	return ident
 }
 
+func includeGuard(str string) string {
+	return strings.ToUpper(str)
+}
+
 type wasmFunc struct {
 	Mod     *wasm.Module
 	Funcs   []*wasmFunc
@@ -382,7 +386,7 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 		return nil
 	})
 	g.Go(func() error {
-		return writeBitsCS(outDir, namespace)
+		return writeBits(outDir, namespace)
 	})
 	g.Go(func() error {
 		return writeJSCS(outDir, namespace)
