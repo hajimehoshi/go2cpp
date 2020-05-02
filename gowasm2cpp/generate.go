@@ -395,10 +395,7 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 		return writeInstCS(outDir, namespace, ifs, fs, exports, globals, types, tables)
 	})
 	g.Go(func() error {
-		return writeMemInitData(outDir, data)
-	})
-	g.Go(func() error {
-		return writeMemCS(outDir, namespace, int(mod.Memory.Entries[0].Limits.Initial))
+		return writeMemCS(outDir, namespace, int(mod.Memory.Entries[0].Limits.Initial), data)
 	})
 
 	if err := g.Wait(); err != nil {

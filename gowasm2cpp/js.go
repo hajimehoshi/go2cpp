@@ -480,6 +480,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
 
   std::shared_ptr<JSObject> fetch = std::make_shared<JSObject>(
     [](Object self, std::vector<Object> args) -> Object {
+      // TODO: Implement this.
       return Object{};
     });
 
