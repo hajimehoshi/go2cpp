@@ -39,9 +39,9 @@ func writeMem(dir string, namespace string, initPageNum int, data []wasmData) er
 		defer f.Close()
 
 		if err := memCppTmpl.Execute(f, struct {
-			Namespace    string
-			InitPageNum  int
-			Data         []wasmData
+			Namespace   string
+			InitPageNum int
+			Data        []wasmData
 		}{
 			Namespace:   namespace,
 			InitPageNum: initPageNum,

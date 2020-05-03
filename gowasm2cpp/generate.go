@@ -48,6 +48,7 @@ type wasmFunc struct {
 	Mod     *wasm.Module
 	Funcs   []*wasmFunc
 	Types   []*wasmType
+	Globals []*wasmGlobal
 	Type    *wasmType
 	Wasm    wasm.Function
 	Index   int
@@ -333,6 +334,17 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 		})
 	}
 
+	var globals []*wasmGlobal
+	for i, e := range mod.Global.Globals {
+		// TODO: Consider mutability.
+		// TODO: Use e.Type.Init.
+		globals = append(globals, &wasmGlobal{
+			Type:  e.Type.Type,
+			Index: i,
+			Init:  0,
+		})
+	}
+
 	var ifs []*wasmFunc
 	for i, e := range mod.Import.Entries {
 		name := e.FieldName
@@ -342,6 +354,7 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 				Sig:  types[e.Type.(wasm.FuncImport).Type].Sig,
 				Name: name,
 			},
+			Globals: globals,
 			Index:   i,
 			Import:  true,
 			BodyStr: importFuncBodies[name],
@@ -374,7 +387,8 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 				Body: &body,
 				Name: name,
 			},
-			Index: i + len(mod.Import.Entries),
+			Globals: globals,
+			Index:   i + len(mod.Import.Entries),
 		})
 	}
 
@@ -406,17 +420,6 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 		f.Mod = mod
 		f.Funcs = allfs
 		f.Types = types
-	}
-
-	var globals []*wasmGlobal
-	for i, e := range mod.Global.Globals {
-		// TODO: Consider mutability.
-		// TODO: Use e.Type.Init.
-		globals = append(globals, &wasmGlobal{
-			Type:  e.Type.Type,
-			Index: i,
-			Init:  0,
-		})
 	}
 
 	if mod.Start != nil {

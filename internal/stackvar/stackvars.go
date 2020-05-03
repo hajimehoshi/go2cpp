@@ -6,31 +6,59 @@ import (
 	"fmt"
 )
 
+type Type int
+
+const (
+	I32 Type = iota
+	I64
+	F32
+	F64
+)
+
+func (t Type) Cpp() string {
+	switch t {
+	case I32:
+		return "int32_t"
+	case I64:
+		return "int64_t"
+	case F32:
+		return "float"
+	case F64:
+		return "double"
+	default:
+		panic("not reached")
+	}
+}
+
 type StackVars struct {
 	VarName func(idx int) string
 
 	exprs  []string
+	types  []Type
 	idx    int
 	peeped bool
 }
 
-func (s *StackVars) PushLhs() string {
+func (s *StackVars) PushLhs(t Type) string {
 	n := s.VarName(s.idx)
-	s.Push(n)
+	s.Push(n, t)
 	s.idx++
 	return n
 }
 
-func (s *StackVars) Push(expr string) {
+func (s *StackVars) Push(expr string, t Type) {
 	s.peeped = false
 	s.exprs = append(s.exprs, expr)
+	s.types = append(s.types, t)
 }
 
-func (s *StackVars) Pop() string {
+func (s *StackVars) Pop() (string, Type) {
 	s.peeped = false
 	l := s.exprs[len(s.exprs)-1]
+	t := s.types[len(s.types)-1]
 	s.exprs = s.exprs[:len(s.exprs)-1]
-	return l
+	s.types = s.types[:len(s.types)-1]
+	return l, t
 }
 
 func (s *StackVars) Peep() ([]string, string) {
@@ -38,10 +66,10 @@ func (s *StackVars) Peep() ([]string, string) {
 		return nil, s.exprs[len(s.exprs)-1]
 	}
 
-	l := s.Pop()
-	n := s.PushLhs()
+	l, t := s.Pop()
+	n := s.PushLhs(t)
 	s.peeped = true
-	return []string{fmt.Sprintf("auto %s = (%s);", n, l)}, n
+	return []string{fmt.Sprintf("%s %s = (%s);", t.Cpp(), n, l)}, n
 }
 
 func (s *StackVars) Empty() bool {
