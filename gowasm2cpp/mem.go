@@ -13,7 +13,7 @@ type wasmData struct {
 	Data   []byte
 }
 
-func writeMemCS(dir string, namespace string, initPageNum int, data []wasmData) error {
+func writeMem(dir string, namespace string, initPageNum int, data []wasmData) error {
 	{
 		f, err := os.Create(filepath.Join(dir, "mem.h"))
 		if err != nil {
@@ -93,11 +93,11 @@ public:
   int32_t Grow(int32_t delta);
 
   int8_t LoadInt8(int32_t addr) const;
-  uint8_t LoadUInt8(int32_t addr) const;
+  uint8_t LoadUint8(int32_t addr) const;
   int16_t LoadInt16(int32_t addr) const;
-  uint16_t LoadUInt16(int32_t addr) const;
+  uint16_t LoadUint16(int32_t addr) const;
   int32_t LoadInt32(int32_t addr) const;
-  uint32_t LoadUInt32(int32_t addr) const;
+  uint32_t LoadUint32(int32_t addr) const;
   int64_t LoadInt64(int32_t addr) const;
   float LoadFloat32(int32_t addr) const;
   double LoadFloat64(int32_t addr) const;
@@ -177,7 +177,7 @@ int8_t Mem::LoadInt8(int32_t addr) const {
   return static_cast<int8_t>(bytes_[addr]);
 }
 
-uint8_t Mem::LoadUInt8(int32_t addr) const {
+uint8_t Mem::LoadUint8(int32_t addr) const {
   return bytes_[addr];
 }
 
@@ -185,7 +185,7 @@ int16_t Mem::LoadInt16(int32_t addr) const {
   return *(reinterpret_cast<const int16_t*>(&bytes_[addr]));
 }
 
-uint16_t Mem::LoadUInt16(int32_t addr) const {
+uint16_t Mem::LoadUint16(int32_t addr) const {
   return *(reinterpret_cast<const uint16_t*>(&bytes_[addr]));
 }
 
@@ -193,7 +193,7 @@ int32_t Mem::LoadInt32(int32_t addr) const {
   return *(reinterpret_cast<const int32_t*>(&bytes_[addr]));
 }
 
-uint32_t Mem::LoadUInt32(int32_t addr) const {
+uint32_t Mem::LoadUint32(int32_t addr) const {
   return *(reinterpret_cast<const uint32_t*>(&bytes_[addr]));
 }
 

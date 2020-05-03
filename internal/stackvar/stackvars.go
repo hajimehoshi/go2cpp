@@ -41,7 +41,7 @@ func (s *StackVars) Peep() ([]string, string) {
 	l := s.Pop()
 	n := s.PushLhs()
 	s.peeped = true
-	return []string{fmt.Sprintf("var %s = (%s);", n, l)}, n
+	return []string{fmt.Sprintf("auto %s = (%s);", n, l)}, n
 }
 
 func (s *StackVars) Empty() bool {

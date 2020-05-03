@@ -36,7 +36,7 @@ func TestPeep(t *testing.T) {
 	s.Push("bar")
 
 	ls, v := s.Peep()
-	if got, want := strings.Join(ls, "\n"), "var stack0 = (bar);"; got != want {
+	if got, want := strings.Join(ls, "\n"), "auto stack0 = (bar);"; got != want {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 	if got, want := v, "stack0"; got != want {
@@ -56,7 +56,7 @@ func TestPeep(t *testing.T) {
 	}
 
 	ls, v = s.Peep()
-	if got, want := strings.Join(ls, "\n"), "var stack1 = (foo);"; got != want {
+	if got, want := strings.Join(ls, "\n"), "auto stack1 = (foo);"; got != want {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 	if got, want := v, "stack1"; got != want {

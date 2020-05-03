@@ -59,14 +59,17 @@ func (f *wasmFunc) Identifier() string {
 	return identifierFromString(f.Wasm.Name)
 }
 
-var funcTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.OriginalName}}
+var funcDeclTmpl = template.Must(template.New("funcDecl").Parse(`// OriginalName: {{.OriginalName}}
 // Index:        {{.Index}}
-{{if .WithBody}}{{if .Public}}public{{else}}private{{end}} {{end}}{{.ReturnType}} {{.Name}}({{.Args}}){{if .WithBody}}
-{
-{{range .Locals}}    {{.}}
+{{.ReturnType}} {{.Name}}({{.Args}});`))
+
+var funcImplTmpl = template.Must(template.New("func").Parse(`// OriginalName: {{.OriginalName}}
+// Index:        {{.Index}}
+{{.ReturnType}} Inst::{{.Name}}({{.Args}}) {
+{{range .Locals}}  {{.}}
 {{end}}{{if .Locals}}
 {{end}}{{range .Body}}{{.}}
-{{end}}}{{else}};{{end}}`))
+{{end}}}`))
 
 func wasmTypeToReturnType(v wasm.ValueType) returnType {
 	switch v {
@@ -83,7 +86,7 @@ func wasmTypeToReturnType(v wasm.ValueType) returnType {
 	}
 }
 
-func (f *wasmFunc) CSharp(indent string, public bool, withBody bool) (string, error) {
+func (f *wasmFunc) CppDecl(indent string) (string, error) {
 	var retType returnType
 	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
 	case 0:
@@ -96,34 +99,73 @@ func (f *wasmFunc) CSharp(indent string, public bool, withBody bool) (string, er
 
 	var args []string
 	for i, t := range f.Wasm.Sig.ParamTypes {
-		args = append(args, fmt.Sprintf("%s local%d", wasmTypeToReturnType(t).CSharp(), i))
+		args = append(args, fmt.Sprintf("%s local%d", wasmTypeToReturnType(t).Cpp(), i))
+	}
+
+	var buf bytes.Buffer
+	if err := funcDeclTmpl.Execute(&buf, struct {
+		OriginalName string
+		Name         string
+		Index        int
+		ReturnType   string
+		Args         string
+	}{
+		OriginalName: f.Wasm.Name,
+		Name:         identifierFromString(f.Wasm.Name),
+		Index:        f.Index,
+		ReturnType:   retType.Cpp(),
+		Args:         strings.Join(args, ", "),
+	}); err != nil {
+		return "", err
+	}
+
+	// Add indentations
+	var lines []string
+	for _, line := range strings.Split(buf.String(), "\n") {
+		lines = append(lines, indent+line)
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
+func (f *wasmFunc) CppImpl(indent string) (string, error) {
+	var retType returnType
+	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
+	case 0:
+		retType = returnTypeVoid
+	case 1:
+		retType = wasmTypeToReturnType(ts[0])
+	default:
+		return "", fmt.Errorf("the number of return values must be 0 or 1 but %d", len(ts))
+	}
+
+	var args []string
+	for i, t := range f.Wasm.Sig.ParamTypes {
+		args = append(args, fmt.Sprintf("%s local%d", wasmTypeToReturnType(t).Cpp(), i))
 	}
 
 	var locals []string
 	var body []string
-	if withBody {
-		if f.BodyStr != "" {
-			body = strings.Split(f.BodyStr, "\n")
-		} else if f.Wasm.Body != nil {
-			var idx int
-			for _, e := range f.Wasm.Body.Locals {
-				for i := 0; i < int(e.Count); i++ {
-					locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).CSharp(), idx+len(f.Wasm.Sig.ParamTypes)))
-					idx++
-				}
+	if f.BodyStr != "" {
+		body = strings.Split(f.BodyStr, "\n")
+	} else if f.Wasm.Body != nil {
+		var idx int
+		for _, e := range f.Wasm.Body.Locals {
+			for i := 0; i < int(e.Count); i++ {
+				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).Cpp(), idx+len(f.Wasm.Sig.ParamTypes)))
+				idx++
 			}
-			var err error
-			body, err = f.bodyToCSharp()
-			if err != nil {
-				return "", err
-			}
-		} else {
-			body = []string{"    throw new NotImplementedException();"}
 		}
+		var err error
+		body, err = f.bodyToCpp()
+		if err != nil {
+			return "", err
+		}
+	} else {
+		body = []string{"  throw new NotImplementedException();"}
 	}
 
 	var buf bytes.Buffer
-	if err := funcTmpl.Execute(&buf, struct {
+	if err := funcImplTmpl.Execute(&buf, struct {
 		OriginalName string
 		Name         string
 		Index        int
@@ -131,18 +173,14 @@ func (f *wasmFunc) CSharp(indent string, public bool, withBody bool) (string, er
 		Args         string
 		Locals       []string
 		Body         []string
-		Public       bool
-		WithBody     bool
 	}{
 		OriginalName: f.Wasm.Name,
 		Name:         identifierFromString(f.Wasm.Name),
 		Index:        f.Index,
-		ReturnType:   retType.CSharp(),
+		ReturnType:   retType.Cpp(),
 		Args:         strings.Join(args, ", "),
 		Locals:       locals,
 		Body:         body,
-		Public:       public,
-		WithBody:     withBody,
 	}); err != nil {
 		return "", err
 	}
@@ -161,7 +199,34 @@ type wasmExport struct {
 	Name  string
 }
 
-func (e *wasmExport) CSharp(indent string) (string, error) {
+func (e *wasmExport) CppDecl(indent string) (string, error) {
+	f := e.Funcs[e.Index]
+
+	var retType returnType
+	switch ts := f.Wasm.Sig.ReturnTypes; len(ts) {
+	case 0:
+		retType = returnTypeVoid
+	case 1:
+		retType = wasmTypeToReturnType(ts[0])
+	default:
+		return "", fmt.Errorf("the number of return values must be 0 or 1 but %d", len(ts))
+	}
+
+	var args []string
+	for i, t := range f.Wasm.Sig.ParamTypes {
+		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToReturnType(t).Cpp(), i))
+	}
+
+	str := fmt.Sprintf(`%s %s(%s);`, retType.Cpp(), e.Name, strings.Join(args, ", "))
+
+	lines := strings.Split(str, "\n")
+	for i := range lines {
+		lines[i] = indent + lines[i]
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
+func (e *wasmExport) CppImpl(indent string) (string, error) {
 	f := e.Funcs[e.Index]
 
 	var ret string
@@ -179,15 +244,14 @@ func (e *wasmExport) CSharp(indent string) (string, error) {
 	var args []string
 	var argsToPass []string
 	for i, t := range f.Wasm.Sig.ParamTypes {
-		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToReturnType(t).CSharp(), i))
+		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToReturnType(t).Cpp(), i))
 		argsToPass = append(argsToPass, fmt.Sprintf("arg%d", i))
 	}
 
-	str := fmt.Sprintf(`public %s %s(%s)
-{
-    %s%s(%s);
+	str := fmt.Sprintf(`%s Inst::%s(%s) {
+  %s%s(%s);
 }
-`, retType.CSharp(), e.Name, strings.Join(args, ", "), ret, identifierFromString(f.Wasm.Name), strings.Join(argsToPass, ", "))
+`, retType.Cpp(), e.Name, strings.Join(args, ", "), ret, identifierFromString(f.Wasm.Name), strings.Join(argsToPass, ", "))
 
 	lines := strings.Split(str, "\n")
 	for i := range lines {
@@ -202,13 +266,31 @@ type wasmGlobal struct {
 	Init  int
 }
 
-func (g *wasmGlobal) CSharp(indent string) string {
-	return fmt.Sprintf("%sprivate %s global%d = %d;", indent, wasmTypeToReturnType(g.Type).CSharp(), g.Index, g.Init)
+func (g *wasmGlobal) Cpp() string {
+	return fmt.Sprintf("%s global%d = %d;", wasmTypeToReturnType(g.Type).Cpp(), g.Index, g.Init)
 }
 
 type wasmType struct {
 	Sig   *wasm.FunctionSig
 	Index int
+}
+
+func (t *wasmType) Cpp() (string, error) {
+	var retType returnType
+	switch ts := t.Sig.ReturnTypes; len(ts) {
+	case 0:
+		retType = returnTypeVoid
+	case 1:
+		retType = wasmTypeToReturnType(ts[0])
+	default:
+		return "", fmt.Errorf("the number of return values must be 0 or 1 but %d", len(ts))
+	}
+	var args []string
+	for i, t := range t.Sig.ParamTypes {
+		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToReturnType(t).Cpp(), i))
+	}
+
+	return fmt.Sprintf("%s (Inst::*)(%s)", retType.Cpp(), strings.Join(args, ", ")), nil
 }
 
 func (t *wasmType) CSharp(indent string) (string, error) {
@@ -392,10 +474,10 @@ func Generate(outDir string, wasmFile string, namespace string) error {
 		return writeJS(outDir, namespace)
 	})
 	g.Go(func() error {
-		return writeInstCS(outDir, namespace, ifs, fs, exports, globals, types, tables)
+		return writeInst(outDir, namespace, ifs, fs, exports, globals, types, tables)
 	})
 	g.Go(func() error {
-		return writeMemCS(outDir, namespace, int(mod.Memory.Entries[0].Limits.Initial), data)
+		return writeMem(outDir, namespace, int(mod.Memory.Entries[0].Limits.Initial), data)
 	})
 
 	if err := g.Wait(); err != nil {
@@ -417,12 +499,6 @@ using System.Timers;
 
 namespace {{.Namespace}}
 {
-    internal interface IImport
-    {
-{{- range $value := .ImportFuncs}}
-{{$value.CSharp "        " false false}}{{end}}
-    }
-
     public class Go
     {
         class Import : IImport
@@ -432,7 +508,7 @@ namespace {{.Namespace}}
                 this.go = go;
             }
 {{range $value := .ImportFuncs}}
-{{$value.CSharp "            " true true}}{{end}}
+{{$value.CppImpl ""}}{{end}}
             private Go go;
         }
 
