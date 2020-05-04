@@ -536,6 +536,25 @@ private:
   std::condition_variable cond_;
 };
 
+class Timer {
+public:
+  Timer(std::function<void()> func, double interval);
+  void Stop();
+
+private:
+  enum class Result {
+    Timeout,
+    NoTimeout,
+  };
+
+  Result WaitFor(double milliseconds);
+
+  std::thread thread_;
+  std::mutex mutex_;
+  std::condition_variable cond_;
+  bool stopped_ = false;
+};
+
 class Go {
 public:
   Go();
@@ -582,7 +601,7 @@ private:
   Writer debug_writer_;
 
   Object pending_event_;
-  std::map<int32_t, std::thread> scheduled_timeouts_;
+  std::map<int32_t, std::unique_ptr<Timer>> scheduled_timeouts_;
   int32_t next_callback_timeout_id_ = 1;
 
   std::unique_ptr<Inst> inst_;
@@ -625,17 +644,40 @@ void error(const std::string& msg) {
 }
 
 void TaskQueue::Enqueue(Task task) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock{mutex_};
   queue_.push(task);
   cond_.notify_one();
 }
 
 TaskQueue::Task TaskQueue::Dequeue() {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock{mutex_};
   cond_.wait(lock, [this]{ return !queue_.empty(); });
   Task task = queue_.front();
   queue_.pop();
   return task;
+}
+
+Timer::Timer(std::function<void()> func, double interval)
+    : thread_{[this, interval](std::function<void()> func) {
+        Result result = WaitFor(interval);
+        if (result == Timer::Result::NoTimeout) {
+          return;
+        }
+        func();
+      }, std::move(func)} {
+}
+
+void Timer::Stop() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  stopped_ = true;
+  cond_.notify_one();
+}
+
+Timer::Result Timer::WaitFor(double milliseconds) {
+  std::unique_lock<std::mutex> lock{mutex_};
+  auto duration = std::chrono::duration<double, std::milli>(milliseconds);
+  bool result = !cond_.wait_for(lock, duration, [this]{return stopped_;});
+  return result ? Result::NoTimeout : Result::Timeout;
 }
 
 Go::Go()
@@ -889,24 +931,22 @@ double Go::UnixNowInMilliseconds() {
 int32_t Go::SetTimeout(double interval) {
   int32_t id = next_callback_timeout_id_;
   next_callback_timeout_id_++;
-  std::thread t([this, interval, id]() {
-    std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(interval));
-    task_queue_.Enqueue([this, id]{
+  std::unique_ptr<Timer> timer = std::make_unique<Timer>(
+    [this, id] {
       Resume();
       while (scheduled_timeouts_.find(id) != scheduled_timeouts_.end()) {
         // for some reason Go failed to register the timeout event, log and try again
         // (temporary workaround for https://github.com/golang/go/issues/28975)
         Resume();
       }
-    });
-  });
-  scheduled_timeouts_[id] = std::move(t);
+    }, interval);
+  scheduled_timeouts_[id] = std::move(timer);
   return id;
 }
 
 void Go::ClearTimeout(int32_t id) {
   if (scheduled_timeouts_.find(id) != scheduled_timeouts_.end()) {
-    // scheduled_timeouts_[id].stop(); // TODO
+    scheduled_timeouts_[id]->Stop();
   }
   scheduled_timeouts_.erase(id);
 }
