@@ -231,7 +231,7 @@ std::string JoinObjects(const std::vector<Object>& objs) {
 }
 
 Writer::Writer(std::ostream& out)
-    : out_(out) {
+    : out_{out} {
 }
 
 void Writer::Write(const std::vector<uint8_t>& bytes) {
@@ -378,7 +378,7 @@ IInvokable::~IInvokable() = default;
 JSObject::IValues::~IValues() = default;
 
 JSObject::DictionaryValues::DictionaryValues(const std::map<std::string, Object>& dict)
-    : dict_(dict) {
+    : dict_{dict} {
 }
 
 Object JSObject::DictionaryValues::Get(const std::string& key) {
@@ -398,8 +398,8 @@ void JSObject::DictionaryValues::Remove(const std::string& key) {
 }
 
 JSObject::FS::FS()
-    : stdout_(std::cout),
-      stderr_(std::cerr) {
+    : stdout_{std::cout},
+      stderr_{std::cerr} {
 }
 
 Object JSObject::FS::Write(Object self, std::vector<Object> args) {
@@ -641,36 +641,36 @@ Object JSObject::ReflectApply(Object target, Object self, std::vector<Object> ar
 }
 
 JSObject::JSObject(const std::string& name)
-    : name_(name) {
+    : name_{name} {
 }
 
 JSObject::JSObject(const std::map<std::string, Object>& values)
-    : values_(std::make_unique<DictionaryValues>(values)) {
+    : values_{std::make_unique<DictionaryValues>(values)} {
 }
 
 JSObject::JSObject(std::unique_ptr<IValues> values)
-    : values_(std::move(values)) {
+    : values_{std::move(values)} {
 }
 
 JSObject::JSObject(const std::string& name, std::unique_ptr<IValues> values)
-    : name_(name),
-      values_(std::move(values)) {
+    : name_{name},
+      values_{std::move(values)} {
 }
 
 JSObject::JSObject(const std::string& name, const std::map<std::string, Object>& values)
-    : name_(name),
-      values_(std::make_unique<DictionaryValues>(values)) {
+    : name_{name},
+      values_{std::make_unique<DictionaryValues>(values)} {
 }
 
 JSObject::JSObject(JSFunc fn)
-    : fn_(fn) {
+    : fn_{fn} {
 }
 
 JSObject::JSObject(const std::string& name, std::unique_ptr<IValues> values, JSFunc fn, bool ctor)
-    : name_(name),
-      values_(std::move(values)),
-      fn_(fn),
-      ctor_(ctor) {
+    : name_{name},
+      values_{std::move(values)},
+      fn_{fn},
+      ctor_{ctor} {
 }
 
 bool JSObject::IsFunction() const {

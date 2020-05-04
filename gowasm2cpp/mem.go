@@ -139,9 +139,9 @@ var memCppTmpl = template.Must(template.New("mem.cpp").Parse(`// Code generated 
 namespace {{.Namespace}} {
 
 BytesSegment::BytesSegment(std::vector<uint8_t>& bytes, size_type offset, size_type length)
-    : bytes_(bytes),
-      offset_(offset),
-      length_(length) {
+    : bytes_{bytes},
+      offset_{offset},
+      length_{length} {
 }
 
 BytesSegment::reference BytesSegment::operator[](size_type n) {
