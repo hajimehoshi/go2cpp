@@ -64,6 +64,7 @@ public:
 
 private:
   std::ostream& out_;
+  // TODO: std::queue should be enough?
   std::deque<uint8_t> buf_;
 };
 
@@ -87,6 +88,7 @@ public:
   explicit Object(const std::string& str);
   explicit Object(const std::vector<uint8_t>& bytes);
   explicit Object(std::shared_ptr<JSObject> jsobject);
+  explicit Object(const std::vector<Object>& array);
 
   Object(const Object& rhs);
   Object& operator=(const Object& rhs);
@@ -273,6 +275,11 @@ Object::Object(const std::vector<uint8_t>& bytes)
 Object::Object(std::shared_ptr<JSObject> jsobject)
     : type_{Type::Object},
       jsobject_value_{jsobject} {
+}
+
+Object::Object(const std::vector<Object>& array)
+    : type_{Type::Object},
+      array_value_{std::make_shared<std::vector<Object>>(array.begin(), array.end())} {
 }
 
 Object::Object(const Object& rhs) = default;

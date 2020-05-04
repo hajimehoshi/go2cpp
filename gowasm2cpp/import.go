@@ -7,10 +7,10 @@ var importFuncBodies = map[string]string{
 	"runtime.wasmExit": `  int32_t code = go_->mem_->LoadInt32(local0 + 8);
   go_->exited_ = true;
   go_->inst_.reset();
-  go_->values_.empty();
-  go_->go_ref_counts_.empty();
-  go_->ids_.empty();
-  go_->id_pool_.empty();
+  go_->values_.clear();
+  go_->go_ref_counts_.clear();
+  go_->ids_.clear();
+  go_->id_pool_ = std::stack<int32_t>();
   go_->Exit(code);`,
 
 	// func wasmWrite(fd uintptr, p unsafe.Pointer, n int32)
