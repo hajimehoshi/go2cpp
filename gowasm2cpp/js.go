@@ -251,7 +251,7 @@ void Writer::Write(const std::vector<uint8_t>& bytes) {
 }
 
 Object Object::Undefined() {
-  static Object undefined{Type::Undefined};
+  static Object& undefined = *new Object(Type::Undefined);
   return undefined;
 }
 
@@ -440,7 +440,7 @@ Object JSObject::FS::Write(Object self, std::vector<Object> args) {
 }
 
 Object JSObject::Global() {
-  static Object global{MakeGlobal()};
+  static Object& global = *new Object(MakeGlobal());
   return global;
 }
 
@@ -489,16 +489,16 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
     out << std::endl;
   };
 
-  static Object writeObjectsToStdout{std::make_shared<JSObject>(
+  static Object& writeObjectsToStdout = *new Object(std::make_shared<JSObject>(
     [](Object self, std::vector<Object> args) -> Object {
       writeObjects(std::cout, args);
       return Object{};
-    })};
-  static Object writeObjectsToStderr{std::make_shared<JSObject>(
+    }));
+  static Object& writeObjectsToStderr = *new Object(std::make_shared<JSObject>(
     [](Object self, std::vector<Object> args) -> Object {
       writeObjects(std::cerr, args);
       return Object{};
-    })};
+    }));
   std::shared_ptr<JSObject> console = std::make_shared<JSObject>("console", std::map<std::string, Object>{
     {"error", writeObjectsToStderr},
     {"debug", writeObjectsToStderr},
