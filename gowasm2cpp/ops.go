@@ -59,6 +59,7 @@ func (r returnType) stackVarType() stackvar.Type {
 	}
 }
 
+// TODO: Remove this
 func (r returnType) CSharp() string {
 	switch r {
 	case returnTypeVoid:
@@ -1078,12 +1079,17 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	// To avoid "jump bypasses variable initialization" errors, all the stack variables must be declared first.
 	var svdecls []string
 	for i, l := range body {
-		m := stackVarRe.FindStringSubmatch(l)
+		m := stackVarDeclRe.FindStringSubmatch(l)
 		if m == nil {
 			continue
 		}
 		svdecls = append(svdecls, fmt.Sprintf("  %s;", m[1]))
 		body[i] = strings.Replace(body[i], m[1], m[3], 1)
+
+		// If the line consists of only a variable name and a semicolon after replacing, remove this.
+		if strings.TrimSpace(body[i]) == m[3] + ";" {
+			body[i] = ""
+		}
 	}
 	svdecls = append(svdecls, "")
 	body = append(svdecls, body...)
@@ -1091,4 +1097,6 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	return body, nil
 }
 
-var stackVarRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+(_[0-9]+)?)|(tmp[0-9]+)))`)
+var (
+	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+(_[0-9]+)?)|(tmp[0-9]+)))`)
+)
