@@ -4,172 +4,153 @@ package gowasm2cpp
 
 var importFuncBodies = map[string]string{
 	// func wasmExit(code int32)
-	"runtime.wasmExit": `    var code = go.mem.LoadInt32(local0 + 8);
-    go.exited = true;
-    go.inst = null;
-    go.values = null;
-    go.goRefCounts = null;
-    go.ids = null;
-    go.idPool = null;
-    go.Exit(code);`,
+	"runtime.wasmExit": `  int32_t code = go_->mem_->LoadInt32(local0 + 8);
+  go_->exited_ = true;
+  go_->inst_.reset();
+  go_->values_.empty();
+  go_->go_ref_counts_.empty();
+  go_->ids_.empty();
+  go_->id_pool_.empty();
+  go_->Exit(code);`,
 
 	// func wasmWrite(fd uintptr, p unsafe.Pointer, n int32)
-	"runtime.wasmWrite": `    var fd = go.mem.LoadInt64(local0 + 8);
-    if (fd != 1 && fd != 2)
-    {
-        throw new NotImplementedException($"fd for runtime.wasmWrite must be 1 or 2 but {fd}");
-    }
-    var p = go.mem.LoadInt64(local0 + 16);
-    var n = go.mem.LoadInt32(local0 + 24);
+	"runtime.wasmWrite": `  int64_t fd = go_->mem_->LoadInt64(local0 + 8);
+  if (fd != 1 && fd != 2) {
+    error("fd for runtime.wasmWrite must be 1 or 2 but " + std::to_string(fd));
+  }
+  int64_t p = go_->mem_->LoadInt64(local0 + 16);
+  int32_t n = go_->mem_->LoadInt32(local0 + 24);
 
-    // Note that runtime.wasmWrite is used only for print/println so far.
-    // Write the buffer to the standard output regardless of fd.
-    go.DebugWrite(go.mem.LoadSliceDirectly(p, n));`,
+  // Note that runtime.wasmWrite is used only for print/println so far.
+  // Write the buffer to the standard output regardless of fd.
+  go_->DebugWrite(go_->mem_->LoadSliceDirectly(p, n));`,
 
 	// func resetMemoryDataView()
-	"runtime.resetMemoryDataView": `    // Do nothing.`,
+	"runtime.resetMemoryDataView": `  // Do nothing.`,
 
 	// func nanotime1() int64
-	"runtime.nanotime1": `    go.mem.StoreInt64(local0 + 8, go.PreciseNowInNanoseconds());`,
+	"runtime.nanotime1": `  go_->mem_->StoreInt64(local0 + 8, go_->PreciseNowInNanoseconds());`,
 
 	// func walltime1() (sec int64, nsec int32)
-	"runtime.walltime1": `    var now = go.UnixNowInMilliseconds();
-    go.mem.StoreInt64(local0 + 8, (long)(now / 1000));
-    go.mem.StoreInt32(local0 + 16, (int)((now % 1000) * 1_000_000));`,
+	"runtime.walltime1": `  double now = go_->UnixNowInMilliseconds();
+  go_->mem_->StoreInt64(local0 + 8, static_cast<int64_t>(now / 1000));
+  go_->mem_->StoreInt32(local0 + 16, static_cast<int32_t>(std::fmod(now, 1000) * 1000000));`,
 
 	// func scheduleTimeoutEvent(delay int64) int32
-	"runtime.scheduleTimeoutEvent": `    var interval = go.mem.LoadInt64(local0 + 8);
-    var id = go.SetTimeout((double)interval);
-    go.mem.StoreInt32(local0 + 16, id);`,
+	"runtime.scheduleTimeoutEvent": `  int64_t interval = go_->mem_->LoadInt64(local0 + 8);
+  int32_t id = go_->SetTimeout(static_cast<double>(interval));
+  go_->mem_->StoreInt32(local0 + 16, id);`,
 
 	// func clearTimeoutEvent(id int32)
-	"runtime.clearTimeoutEvent": `    var id = go.mem.LoadInt32(local0 + 8);
-    go.ClearTimeout(id);`,
+	"runtime.clearTimeoutEvent": `  int32_t id = go_->mem_->LoadInt32(local0 + 8);
+  go_->ClearTimeout(id);`,
 
 	// func getRandomData(r []byte)
-	"runtime.getRandomData": `    var slice = go.mem.LoadSlice(local0 + 8);
-    var bytes = go.GetRandomBytes(slice.Count);
-    for (int i = 0; i < slice.Count; i++) {
-        slice.Array[slice.Offset + i] = bytes[i];
-    }`,
+	"runtime.getRandomData": `  BytesSegment slice = go_->mem_->LoadSlice(local0 + 8);
+  go_->GetRandomBytes(slice);`,
 
 	// func finalizeRef(v ref)
-	"syscall/js.finalizeRef": `    int id = (int)go.mem.LoadUint32(local0 + 8);
-    go.goRefCounts[id]--;
-    if (go.goRefCounts[id] == 0)
-    {
-        var v = go.values[id];
-        go.values[id] = null;
-        go.ids.Remove(v);
-        go.idPool.Push(id);
-    }`,
+	"syscall/js.finalizeRef": `  int32_t id = static_cast<int32_t>(go_->mem_->LoadUint32(local0 + 8));
+  go_->go_ref_counts_[id]--;
+  if (go_->go_ref_counts_[id] == 0) {
+    Object v = go_->values_[id];
+    go_->values_[id] = Object{};
+    go_->ids_.erase(v);
+    go_->id_pool_.push(id);
+  }`,
 
 	// func stringVal(value string) ref
-	"syscall/js.stringVal": `    go.StoreValue(local0 + 24, go.mem.LoadString(local0 + 8));`,
+	"syscall/js.stringVal": `  go_->StoreValue(local0 + 24, Object{go_->mem_->LoadString(local0 + 8)});`,
 
 	// func valueGet(v ref, p string) ref
-	"syscall/js.valueGet": `    var result = JSObject.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16));
-    local0 = go.inst.getsp();
-    go.StoreValue(local0 + 32, result);`,
+	"syscall/js.valueGet": `  Object result = JSObject::ReflectGet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));
+  local0 = go_->inst_->getsp();
+  go_->StoreValue(local0 + 32, result);`,
 
 	// func valueSet(v ref, p string, x ref)
-	"syscall/js.valueSet": `    JSObject.ReflectSet(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16), go.LoadValue(local0 + 32));`,
+	"syscall/js.valueSet": `  JSObject::ReflectSet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16), go_->LoadValue(local0 + 32));`,
 
 	// func valueDelete(v ref, p string)
-	"syscall/js.valueDelete": `    JSObject.ReflectDelete(go.LoadValue(local0 + 8), go.mem.LoadString(local0 + 16));`,
+	"syscall/js.valueDelete": `  JSObject::ReflectDelete(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));`,
 
 	// func valueIndex(v ref, i int) ref
-	"syscall/js.valueIndex": `    go.StoreValue(local0 + 24, JSObject.ReflectGet(go.LoadValue(local0 + 8), go.mem.LoadInt64(local0 + 16).ToString()));`,
+	"syscall/js.valueIndex": `  go_->StoreValue(local0 + 24, JSObject::ReflectGet(go_->LoadValue(local0 + 8), std::to_string(go_->mem_->LoadInt64(local0 + 16))));`,
 
 	// valueSetIndex(v ref, i int, x ref)
-	"syscall/js.valueSetIndex": `    JSObject.ReflectSet(go.LoadValue(local0 + 8), go.mem.LoadInt64(local0 + 16).ToString(), go.LoadValue(local0 + 24));`,
+	"syscall/js.valueSetIndex": `  JSObject::ReflectSet(go_->LoadValue(local0 + 8), std::to_string(go_->mem_->LoadInt64(local0 + 16)), go_->LoadValue(local0 + 24));`,
 
 	// func valueCall(v ref, m string, args []ref) (ref, bool)
-	"syscall/js.valueCall": `    var v = go.LoadValue(local0 + 8);
-    var m = JSObject.ReflectGet(v, go.mem.LoadString(local0 + 16));
-    var args = go.LoadSliceOfValues(local0 + 32);
-    var result = JSObject.ReflectApply(m, v, args);
-    local0 = go.inst.getsp();
-    go.StoreValue(local0 + 56, result);
-    go.mem.StoreInt8(local0 + 64, 1);`,
+	"syscall/js.valueCall": `  Object v = go_->LoadValue(local0 + 8);
+  Object m = JSObject::ReflectGet(v, go_->mem_->LoadString(local0 + 16));
+  std::vector<Object> args = go_->LoadSliceOfValues(local0 + 32);
+  Object result = JSObject::ReflectApply(m, v, args);
+  local0 = go_->inst_->getsp();
+  go_->StoreValue(local0 + 56, result);
+  go_->mem_->StoreInt8(local0 + 64, 1);`,
 
 	// func valueInvoke(v ref, args []ref) (ref, bool)
-	"syscall/js.valueInvoke": `    var v = go.LoadValue(local0 + 8);
-    var args = go.LoadSliceOfValues(local0 + 16);
-    var result = JSObject.ReflectApply(v, JSObject.Undefined, args);
-    local0 = go.inst.getsp();
-    go.StoreValue(local0 + 40, result);
-    go.mem.StoreInt8(local0 + 48, 1);`,
+	"syscall/js.valueInvoke": `  Object v = go_->LoadValue(local0 + 8);
+  std::vector<Object> args = go_->LoadSliceOfValues(local0 + 16);
+  Object result = JSObject::ReflectApply(v, JSObject::Undefined, args);
+  local0 = go_->inst_->getsp();
+  go_->StoreValue(local0 + 40, result);
+  go_->mem_->StoreInt8(local0 + 48, 1);`,
 
 	// func valueNew(v ref, args []ref) (ref, bool)
-	"syscall/js.valueNew": `    var v = go.LoadValue(local0 + 8);
-    var args = go.LoadSliceOfValues(local0 + 16);
-    var result = JSObject.ReflectConstruct(v, args);
-    if (result != null)
-    {
-        local0 = go.inst.getsp();
-        go.StoreValue(local0 + 40, result);
-        go.mem.StoreInt8(local0 + 48, 1);
-    }
-    else
-    {
-        go.StoreValue(local0 + 40, null);
-        go.mem.StoreInt8(local0 + 48, 0);
-    }`,
+	"syscall/js.valueNew": `  Object v = go_->LoadValue(local0 + 8);
+  std::vector<Object> args = go_->LoadSliceOfValues(local0 + 16);
+  Object result = JSObject::ReflectConstruct(v, args);
+  if (!result.IsNull()) {
+    local0 = go_->inst_->getsp();
+    go_->StoreValue(local0 + 40, result);
+    go_->mem_->StoreInt8(local0 + 48, 1);
+  } else {
+    go_->StoreValue(local0 + 40, Object{});
+    go_->mem_->StoreInt8(local0 + 48, 0);
+  }`,
 
 	// func valueLength(v ref) int
-	"syscall/js.valueLength": `    go.mem.StoreInt64(local0 + 16, ((Array)go.LoadValue(local0 + 8)).Length);`,
+	"syscall/js.valueLength": `  go_->mem_->StoreInt64(local0 + 16, static_cast<int64_t>(go_->LoadValue(local0 + 8).ToArray()->size()));`,
 
 	// valuePrepareString(v ref) (ref, int)
-	"syscall/js.valuePrepareString": `    byte[] str = Encoding.UTF8.GetBytes(go.LoadValue(local0 + 8).ToString());
-    go.StoreValue(local0 + 16, str);
-    go.mem.StoreInt64(local0 + 24, str.Length);`,
+	"syscall/js.valuePrepareString": `  std::string str = go_->LoadValue(local0 + 8).ToString();
+  go_->StoreValue(local0 + 16, Object{str});
+  go_->mem_->StoreInt64(local0 + 24, static_cast<int64_t>(str.size()));`,
 
 	// valueLoadString(v ref, b []byte)
-	"syscall/js.valueLoadString": `    byte[] src = (byte[])go.LoadValue(local0 + 8);
-    var dst = go.mem.LoadSlice(local0 + 16);
-    int len = Math.Min(dst.Count, src.Length);
-    for (int i = 0; i < len; i++)
-    {
-        dst.Array[dst.Offset + i] = src[i];
-    }`,
+	"syscall/js.valueLoadString": `  std::vector<uint8_t>* src = go_->LoadValue(local0 + 8).ToBytes();
+  BytesSegment dst = go_->mem_->LoadSlice(local0 + 16);
+  int len = std::min(dst.size(), src->size());
+  std::copy(src->begin(), src->begin() + len, dst.begin());`,
 
 	/*// func valueInstanceOf(v ref, t ref) bool
 	"syscall/js.valueInstanceOf": (sp) => {
-		this.mem.setUint8(sp + 24, loadValue(sp + 8) instanceof loadValue(sp + 16));
+		this.mem_->setUint8(sp + 24, loadValue(sp + 8) instanceof loadValue(sp + 16));
 	},*/
 
 	// func copyBytesToGo(dst []byte, src ref) (int, bool)
-	"syscall/js.copyBytesToGo": `    var dst = go.mem.LoadSlice(local0 + 8);
-    var src = go.LoadValue(local0 + 32);
-    if (!(src is byte[]))
-    {
-        go.mem.StoreInt8(local0 + 48, 0);
-        return;
-    }
-    var srcbs = (byte[])src;
-    for (int i = 0; i < dst.Count; i++)
-    {
-        dst.Array[dst.Offset + i] = srcbs[i];
-    }
-    go.mem.StoreInt64(local0 + 40, (long)dst.Count);
-    go.mem.StoreInt8(local0 + 48, 1);`,
+	"syscall/js.copyBytesToGo": `  BytesSegment dst = go_->mem_->LoadSlice(local0 + 8);
+  Object src = go_->LoadValue(local0 + 32);
+  if (!src.IsBytes()) {
+    go_->mem_->StoreInt8(local0 + 48, 0);
+    return;
+  }
+  std::vector<uint8_t>* srcbs = src.ToBytes();
+  std::copy(srcbs->begin(), srcbs->end(), dst.begin());
+  go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dst.size()));
+  go_->mem_->StoreInt8(local0 + 48, 1);`,
 
 	// func copyBytesToJS(dst ref, src []byte) (int, bool)
-	"syscall/js.copyBytesToJS": `    var dst = go.LoadValue(local0 + 8);
-    var src = go.mem.LoadSlice(local0 + 16);
-    if (!(dst is byte[]))
-    {
-        go.mem.StoreInt8(local0 + 48, 0);
-        return;
-    }
-    var dstbs = (byte[])dst;
-    for (int i = 0; i < dstbs.Length; i++)
-    {
-        dstbs[i] = src.Array[src.Offset + i];
-    }
-    go.mem.StoreInt64(local0 + 40, (long)dstbs.Length);
-    go.mem.StoreInt8(local0 + 48, 1);`,
+	"syscall/js.copyBytesToJS": `  Object dst = go_->LoadValue(local0 + 8);
+  BytesSegment src = go_->mem_->LoadSlice(local0 + 16);
+  if (!dst.IsBytes()) {
+    go_->mem_->StoreInt8(local0 + 48, 0);
+    return;
+  }
+  std::vector<uint8_t>* dstbs = dst.ToBytes();
+  std::copy(src.begin(), src.end(), dstbs->begin());
+  go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dstbs->size()));
+  go_->mem_->StoreInt8(local0 + 48, 1);`,
 
-	"debug": `    Console.WriteLine(local0);`,
+	"debug": `  std::cout << local0 << std::endl;`,
 }

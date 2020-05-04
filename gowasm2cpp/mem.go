@@ -68,17 +68,23 @@ namespace {{.Namespace}} {
 class BytesSegment {
 public:
   using size_type = std::vector<uint8_t>::size_type;
+  using reference = std::vector<uint8_t>::reference;
+  using const_reference = std::vector<uint8_t>::const_reference;
+  using iterator = std::vector<uint8_t>::iterator;
   using const_iterator = std::vector<uint8_t>::const_iterator;
 
-  BytesSegment(const std::vector<uint8_t>& bytes, size_type offset, size_type length);
+  BytesSegment(std::vector<uint8_t>& bytes, size_type offset, size_type length);
 
-  uint8_t operator[](size_type n) const;
+  reference operator[](size_type n);
+  const_reference operator[](size_type n) const;
   size_type size() const;
+  iterator begin();
   const_iterator begin() const;
+  iterator end();
   const_iterator end() const;
 
 private:
-  const std::vector<uint8_t>& bytes_;
+  std::vector<uint8_t>& bytes_;
   const size_type offset_ = 0;
   const size_type length_ = 0;
 };
@@ -110,8 +116,8 @@ public:
   void StoreFloat64(int32_t addr, double val);
   void StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes);
 
-  BytesSegment LoadSlice(int32_t addr) const;
-  BytesSegment LoadSliceDirectly(int64_t array, int32_t len) const;
+  BytesSegment LoadSlice(int32_t addr);
+  BytesSegment LoadSliceDirectly(int64_t array, int32_t len);
   std::string LoadString(int32_t addr) const;
 
 private:
@@ -132,13 +138,17 @@ var memCppTmpl = template.Must(template.New("mem.cpp").Parse(`// Code generated 
 
 namespace {{.Namespace}} {
 
-BytesSegment::BytesSegment(const std::vector<uint8_t>& bytes, size_type offset, size_type length)
+BytesSegment::BytesSegment(std::vector<uint8_t>& bytes, size_type offset, size_type length)
     : bytes_(bytes),
       offset_(offset),
       length_(length) {
 }
 
-uint8_t BytesSegment::operator[](size_type n) const {
+BytesSegment::reference BytesSegment::operator[](size_type n) {
+  return bytes_[n + offset_];
+}
+
+BytesSegment::const_reference BytesSegment::operator[](size_type n) const {
   return bytes_[n + offset_];
 }
 
@@ -146,8 +156,16 @@ BytesSegment::size_type BytesSegment::size() const {
   return length_;
 }
 
+BytesSegment::iterator BytesSegment::begin() {
+  return bytes_.begin() + offset_;
+}
+
 BytesSegment::const_iterator BytesSegment::begin() const {
   return bytes_.begin() + offset_;
+}
+
+BytesSegment::iterator BytesSegment::end() {
+  return bytes_.begin() + offset_ + length_;
 }
 
 BytesSegment::const_iterator BytesSegment::end() const {
@@ -237,13 +255,13 @@ void Mem::StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes) {
   std::copy(bytes.begin(), bytes.end(), bytes_.begin() + addr);
 }
 
-BytesSegment Mem::LoadSlice(int32_t addr) const {
+BytesSegment Mem::LoadSlice(int32_t addr) {
   int64_t array = LoadInt64(addr);
   int64_t len = LoadInt64(addr + 8);
   return BytesSegment{bytes_, static_cast<BytesSegment::size_type>(array), static_cast<BytesSegment::size_type>(len)};
 }
 
-BytesSegment Mem::LoadSliceDirectly(int64_t array, int32_t len) const {
+BytesSegment Mem::LoadSliceDirectly(int64_t array, int32_t len) {
   return BytesSegment{bytes_, static_cast<BytesSegment::size_type>(array), static_cast<BytesSegment::size_type>(len)};
 }
 

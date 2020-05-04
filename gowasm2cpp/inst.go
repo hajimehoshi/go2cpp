@@ -47,7 +47,7 @@ func writeInst(dir string, namespace string, importFuncs, funcs []*wasmFunc, exp
 			NumTable            int
 			NumMaxTableElements int
 		}{
-			IncludeGuard:        includeGuard(namespace),
+			IncludeGuard:        includeGuard(namespace) + "_INST_H",
 			Namespace:           namespace,
 			ImportFuncs:         importFuncs,
 			Exports:             exports,
@@ -150,7 +150,7 @@ class IImport {
 public:
   virtual ~IImport();
 
-{{range $value := .ImportFuncs}}{{$value.CppDecl "  "}}
+{{range $value := .ImportFuncs}}{{$value.CppDecl "  " true false}}
 
 {{end -}} };
 
@@ -167,7 +167,7 @@ private:
 {{range $value := .Types}}    Type{{.Index}} type{{.Index}}_;
 {{end}}  };
 
-{{range $value := .Funcs}}{{$value.CppDecl "  "}}
+{{range $value := .Funcs}}{{$value.CppDecl "  " false false}}
 
 {{end}}  Mem* mem_;
   IImport* import_;
@@ -196,7 +196,7 @@ var instFuncCppTmpl = template.Must(template.New("inst.funcs.cpp").Parse(`// Cod
 
 namespace {{.Namespace}} {
 
-{{range $value := .Funcs}}{{$value.CppImpl ""}}
+{{range $value := .Funcs}}{{$value.CppImpl "Inst" ""}}
 {{end}}}
 `))
 
