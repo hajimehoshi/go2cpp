@@ -59,24 +59,6 @@ func (r returnType) stackVarType() stackvar.Type {
 	}
 }
 
-// TODO: Remove this
-func (r returnType) CSharp() string {
-	switch r {
-	case returnTypeVoid:
-		return "void"
-	case returnTypeI32:
-		return "int"
-	case returnTypeI64:
-		return "long"
-	case returnTypeF32:
-		return "float"
-	case returnTypeF64:
-		return "double"
-	default:
-		panic("not reached")
-	}
-}
-
 type stack struct {
 	newIdx int
 	stack  []int

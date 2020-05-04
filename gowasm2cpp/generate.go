@@ -300,25 +300,6 @@ func (t *wasmType) Cpp() (string, error) {
 	return fmt.Sprintf("%s (Inst::*)(%s)", retType.Cpp(), strings.Join(args, ", ")), nil
 }
 
-func (t *wasmType) CSharp(indent string) (string, error) {
-	var retType returnType
-	switch ts := t.Sig.ReturnTypes; len(ts) {
-	case 0:
-		retType = returnTypeVoid
-	case 1:
-		retType = wasmTypeToReturnType(ts[0])
-	default:
-		return "", fmt.Errorf("the number of return values must be 0 or 1 but %d", len(ts))
-	}
-
-	var args []string
-	for i, t := range t.Sig.ParamTypes {
-		args = append(args, fmt.Sprintf("%s arg%d", wasmTypeToReturnType(t).CSharp(), i))
-	}
-
-	return fmt.Sprintf("%sprivate delegate %s Type%d(%s);", indent, retType.CSharp(), t.Index, strings.Join(args, ", ")), nil
-}
-
 func Generate(outDir string, wasmFile string, namespace string) error {
 	f, err := os.Open(wasmFile)
 	if err != nil {
