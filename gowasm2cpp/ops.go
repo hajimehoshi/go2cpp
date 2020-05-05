@@ -117,9 +117,10 @@ func (b *blockStack) IndentTemporarily() {
 }
 
 func (b *blockStack) varName(idx int) string {
-	g := 0
+	// g=0 is used for temporary variables.
+	g := 1
 	if b.s.Len() > 0 {
-		g = b.s.Peep() + 1
+		g = b.s.Peep() + 2
 	}
 	// The stack varialbe name might be replaced at aggregateStackVars later.
 	// Then, the name must be easy to parse.
@@ -396,8 +397,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				ret = fmt.Sprintf("%s %s = ", t.Cpp(), blockStack.PushLhs(t.stackVarType()))
 			}
 
-			appendBody("Type%d tmp%d = funcs_[table_[0][%s]].type%d_;", typeid, tmpidx, idx, typeid)
-			appendBody("%s(this->*tmp%d)(%s);", ret, tmpidx, strings.Join(args, ", "))
+			appendBody("Type%d stack0_%d = funcs_[table_[0][%s]].type%d_;", typeid, tmpidx, idx, typeid)
+			appendBody("%s(this->*stack0_%d)(%s);", ret, tmpidx, strings.Join(args, ", "))
 			tmpidx++
 
 		case operators.Drop:
@@ -577,8 +578,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			} else {
 				va := blockStack.PushLhs(stackvar.F32)
 				bits := math.Float32bits(v)
-				appendBody("uint32_t tmp%d = %d; // %f", tmpidx, bits, v)
-				appendBody("float %s = *reinterpret_cast<float*>(&tmp%d);", va, tmpidx)
+				appendBody("uint32_t stack0_%d = %d; // %f", tmpidx, bits, v)
+				appendBody("float %s = *reinterpret_cast<float*>(&stack0_%d);", va, tmpidx)
 				tmpidx++
 			}
 		case operators.F64Const:
@@ -587,8 +588,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			} else {
 				va := blockStack.PushLhs(stackvar.F64)
 				bits := math.Float64bits(v)
-				appendBody("uint64_t tmp%d = %dULL; // %f", tmpidx, bits, v)
-				appendBody("double %s = *reinterpret_cast<double*>(&tmp%d);", va, tmpidx)
+				appendBody("uint64_t stack0_%d = %dULL; // %f", tmpidx, bits, v)
+				appendBody("double %s = *reinterpret_cast<double*>(&stack0_%d);", va, tmpidx)
 				tmpidx++
 			}
 
@@ -1067,7 +1068,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 }
 
 var (
-	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+_[0-9]+)|(tmp[0-9]+)))`)
+	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) (stack[0-9]+_[0-9]+))`)
 	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
 	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
 )
@@ -1099,7 +1100,7 @@ func aggregateStackVars(body []string) []string {
 		}
 	}
 
-	r := make([]string, 0, len(vars) + 1 + len(body))
+	r := make([]string, 0, len(vars)+1+len(body))
 	for _, v := range vars {
 		r = append(r, fmt.Sprintf("  %s %s;", v.Type, v.Name))
 	}
