@@ -166,7 +166,11 @@ func (f *wasmFunc) CppImpl(className string, indent string) (string, error) {
 			return "", err
 		}
 	} else {
-		body = []string{"  throw new NotImplementedException();"}
+		// TODO: Use error function.
+		ident := identifierFromString(f.Wasm.Name)
+		body = []string{
+			fmt.Sprintf(`  std::cerr << "%s not implemented" << std::endl;`, ident),
+			"  std::exit(1);"}
 	}
 
 	var buf bytes.Buffer
