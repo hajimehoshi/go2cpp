@@ -960,7 +960,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.F64Copysign:
 			arg1, _ := blockStack.PopStackVar()
 			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("CopySign((%s), (%s))", arg0, arg1), stackvar.F64)
+			blockStack.PushStackVar(fmt.Sprintf("std::copysign((%s), (%s))", arg0, arg1), stackvar.F64)
 
 		case operators.I32WrapI64:
 			expr, _ := blockStack.PopStackVar()
