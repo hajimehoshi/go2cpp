@@ -881,7 +881,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushStackVar(fmt.Sprintf("std::trunc(%s)", expr), stackvar.F32)
 		case operators.F32Nearest:
 			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::round(%s)", expr), stackvar.F32)
+			blockStack.PushStackVar(fmt.Sprintf("Math::Round(%s)", expr), stackvar.F32)
 		case operators.F32Sqrt:
 			expr, _ := blockStack.PopStackVar()
 			blockStack.PushStackVar(fmt.Sprintf("std::sqrt(%s)", expr), stackvar.F32)
@@ -930,7 +930,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushStackVar(fmt.Sprintf("std::trunc(%s)", expr), stackvar.F64)
 		case operators.F64Nearest:
 			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::round(%s)", expr), stackvar.F64)
+			blockStack.PushStackVar(fmt.Sprintf("Math::Round(%s)", expr), stackvar.F64)
 		case operators.F64Sqrt:
 			expr, _ := blockStack.PopStackVar()
 			blockStack.PushStackVar(fmt.Sprintf("std::sqrt(%s)", expr), stackvar.F64)
