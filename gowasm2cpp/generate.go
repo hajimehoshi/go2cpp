@@ -766,15 +766,14 @@ int Go::Run(const std::vector<std::string>& args) {
 
   inst_->run(argc, argv);
 
-  for (;;) {
-    if (exited_) {
-      return static_cast<int>(exit_code_);
-    }
+  while (!exited_) {
     TaskQueue::Task task = task_queue_.Dequeue();
     if (task) {
       task();
     }
   }
+
+  return static_cast<int>(exit_code_);
 }
 
 Go::Import::Import(Go* go)
