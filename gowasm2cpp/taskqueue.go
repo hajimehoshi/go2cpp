@@ -85,7 +85,7 @@ private:
 
   Result WaitFor(double milliseconds);
 
-  // A mutex and a condition variable must be constructed before the thread starts.
+  // A mutex and a condition must be constructed before the thread starts.
   std::mutex mutex_;
   std::condition_variable cond_;
   std::thread thread_;
