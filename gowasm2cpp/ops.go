@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"runtime/debug"
+	"strconv"
 	"strings"
 
 	"github.com/go-interpreter/wagon/disasm"
@@ -1068,7 +1069,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 }
 
 var (
-	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) (stack[0-9]+_[0-9]+))`)
+	stackVarRe     = regexp.MustCompile(`stack[0-9]+_[0-9]+`)
+	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) (stack([0-9]+)_[0-9]+))`)
 	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
 	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
 )
@@ -1076,33 +1078,52 @@ var (
 func aggregateStackVars(body []string) []string {
 	// To avoid "jump bypasses variable initialization" errors, all the stack variables must be declared first.
 
-	type StackVar struct {
-		Type string
-		Name string
+	newVarName := func(t string, idx int) string {
+		return fmt.Sprintf("stack_%s_%d", t, idx)
 	}
 
-	// TODO: Group the variables and reduce them.
-	var vars []StackVar
+	types := map[int]map[string]int{}
+	varnum := map[string]int{}
+	varmap := map[string]string{}
 	for i, l := range body {
 		m := stackVarDeclRe.FindStringSubmatch(l)
 		if m == nil {
 			continue
 		}
-		vars = append(vars, StackVar{
-			Type: m[2],
-			Name: m[3],
-		})
-		body[i] = strings.Replace(body[i], m[1], m[3], 1)
 
+		t := m[2]
+		grp, _ := strconv.Atoi(m[4])
+
+		if _, ok := types[grp]; !ok {
+			types[grp] = map[string]int{}
+		}
+		newidx := types[grp][t]
+		types[grp][t]++
+		if varnum[t] < newidx+1 {
+			varnum[t] = newidx + 1
+		}
+
+		varmap[m[3]] = newVarName(t, newidx)
+
+		body[i] = strings.Replace(body[i], m[1], m[3], 1)
 		// If the line consists of only a variable name and a semicolon after replacing, remove this.
 		if strings.TrimSpace(body[i]) == m[3]+";" {
 			body[i] = ""
 		}
 	}
 
-	r := make([]string, 0, len(vars)+1+len(body))
-	for _, v := range vars {
-		r = append(r, fmt.Sprintf("  %s %s;", v.Type, v.Name))
+	for i, l := range body {
+		body[i] = stackVarRe.ReplaceAllStringFunc(l, func(from string) string {
+			return varmap[from]
+		})
+	}
+
+	// TODO: Sort by type names
+	var r []string
+	for t, c := range varnum {
+		for i := 0; i < c; i++ {
+			r = append(r, fmt.Sprintf("  %s %s;", t, newVarName(t, i)))
+		}
 	}
 	r = append(r, "")
 	r = append(r, body...)
