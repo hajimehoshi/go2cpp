@@ -1,4 +1,5 @@
 *~
+*.dSYM
 *.o
 *.wasm
 .DS_Store
