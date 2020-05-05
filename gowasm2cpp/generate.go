@@ -566,9 +566,9 @@ private:
 class Go {
 public:
   Go();
-  void Run();
-  void Run(int argc, char** argv);
-  void Run(const std::vector<std::string>& args);
+  int Run();
+  int Run(int argc, char** argv);
+  int Run(const std::vector<std::string>& args);
 
 private:
   class Import : public IImport {
@@ -622,6 +622,7 @@ private:
   std::map<Object, int32_t> ids_;
   std::stack<int32_t> id_pool_;
   bool exited_ = false;
+  int32_t exit_code_ = 0;
 
   std::chrono::high_resolution_clock::time_point start_time_point_ = std::chrono::high_resolution_clock::now();
 };
@@ -700,16 +701,16 @@ Go::Go()
       debug_writer_{std::cerr} {
 }
 
-void Go::Run() {
-  Run(std::vector<std::string>{});
+int Go::Run() {
+  return Run(std::vector<std::string>{});
 }
 
-void Go::Run(int argc, char** argv) {
+int Go::Run(int argc, char** argv) {
   std::vector<std::string> args(argv, argv + argc);
-  Run(args);
+  return Run(args);
 }
 
-void Go::Run(const std::vector<std::string>& args) {
+int Go::Run(const std::vector<std::string>& args) {
   mem_ = std::make_unique<Mem>();
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
   values_ = std::map<int32_t, Object>{
@@ -725,6 +726,7 @@ void Go::Run(const std::vector<std::string>& args) {
   ids_.clear();
   id_pool_ = std::stack<int32_t>();
   exited_ = false;
+  exit_code_ = 0;
 
   int32_t offset = 4096;
   auto str_ptr = [this, &offset](const std::string& str) -> int32_t {
@@ -766,7 +768,7 @@ void Go::Run(const std::vector<std::string>& args) {
 
   for (;;) {
     if (exited_) {
-      return;
+      return static_cast<int>(exit_code_);
     }
     TaskQueue::Task task = task_queue_.Dequeue();
     if (task) {
@@ -904,9 +906,7 @@ std::vector<Object> Go::LoadSliceOfValues(int32_t addr) {
 }
 
 void Go::Exit(int32_t code) {
-  if (code) {
-    std::cerr << "exit code: " << code << std::endl;
-  }
+  exit_code_ = code;
 }
 
 void Go::Resume() {

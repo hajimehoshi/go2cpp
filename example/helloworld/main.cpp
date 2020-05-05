@@ -4,6 +4,5 @@
 
 int main() {
   go2cpp_autogen::Go go;
-  go.Run();
-  return 0;
+  return go.Run();
 }

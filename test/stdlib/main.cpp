@@ -4,6 +4,5 @@
 
 int main(int argc, char *argv[]) {
   go2cpp_autogen::Go go;
-  go.Run(argc, argv);
-  return 0;
+  return go.Run(argc, argv);
 }
