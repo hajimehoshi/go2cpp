@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -1079,7 +1080,24 @@ func aggregateStackVars(body []string) []string {
 	// To avoid "jump bypasses variable initialization" errors, all the stack variables must be declared first.
 
 	newVarName := func(t string, idx int) string {
-		return fmt.Sprintf("stack_%s_%d", t, idx)
+		var tname string
+		switch t {
+		case "int32_t":
+			tname = "i32"
+		case "int64_t":
+			tname = "i64"
+		case "uint32_t":
+			tname = "u32"
+		case "uint64_t":
+			tname = "u64"
+		case "float":
+			tname = "f32"
+		case "double":
+			tname = "f64"
+		default:
+			tname = "t" + t[4:]
+		}
+		return fmt.Sprintf("%s_%d", tname, idx)
 	}
 
 	types := map[int]map[string]int{}
@@ -1118,14 +1136,20 @@ func aggregateStackVars(body []string) []string {
 		})
 	}
 
-	// TODO: Sort by type names
-	var r []string
-	for t, c := range varnum {
+	var decls []string
+	var ts []string
+	for t := range varnum {
+		ts = append(ts, t)
+	}
+	sort.Strings(ts)
+	for _, t := range ts {
+		c := varnum[t]
 		for i := 0; i < c; i++ {
-			r = append(r, fmt.Sprintf("  %s %s;", t, newVarName(t, i)))
+			decls = append(decls, fmt.Sprintf("  %s %s;", t, newVarName(t, i)))
 		}
 	}
-	r = append(r, "")
+
+	r := append(decls, "")
 	r = append(r, body...)
 	return r
 }
