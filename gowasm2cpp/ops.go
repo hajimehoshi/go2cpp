@@ -249,7 +249,6 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case 0:
 			return "return;"
 		default:
-			// TODO: Should this be PopStackVar?
 			ls, v := blockStack.PeepStackVar()
 			for _, l := range ls {
 				appendBody(l)
