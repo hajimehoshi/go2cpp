@@ -230,7 +230,18 @@ std::string JoinObjects(const std::vector<Object>& objs) {
   return str;
 }
 
+void WriteObjects(std::ostream& out, const std::vector<Object>& objs) {
+  std::vector<std::string> inspects(objs.size());
+  for (int i = 0; i < objs.size(); i++) {
+    out << objs[i].Inspect();
+    if (i < objs.size() - 1) {
+      out << ", ";
+    }
+  }
+  out << std::endl;
 }
+
+}  // namespace
 
 Writer::Writer(std::ostream& out)
     : out_{out} {
@@ -478,25 +489,14 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
     {"getRandomValues", getRandomValues},
   });
 
-  static auto writeObjects = [](std::ostream& out, const std::vector<Object>& objs) {
-    std::vector<std::string> inspects(objs.size());
-    for (int i = 0; i < objs.size(); i++) {
-      out << objs[i].Inspect();
-      if (i < objs.size() - 1) {
-        out << ", ";
-      }
-    }
-    out << std::endl;
-  };
-
   static Object& writeObjectsToStdout = *new Object(std::make_shared<JSObject>(
     [](Object self, std::vector<Object> args) -> Object {
-      writeObjects(std::cout, args);
+      WriteObjects(std::cout, args);
       return Object{};
     }));
   static Object& writeObjectsToStderr = *new Object(std::make_shared<JSObject>(
     [](Object self, std::vector<Object> args) -> Object {
-      writeObjects(std::cerr, args);
+      WriteObjects(std::cerr, args);
       return Object{};
     }));
   std::shared_ptr<JSObject> console = std::make_shared<JSObject>("console", std::map<std::string, Object>{
@@ -513,7 +513,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       return Object{};
     });
 
-  static FS fsimpl;
+  static FS& fsimpl = *new FS();
   std::shared_ptr<JSObject> fs = std::make_shared<JSObject>("fs", std::map<std::string, Object>{
     {"constants", Object{std::make_shared<JSObject>(std::map<std::string, Object>{
         {"O_WRONLY", Object{-1}},

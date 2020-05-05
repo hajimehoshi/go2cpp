@@ -2,8 +2,8 @@
 
 #include "autogen/go.h"
 
-int main() {
+int main(int argc, char *argv[]) {
   go2cpp_autogen::Go go;
-  go.Run();
+  go.Run(argc, argv);
   return 0;
 }

@@ -590,6 +590,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				tmpidx++
 			}
 
+			// TODO: Remove 1 and 0: conditions should be enough.
 		case operators.I32Eqz:
 			arg, _ := blockStack.PopStackVar()
 			blockStack.PushStackVar(fmt.Sprintf("((%s) == 0) ? 1 : 0", arg), stackvar.I32)

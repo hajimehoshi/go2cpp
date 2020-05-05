@@ -562,6 +562,7 @@ class Go {
 public:
   Go();
   void Run();
+  void Run(int argc, char** argv);
   void Run(const std::vector<std::string>& args);
 
 private:
@@ -696,6 +697,11 @@ Go::Go()
 
 void Go::Run() {
   Run(std::vector<std::string>{});
+}
+
+void Go::Run(int argc, char** argv) {
+  std::vector<std::string> args(argv, argv + argc);
+  Run(args);
 }
 
 void Go::Run(const std::vector<std::string>& args) {
