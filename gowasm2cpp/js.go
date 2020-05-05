@@ -567,6 +567,9 @@ Object JSObject::ReflectGet(Object target, const std::string& key) {
     error("get on null (key: " + key + ") is forbidden");
     return Object{};
   }
+  if (target.IsJSObject()) {
+    return target.ToJSObject()->Get(key);
+  }
   if (target.IsArray()) {
     int idx = std::stoi(key);
     if (idx > 0 || (idx == 0 && key == "0")) {
