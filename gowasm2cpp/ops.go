@@ -207,6 +207,12 @@ func (b *blockStack) Empty() bool {
 	return b.stackvars[len(b.stackvars)-1].Empty()
 }
 
+var (
+	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+(_[0-9]+)?)|(tmp[0-9]+)))`)
+	labelRe = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
+	gotoRe = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
+)
+
 func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -1075,9 +1081,38 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	svdecls = append(svdecls, "")
 	body = append(svdecls, body...)
 
+	body = removeUnusedLabels(body);
+
 	return body, nil
 }
 
-var (
-	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+(_[0-9]+)?)|(tmp[0-9]+)))`)
-)
+func removeUnusedLabels(body []string) []string {
+	labels := map[string]int{}
+	gotos := map[string]struct{}{}
+	for i, l := range body {
+		if m := labelRe.FindStringSubmatch(l); m != nil {
+			labels[m[1]] = i
+		}
+		if m := gotoRe.FindStringSubmatch(l); m != nil {
+			gotos[m[3]] = struct{}{}
+		}
+	}
+
+	unused := map[int]struct{}{}
+	for l, i := range labels {
+		if _, ok := gotos[l]; ok {
+			continue
+		}
+		unused[i] = struct{}{}
+	}
+
+	r := make([]string, 0, len(body) - len(unused))
+	for i, l := range body {
+		if _, ok := unused[i]; ok {
+			continue
+		}
+		r = append(r, l)
+	}
+
+	return r
+}
