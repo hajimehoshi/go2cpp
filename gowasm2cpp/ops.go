@@ -209,8 +209,8 @@ func (b *blockStack) Empty() bool {
 
 var (
 	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+(_[0-9]+)?)|(tmp[0-9]+)))`)
-	labelRe = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
-	gotoRe = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
+	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
+	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
 )
 
 func (f *wasmFunc) bodyToCpp() ([]string, error) {
@@ -1074,14 +1074,14 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		body[i] = strings.Replace(body[i], m[1], m[3], 1)
 
 		// If the line consists of only a variable name and a semicolon after replacing, remove this.
-		if strings.TrimSpace(body[i]) == m[3] + ";" {
+		if strings.TrimSpace(body[i]) == m[3]+";" {
 			body[i] = ""
 		}
 	}
 	svdecls = append(svdecls, "")
 	body = append(svdecls, body...)
 
-	body = removeUnusedLabels(body);
+	body = removeUnusedLabels(body)
 
 	return body, nil
 }
@@ -1106,7 +1106,7 @@ func removeUnusedLabels(body []string) []string {
 		unused[i] = struct{}{}
 	}
 
-	r := make([]string, 0, len(body) - len(unused))
+	r := make([]string, 0, len(body)-len(unused))
 	for i, l := range body {
 		if _, ok := unused[i]; ok {
 			continue
