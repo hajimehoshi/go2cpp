@@ -117,10 +117,13 @@ func (b *blockStack) IndentTemporarily() {
 }
 
 func (b *blockStack) varName(idx int) string {
+	g := 0
 	if b.s.Len() > 0 {
-		return fmt.Sprintf("stack%d_%d", b.s.Peep(), idx)
+		g = b.s.Peep() + 1
 	}
-	return fmt.Sprintf("stack%d", idx)
+	// The stack varialbe name might be replaced at aggregateStackVars later.
+	// Then, the name must be easy to parse.
+	return fmt.Sprintf("stack%d_%d", g, idx)
 }
 
 func (b *blockStack) Push(btype blockType, ret string) int {
@@ -206,12 +209,6 @@ func (b *blockStack) Empty() bool {
 	}
 	return b.stackvars[len(b.stackvars)-1].Empty()
 }
-
-var (
-	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+(_[0-9]+)?)|(tmp[0-9]+)))`)
-	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
-	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
-)
 
 func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	defer func() {
@@ -1063,14 +1060,37 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		return nil, fmt.Errorf("unexpected num of return types: %d", len(sig.ReturnTypes))
 	}
 
+	body = aggregateStackVars(body)
+	body = removeUnusedLabels(body)
+
+	return body, nil
+}
+
+var (
+	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) ((stack[0-9]+_[0-9]+)|(tmp[0-9]+)))`)
+	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
+	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
+)
+
+func aggregateStackVars(body []string) []string {
 	// To avoid "jump bypasses variable initialization" errors, all the stack variables must be declared first.
-	var svdecls []string
+
+	type StackVar struct {
+		Type string
+		Name string
+	}
+
+	// TODO: Group the variables and reduce them.
+	var vars []StackVar
 	for i, l := range body {
 		m := stackVarDeclRe.FindStringSubmatch(l)
 		if m == nil {
 			continue
 		}
-		svdecls = append(svdecls, fmt.Sprintf("  %s;", m[1]))
+		vars = append(vars, StackVar{
+			Type: m[2],
+			Name: m[3],
+		})
 		body[i] = strings.Replace(body[i], m[1], m[3], 1)
 
 		// If the line consists of only a variable name and a semicolon after replacing, remove this.
@@ -1078,12 +1098,14 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			body[i] = ""
 		}
 	}
-	svdecls = append(svdecls, "")
-	body = append(svdecls, body...)
 
-	body = removeUnusedLabels(body)
-
-	return body, nil
+	r := make([]string, 0, len(vars) + 1 + len(body))
+	for _, v := range vars {
+		r = append(r, fmt.Sprintf("  %s %s;", v.Type, v.Name))
+	}
+	r = append(r, "")
+	r = append(r, body...)
+	return r
 }
 
 func removeUnusedLabels(body []string) []string {
