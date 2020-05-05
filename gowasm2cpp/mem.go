@@ -136,6 +136,8 @@ var memCppTmpl = template.Must(template.New("mem.cpp").Parse(`// Code generated 
 
 #include "autogen/mem.h"
 
+#include <algorithm>
+
 namespace {{.Namespace}} {
 
 BytesSegment::BytesSegment(std::vector<uint8_t>& bytes, size_type offset, size_type length)
