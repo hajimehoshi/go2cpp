@@ -808,7 +808,7 @@ void Go::StoreValue(int32_t addr, Object v) {
   if (v.IsString()) {
     type_flag = 2;
     // There is no counterpart for Symbol in C++, then type_flag = 3 is not used.
-  } else if (v.IsJSObject() && v.ToJSObject()->IsFunction()) {
+  } else if (v.IsJSObject() && v.ToJSObject().IsFunction()) {
     type_flag = 4;
   }
   mem_->StoreInt32(addr + 4, kNaNHead | type_flag);

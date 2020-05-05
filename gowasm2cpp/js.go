@@ -108,9 +108,9 @@ public:
   bool ToBool() const;
   double ToNumber() const;
   std::string ToString() const;
-  std::vector<uint8_t>* ToBytes();
-  JSObject* ToJSObject() const;
-  std::vector<Object>* ToArray();
+  std::vector<uint8_t>& ToBytes();
+  JSObject& ToJSObject();
+  std::vector<Object>& ToArray();
 
   std::string Inspect() const;
 
@@ -357,19 +357,24 @@ std::string Object::ToString() const {
   return std::string(bytes_value_->begin(), bytes_value_->end());
 }
 
-std::vector<uint8_t>* Object::ToBytes() {
+std::vector<uint8_t>& Object::ToBytes() {
   assert(type_ == Type::Object);
-  return bytes_value_.get();
+  return *bytes_value_;
 }
 
-JSObject* Object::ToJSObject() const {
+const std::vector<uint8_t>& Object::ToBytes() const {
   assert(type_ == Type::Object);
-  return jsobject_value_.get();
+  return *bytes_value_;
 }
 
-std::vector<Object>* Object::ToArray() {
+JSObject& Object::ToJSObject() {
   assert(type_ == Type::Object);
-  return array_value_.get();
+  return *jsobject_value_;
+}
+
+std::vector<Object>& Object::ToArray() {
+  assert(type_ == Type::Object);
+  return *array_value_;
 }
 
 std::string Object::Inspect() const {
@@ -386,7 +391,7 @@ std::string Object::Inspect() const {
     return ToString();
   case Type::Object:
     if (IsJSObject()) {
-      return ToJSObject()->ToString();
+      return ToJSObject().ToString();
     }
     return "(object)";
   default:
@@ -426,12 +431,12 @@ JSObject::FS::FS()
 
 Object JSObject::FS::Write(Object self, std::vector<Object> args) {
   int fd = (int)(args[0].ToNumber());
-  std::vector<uint8_t>* buf = args[1].ToBytes();
+  std::vector<uint8_t>& buf = args[1].ToBytes();
   int offset = (int)(args[2].ToNumber());
   int length = (int)(args[3].ToNumber());
   Object position = args[4];
   Object callback = args[5];
-  if (offset != 0 || length != buf->size()) {
+  if (offset != 0 || length != buf.size()) {
     ReflectApply(callback, Object{}, std::vector<Object>{ Object{Enosys("write")} });
     return Object{};
   }
@@ -441,16 +446,16 @@ Object JSObject::FS::Write(Object self, std::vector<Object> args) {
   }
   switch (fd) {
   case 1:
-    stdout_.Write(*buf);
+    stdout_.Write(buf);
     break;
   case 2:
-    stderr_.Write(*buf);
+    stderr_.Write(buf);
     break;
   default:
     ReflectApply(callback, Object{}, std::vector<Object>{ Object{Enosys("write")} });
     break;
   }
-  ReflectApply(callback, Object{}, std::vector<Object>{ Object{}, Object{static_cast<double>(buf->size())} });
+  ReflectApply(callback, Object{}, std::vector<Object>{ Object{}, Object{static_cast<double>(buf.size())} });
   return Object{};
 }
 
@@ -480,12 +485,12 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
 
   Object getRandomValues{std::make_shared<JSObject>(
     [](Object self, std::vector<Object> args) -> Object {
-      std::vector<uint8_t>* bs = args[0].ToBytes();
+      std::vector<uint8_t>& bs = args[0].ToBytes();
       // TODO: Use cryptographically strong random values instead of std::random_device.
       static std::random_device rd;
       std::uniform_int_distribution<uint8_t> dist(0, 255);
-      for (int i = 0; i < bs->size(); i++) {
-        (*bs)[i] = dist(rd);
+      for (int i = 0; i < bs.size(); i++) {
+        bs[i] = dist(rd);
       }
       return Object{};
     })};
@@ -572,12 +577,12 @@ Object JSObject::ReflectGet(Object target, const std::string& key) {
     return Object{};
   }
   if (target.IsJSObject()) {
-    return target.ToJSObject()->Get(key);
+    return target.ToJSObject().Get(key);
   }
   if (target.IsArray()) {
     int idx = std::stoi(key);
     if (idx > 0 || (idx == 0 && key == "0")) {
-      return (*target.ToArray())[idx];
+      return target.ToArray()[idx];
     }
   }
   error(target.Inspect() + "." + key + " not found");
@@ -592,7 +597,7 @@ void JSObject::ReflectSet(Object target, const std::string& key, Object value) {
     error("set on null (key: " + key + ") is forbidden");
   }
   if (target.IsJSObject()) {
-    target.ToJSObject()->Set(key, value);
+    target.ToJSObject().Set(key, value);
     return;
   }
   error(target.Inspect() + "." + key + " cannot be set");
@@ -606,7 +611,7 @@ void JSObject::ReflectDelete(Object target, const std::string& key) {
     error("delete on null (key: " + key + ") is forbidden");
   }
   if (target.IsJSObject()) {
-    target.ToJSObject()->Delete(key);
+    target.ToJSObject().Delete(key);
     return;
   }
   error(target.Inspect() + "." + key + " cannot be deleted");
@@ -622,12 +627,12 @@ Object JSObject::ReflectConstruct(Object target, std::vector<Object> args) {
     return Object{};
   }
   if (target.IsJSObject()) {
-    JSObject* t = target.ToJSObject();
-    if (!t->ctor_) {
-      error(t->ToString() + " is not a constructor");
+    JSObject& t = target.ToJSObject();
+    if (!t.ctor_) {
+      error(t.ToString() + " is not a constructor");
       return Object{};
     }
-    return t->fn_(target, args);
+    return t.fn_(target, args);
   }
   error("new " + target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Object{};
@@ -643,12 +648,12 @@ Object JSObject::ReflectApply(Object target, Object self, std::vector<Object> ar
     return Object{};
   }
   if (target.IsJSObject()) {
-    JSObject* t = target.ToJSObject();
-    if (t->ctor_) {
-      error(t->ToString() + " is a constructor");
+    JSObject& t = target.ToJSObject();
+    if (t.ctor_) {
+      error(t.ToString() + " is a constructor");
       return Object{};
     }
-    return t->fn_(self, args);
+    return t.fn_(self, args);
   }
   error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Object{};

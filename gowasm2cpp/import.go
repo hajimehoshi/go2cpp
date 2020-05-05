@@ -110,7 +110,7 @@ var importFuncBodies = map[string]string{
   }`,
 
 	// func valueLength(v ref) int
-	"syscall/js.valueLength": `  go_->mem_->StoreInt64(local0 + 16, static_cast<int64_t>(go_->LoadValue(local0 + 8).ToArray()->size()));`,
+	"syscall/js.valueLength": `  go_->mem_->StoreInt64(local0 + 16, static_cast<int64_t>(go_->LoadValue(local0 + 8).ToArray().size()));`,
 
 	// valuePrepareString(v ref) (ref, int)
 	"syscall/js.valuePrepareString": `  std::string str = go_->LoadValue(local0 + 8).ToString();
@@ -118,10 +118,10 @@ var importFuncBodies = map[string]string{
   go_->mem_->StoreInt64(local0 + 24, static_cast<int64_t>(str.size()));`,
 
 	// valueLoadString(v ref, b []byte)
-	"syscall/js.valueLoadString": `  std::vector<uint8_t>* src = go_->LoadValue(local0 + 8).ToBytes();
+	"syscall/js.valueLoadString": `  std::vector<uint8_t>& src = go_->LoadValue(local0 + 8).ToBytes();
   BytesSegment dst = go_->mem_->LoadSlice(local0 + 16);
-  int len = std::min(dst.size(), src->size());
-  std::copy(src->begin(), src->begin() + len, dst.begin());`,
+  int len = std::min(dst.size(), src.size());
+  std::copy(src.begin(), src.begin() + len, dst.begin());`,
 
 	/*// func valueInstanceOf(v ref, t ref) bool
 	"syscall/js.valueInstanceOf": (sp) => {
@@ -135,8 +135,8 @@ var importFuncBodies = map[string]string{
     go_->mem_->StoreInt8(local0 + 48, 0);
     return;
   }
-  std::vector<uint8_t>* srcbs = src.ToBytes();
-  std::copy(srcbs->begin(), srcbs->end(), dst.begin());
+  std::vector<uint8_t>& srcbs = src.ToBytes();
+  std::copy(srcbs.begin(), srcbs.end(), dst.begin());
   go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dst.size()));
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
@@ -147,9 +147,9 @@ var importFuncBodies = map[string]string{
     go_->mem_->StoreInt8(local0 + 48, 0);
     return;
   }
-  std::vector<uint8_t>* dstbs = dst.ToBytes();
-  std::copy(src.begin(), src.end(), dstbs->begin());
-  go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dstbs->size()));
+  std::vector<uint8_t>& dstbs = dst.ToBytes();
+  std::copy(src.begin(), src.end(), dstbs.begin());
+  go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dstbs.size()));
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
 	"debug": `  std::cout << local0 << std::endl;`,
