@@ -876,7 +876,7 @@ void Go::StoreValue(int32_t addr, Object v) {
 std::vector<Object> Go::LoadSliceOfValues(int32_t addr) {
   int32_t array = static_cast<int32_t>(mem_->LoadInt64(addr));
   int32_t len = static_cast<int32_t>(mem_->LoadInt64(addr + 8));
-  std::vector<Object> a;
+  std::vector<Object> a(len);
   for (int32_t i = 0; i < len; i++) {
     a[i] = LoadValue(array + i * 8);
   }
