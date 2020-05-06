@@ -9,11 +9,14 @@ import (
 )
 
 func main() {
-	t := js.Global().Get(".net").Get("Go2DotNet.Example.Binding.Test")
+	i := 0
 	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		println("Hi")
+		println("Hi", i)
+		i++
 		return nil
 	})
 	defer f.Release()
-	t.Call("CallTwice", f)
+
+	// For the definition of CallTwice, see main.cpp.
+	js.Global().Get("c++").Call("CallTwice", f)
 }
