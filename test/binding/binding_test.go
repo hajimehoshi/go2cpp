@@ -3,6 +3,7 @@
 package binding_test
 
 import (
+	"fmt"
 	"syscall/js"
 	"testing"
 )
@@ -35,16 +36,15 @@ func TestIdentity(t *testing.T) {
 }
 
 func TestInvoke(t *testing.T) {
-	called := false
 	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		called = true
-		return nil
+		return fmt.Sprintf("%t, %d, %s", args[0].Bool(), args[1].Int(), args[2].String())
 	})
 	defer f.Release()
 
-	js.Global().Get("c++").Call("Invoke", f)
-	if !called {
-		t.Errorf("f should be called but not")
+	got := js.Global().Get("c++").Call("Invoke", f, true, 2, "third arg").String()
+	want := "true, 2, third arg"
+	if got != want {
+		t.Errorf("got: %v, want: %v", got, want)
 	}
 }
 

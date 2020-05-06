@@ -10,7 +10,9 @@ int main(int argc, char *argv[]) {
           });
   go.Bind("Invoke",
           [](std::vector<go2cpp_autogen::BindingValue> args) -> go2cpp_autogen::BindingValue {
-            return args[0].Invoke();
+            go2cpp_autogen::BindingValue recv = args[0];
+            args.erase(args.begin());
+            return recv.Invoke(args);
           });
   go.Bind("Sum",
           [](std::vector<go2cpp_autogen::BindingValue> args) -> go2cpp_autogen::BindingValue {
