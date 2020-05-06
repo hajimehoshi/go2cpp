@@ -529,9 +529,9 @@ namespace {{.Namespace}} {
 class Mem;
 class Go;
 
-class GoValue {
+class BindingValue {
 public:
-  GoValue();
+  BindingValue();
 
   bool IsNull() const;
   bool IsUndefined() const;
@@ -546,13 +546,13 @@ public:
   std::string ToString() const;
   const std::vector<uint8_t>& ToBytes() const;
 
-  GoValue Invoke();
-  GoValue Invoke(std::vector<GoValue> args);
+  BindingValue Invoke();
+  BindingValue Invoke(std::vector<BindingValue> args);
 
 private:
   friend class Go;
 
-  explicit GoValue(Object object);
+  explicit BindingValue(Object object);
 
   Object ToObject();
 
@@ -561,7 +561,7 @@ private:
 
 class Go {
 public:
-  using Func = std::function<GoValue(std::vector<GoValue>)>;
+  using Func = std::function<BindingValue(std::vector<BindingValue>)>;
 
   Go();
   int Run();
@@ -667,70 +667,70 @@ void error(const std::string& msg) {
 
 }
 
-GoValue::GoValue() {
+BindingValue::BindingValue() {
 }
 
-GoValue::GoValue(Object object)
+BindingValue::BindingValue(Object object)
     : object_{object} {
 }
 
-bool GoValue::IsNull() const {
+bool BindingValue::IsNull() const {
   return object_.IsNull();
 }
 
-bool GoValue::IsUndefined() const {
+bool BindingValue::IsUndefined() const {
   return object_.IsUndefined();
 }
 
-bool GoValue::IsBool() const {
+bool BindingValue::IsBool() const {
   return object_.IsBool();
 }
 
-bool GoValue::IsNumber() const {
+bool BindingValue::IsNumber() const {
   return object_.IsNumber();
 }
 
-bool GoValue::IsString() const {
+bool BindingValue::IsString() const {
   return object_.IsString();
 }
 
-bool GoValue::IsBytes() const {
+bool BindingValue::IsBytes() const {
   return object_.IsBytes();
 }
 
-bool GoValue::IsFunction() const {
+bool BindingValue::IsFunction() const {
   return object_.IsJSObject() && object_.ToJSObject().IsFunction();
 }
 
-bool GoValue::ToBool() const {
+bool BindingValue::ToBool() const {
   return object_.ToBool();
 }
 
-double GoValue::ToNumber() const {
+double BindingValue::ToNumber() const {
   return object_.ToNumber();
 }
 
-std::string GoValue::ToString() const {
+std::string BindingValue::ToString() const {
   return object_.ToString();
 }
 
-const std::vector<uint8_t>& GoValue::ToBytes() const {
+const std::vector<uint8_t>& BindingValue::ToBytes() const {
   return object_.ToBytes();
 }
 
-GoValue GoValue::Invoke() {
-  return Invoke(std::vector<GoValue>{});
+BindingValue BindingValue::Invoke() {
+  return Invoke(std::vector<BindingValue>{});
 }
 
-GoValue GoValue::Invoke(std::vector<GoValue> args) {
+BindingValue BindingValue::Invoke(std::vector<BindingValue> args) {
   std::vector<Object> objs(args.size());
   for (int i = 0; i < args.size(); i++) {
     objs[i] = args[i].ToObject();
   }
-  return GoValue{object_.ToJSObject().Invoke(objs)};
+  return BindingValue{object_.ToJSObject().Invoke(objs)};
 }
 
-Object GoValue::ToObject() {
+Object BindingValue::ToObject() {
   return object_;
 }
 
@@ -873,11 +873,11 @@ Object Go::Bindings::Get(const std::string& key) {
   Func& fn = funcs_[key];
   std::shared_ptr<JSObject> jsobj = std::make_shared<JSObject>(
     [&fn](Object self, std::vector<Object> args) -> Object {
-      std::vector<GoValue> goargs(args.size());
+      std::vector<BindingValue> goargs(args.size());
       for (int i = 0; i < goargs.size(); i++) {
-        goargs[i] = GoValue{args[i]};
+        goargs[i] = BindingValue{args[i]};
       }
-      GoValue result = fn(goargs);
+      BindingValue result = fn(goargs);
       return result.ToObject();
     });
   return Object{jsobj};
