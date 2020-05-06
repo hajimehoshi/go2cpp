@@ -31,3 +31,8 @@ jobs:
         ./run.sh sort -test.v -test.run=^Test
         ./run.sh sync -test.v -test.run=^Test
         ./run.sh sync/atomic -test.v -test.run=^Test
+
+    - name: Test binding
+      working-directory: test/binding
+      run: |
+        ./run.sh -test.v -test.run=^Test

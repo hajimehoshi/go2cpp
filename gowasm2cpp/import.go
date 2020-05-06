@@ -118,7 +118,7 @@ var importFuncBodies = map[string]string{
   go_->mem_->StoreInt64(local0 + 24, static_cast<int64_t>(str.size()));`,
 
 	// valueLoadString(v ref, b []byte)
-	"syscall/js.valueLoadString": `  std::vector<uint8_t>& src = go_->LoadValue(local0 + 8).ToBytes();
+	"syscall/js.valueLoadString": `  std::string src = go_->LoadValue(local0 + 8).ToString();
   BytesSegment dst = go_->mem_->LoadSlice(local0 + 16);
   int len = std::min(dst.size(), src.size());
   std::copy(src.begin(), src.begin() + len, dst.begin());`,
