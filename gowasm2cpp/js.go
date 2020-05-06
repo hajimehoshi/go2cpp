@@ -109,7 +109,9 @@ public:
   double ToNumber() const;
   std::string ToString() const;
   std::vector<uint8_t>& ToBytes();
+  const std::vector<uint8_t>& ToBytes() const;
   JSObject& ToJSObject();
+  const JSObject& ToJSObject() const;
   std::vector<Object>& ToArray();
 
   std::string Inspect() const;
@@ -368,6 +370,11 @@ const std::vector<uint8_t>& Object::ToBytes() const {
 }
 
 JSObject& Object::ToJSObject() {
+  assert(type_ == Type::Object);
+  return *jsobject_value_;
+}
+
+const JSObject& Object::ToJSObject() const {
   assert(type_ == Type::Object);
   return *jsobject_value_;
 }
