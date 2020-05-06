@@ -358,56 +358,74 @@ bool Object::IsArray() const {
 
 bool Object::ToBool() const {
   if (type_ != Type::Bool) {
-    error("type must be bool but not");
+    error("Object::ToBool: the type must be Type::Bool but not: " + Inspect());
   }
   return static_cast<bool>(num_value_);
 }
 
 double Object::ToNumber() const {
   if (type_ != Type::Number) {
-    error("type must be number but not");
+    error("Object::ToNumber: the type must be Type::Number but not: " + Inspect());
   }
   return num_value_;
 }
 
 std::string Object::ToString() const {
   if (type_ != Type::String) {
-    error("type must be string but not");
+    error("Object::ToString: the type must be Type::String but not: " + Inspect());
+  }
+  if (!bytes_value_) {
+    error("Object::ToString: bytes_value_ must not be null");
   }
   return std::string(bytes_value_->begin(), bytes_value_->end());
 }
 
 std::vector<uint8_t>& Object::ToBytes() {
   if (type_ != Type::Object) {
-    error("type must be object but not");
+    error("Object::ToBytes: the type must be Type::Object but not: " + Inspect());
+  }
+  if (!bytes_value_) {
+    error("Object::ToBytes: bytes_value_ must not be null");
   }
   return *bytes_value_;
 }
 
 const std::vector<uint8_t>& Object::ToBytes() const {
   if (type_ != Type::Object) {
-    error("type must be object but not");
+    error("Object::ToBytes: the type must be Type::Object but not: " + Inspect());
+  }
+  if (!bytes_value_) {
+    error("Object::ToBytes: bytes_value_ must not be null");
   }
   return *bytes_value_;
 }
 
 JSObject& Object::ToJSObject() {
   if (type_ != Type::Object) {
-    error("type must be object but not");
+    error("Object::ToJSObject: the type must be Type::Object but not: " + Inspect());
+  }
+  if (!jsobject_value_) {
+    error("Object::ToJSObject: jsobject_value_ must not be null");
   }
   return *jsobject_value_;
 }
 
 const JSObject& Object::ToJSObject() const {
   if (type_ != Type::Object) {
-    error("type must be object but not");
+    error("Object::ToJSObject: the type must be Type::Object but not: " + Inspect());
+  }
+  if (!jsobject_value_) {
+    error("Object::ToJSObject: jsobject_value_ must not be null");
   }
   return *jsobject_value_;
 }
 
 std::vector<Object>& Object::ToArray() {
   if (type_ != Type::Object) {
-    error("type must be object but not");
+    error("Object::ToArray: the type must be Type::Object but not: " + Inspect());
+  }
+  if (!array_value_) {
+    error("Object::ToArray: array_value_ must not be null");
   }
   return *array_value_;
 }

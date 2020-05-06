@@ -33,3 +33,23 @@ func TestIdentity(t *testing.T) {
 		t.Errorf("got: %v, want: js.Undefined()", got)
 	}
 }
+
+func TestInvoke(t *testing.T) {
+	called := false
+	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		called = true
+		return nil
+	})
+	defer f.Release()
+
+	js.Global().Get("c++").Call("Invoke", f)
+	if !called {
+		t.Errorf("f should be called but not")
+	}
+}
+
+func TestSum(t *testing.T) {
+	if got, want := js.Global().Get("c++").Call("Sum", 1, 2, 3, 4, 5).Int(), 15; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}

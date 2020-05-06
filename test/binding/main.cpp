@@ -8,5 +8,17 @@ int main(int argc, char *argv[]) {
           [](std::vector<go2cpp_autogen::BindingValue> args) -> go2cpp_autogen::BindingValue {
             return args[0];
           });
+  go.Bind("Invoke",
+          [](std::vector<go2cpp_autogen::BindingValue> args) -> go2cpp_autogen::BindingValue {
+            return args[0].Invoke();
+          });
+  go.Bind("Sum",
+          [](std::vector<go2cpp_autogen::BindingValue> args) -> go2cpp_autogen::BindingValue {
+            double sum = 0;
+            for (auto v : args) {
+              sum += v.ToNumber();
+            }
+            return go2cpp_autogen::BindingValue{sum};
+          });
   return go.Run(argc, argv);
 }

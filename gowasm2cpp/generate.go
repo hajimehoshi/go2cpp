@@ -532,6 +532,10 @@ class Go;
 class BindingValue {
 public:
   BindingValue();
+  explicit BindingValue(bool b);
+  explicit BindingValue(double num);
+  explicit BindingValue(const std::string& str);
+  explicit BindingValue(const std::vector<uint8_t>& bytes);
 
   bool IsNull() const;
   bool IsUndefined() const;
@@ -670,6 +674,22 @@ void error(const std::string& msg) {
 }
 
 BindingValue::BindingValue() {
+}
+
+BindingValue::BindingValue(bool b)
+    : object_{b ? Object::True() : Object::False()} {
+}
+
+BindingValue::BindingValue(double num)
+    : object_{num} {
+}
+
+BindingValue::BindingValue(const std::string& str)
+    : object_{str} {
+}
+
+BindingValue::BindingValue(const std::vector<uint8_t>& bytes)
+    : object_{bytes} {
 }
 
 BindingValue::BindingValue(Object object)
@@ -850,7 +870,7 @@ Object Go::JSValues::Get(const std::string& key) {
   if (key == "_pendingEvent") {
     return go_->pending_event_;
   }
-  error("key not found: " + key);
+  error("Go::JSValues::Get: key not found: " + key);
   return Object{};
 }
 
@@ -863,7 +883,7 @@ void Go::JSValues::Set(const std::string& key, Object value) {
 }
 
 void Go::JSValues::Remove(const std::string& key) {
-  error("not implemented: JSValues::Remove");
+  error("Go::JSValues::Remove: not implemented");
 }
 
 Go::Bindings::Bindings(std::map<std::string, Func> funcs)
@@ -872,7 +892,7 @@ Go::Bindings::Bindings(std::map<std::string, Func> funcs)
 
 Object Go::Bindings::Get(const std::string& key) {
   if (funcs_.find(key) == funcs_.end()) {
-    error(key + " not found");
+    error("Go::Bindings::Get: " + key + " not found");
     return Object{};
   }
   Func& fn = funcs_[key];
@@ -889,11 +909,11 @@ Object Go::Bindings::Get(const std::string& key) {
 }
 
 void Go::Bindings::Set(const std::string& key, Object value) {
-  error("not implemented: Bindings::Set");
+  error("Go::Bindings::Set: not implemented");
 }
 
 void Go::Bindings::Remove(const std::string& key) {
-  error("not implemented: Bindings::Remove");
+  error("Go::Bindings::Remove: not implemented");
 }
 
 void Go::Bindings::Set(const std::string& key, Func func) {
