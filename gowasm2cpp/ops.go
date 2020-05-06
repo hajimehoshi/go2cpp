@@ -263,6 +263,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		}
 	}
 
+	// Some stack variables must not be merged when they are used across multiple blocks.
+	nomerge := map[string]struct{}{}
+
 	for _, instr := range dis.Code {
 		switch instr.Op.Code {
 		case operators.Unreachable:
@@ -275,6 +278,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
 				ret = blockStack.PushLhs(t.stackVarType())
 				appendBody("%s %s;", t.Cpp(), ret)
+				nomerge[ret] = struct{}{}
 			}
 			blockStack.Push(blockTypeBlock, ret)
 		case operators.Loop:
@@ -283,6 +287,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
 				ret = blockStack.PushLhs(t.stackVarType())
 				appendBody("%s %s;", t.Cpp(), ret)
+				nomerge[ret] = struct{}{}
 			}
 			l := blockStack.Push(blockTypeLoop, ret)
 			appendBody("label%d:;", l)
@@ -293,6 +298,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
 				ret = blockStack.PushLhs(t.stackVarType())
 				appendBody("%s %s;", t.Cpp(), ret)
+				nomerge[ret] = struct{}{}
 			}
 			appendBody("if (%s) {", cond)
 			blockStack.Push(blockTypeIf, ret)
@@ -1063,7 +1069,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		return nil, fmt.Errorf("unexpected num of return types: %d", len(sig.ReturnTypes))
 	}
 
-	body = aggregateStackVars(body)
+	body = aggregateStackVars(body, nomerge)
 	body = removeUnusedLabels(body)
 
 	return body, nil
@@ -1076,7 +1082,7 @@ var (
 	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
 )
 
-func aggregateStackVars(body []string) []string {
+func aggregateStackVars(body []string, nomerge map[string]struct{}) []string {
 	// To avoid "jump bypasses variable initialization" errors, all the stack variables must be declared first.
 
 	newVarName := func(t string, idx int) string {
@@ -1103,9 +1109,17 @@ func aggregateStackVars(body []string) []string {
 	types := map[int]map[string]int{}
 	varnum := map[string]int{}
 	varmap := map[string]string{}
+	var nomergelines []string
 	for i, l := range body {
 		m := stackVarDeclRe.FindStringSubmatch(l)
 		if m == nil {
+			continue
+		}
+
+		if _, ok := nomerge[m[3]]; ok {
+			nomergelines = append(nomergelines, body[i])
+			varmap[m[3]] = m[3]
+			body[i] = ""
 			continue
 		}
 
@@ -1149,7 +1163,8 @@ func aggregateStackVars(body []string) []string {
 		}
 	}
 
-	r := append(decls, "")
+	r := append(decls, nomergelines...)
+	r = append(r, "")
 	r = append(r, body...)
 	return r
 }
