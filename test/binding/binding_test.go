@@ -27,4 +27,9 @@ func TestIdentity(t *testing.T) {
 	if got := js.Global().Get("c++").Call("Identity", js.Undefined()); !got.Equal(js.Undefined()) {
 		t.Errorf("got: %v, want: js.Undefined()", got)
 	}
+
+	// It is OK to pass an object. BindingValue doesn't offer a way to manipulte the object.
+	if got := js.Global().Get("c++").Call("Identity", js.Global()); !got.Equal(js.Global()) {
+		t.Errorf("got: %v, want: js.Undefined()", got)
+	}
 }

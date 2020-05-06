@@ -769,6 +769,9 @@ int Go::Run(const std::vector<std::string>& args) {
   };
   go_ref_counts_.clear();
   ids_.clear();
+  ids_[values_[5]] = 5;
+  ids_[values_[6]] = 6;
+
   id_pool_ = std::stack<int32_t>();
   exited_ = false;
   exit_code_ = 0;
