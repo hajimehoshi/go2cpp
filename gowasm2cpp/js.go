@@ -169,7 +169,7 @@ public:
   void Delete(const std::string& key);
   Object Invoke(std::vector<Object> args) override;
 
-  std::string ToString();
+  std::string ToString() const;
 
 private:
   class DictionaryValues : public IValues {
@@ -736,7 +736,7 @@ Object JSObject::Invoke(std::vector<Object> args) {
   return fn_(Object{}, args);
 }
 
-std::string JSObject::ToString() {
+std::string JSObject::ToString() const {
   return name_;
 }
 
