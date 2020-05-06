@@ -84,10 +84,9 @@ public:
   };
 
   static Object Undefined();
-  static Object True();
-  static Object False();
 
   Object();
+  explicit Object(bool b);
   explicit Object(double num);
   explicit Object(const std::string& str);
   explicit Object(const std::vector<uint8_t>& bytes);
@@ -269,17 +268,12 @@ Object Object::Undefined() {
   return undefined;
 }
 
-Object Object::True() {
-  static Object& t = *new Object(Type::Bool, 1);
-  return t;
-}
-
-Object Object::False() {
-  static Object& f = *new Object(Type::Bool, 0);
-  return f;
-}
-
 Object::Object() = default;
+
+Object::Object(bool b)
+    : type_{Type::Bool},
+      num_value_{static_cast<double>(b)}{
+}
 
 Object::Object(double num)
     : type_{Type::Number},
@@ -576,12 +570,12 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   static FS& fsimpl = *new FS();
   std::shared_ptr<JSObject> fs = std::make_shared<JSObject>("fs", std::map<std::string, Object>{
     {"constants", Object{std::make_shared<JSObject>(std::map<std::string, Object>{
-        {"O_WRONLY", Object{-1}},
-        {"O_RDWR", Object{-1}},
-        {"O_CREAT", Object{-1}},
-        {"O_TRUNC", Object{-1}},
-        {"O_APPEND", Object{-1}},
-        {"O_EXCL", Object{-1}},
+        {"O_WRONLY", Object{-1.0}},
+        {"O_RDWR", Object{-1.0}},
+        {"O_CREAT", Object{-1.0}},
+        {"O_TRUNC", Object{-1.0}},
+        {"O_APPEND", Object{-1.0}},
+        {"O_EXCL", Object{-1.0}},
       })}},
     {"write", Object{std::make_shared<JSObject>(
       [](Object self, std::vector<Object> args) -> Object {
@@ -590,8 +584,8 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   });
 
   std::shared_ptr<JSObject> process = std::make_shared<JSObject>("process", std::map<std::string, Object>{
-    {"pid", Object{-1}},
-    {"ppid", Object{-1}},
+    {"pid", Object{-1.0}},
+    {"ppid", Object{-1.0}},
   });
 
   std::shared_ptr<JSObject> global = std::make_shared<JSObject>("global", std::map<std::string, Object>{

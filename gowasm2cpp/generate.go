@@ -677,7 +677,7 @@ BindingValue::BindingValue() {
 }
 
 BindingValue::BindingValue(bool b)
-    : object_{b ? Object::True() : Object::False()} {
+    : object_{b} {
 }
 
 BindingValue::BindingValue(double num)
@@ -782,8 +782,8 @@ int Go::Run(const std::vector<std::string>& args) {
     {0, Object{std::nan("")}},
     {1, Object{0.0}},
     {2, Object{}},
-    {3, Object::True()},
-    {4, Object::False()},
+    {3, Object{true}},
+    {4, Object{false}},
     {5, global},
     {6, Object{JSObject::Go(std::make_unique<JSValues>(this))}},
   };

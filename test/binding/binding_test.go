@@ -53,3 +53,12 @@ func TestSum(t *testing.T) {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 }
+
+func TestBool(t *testing.T) {
+	if got, want := js.Global().Get("c++").Call("Bool", true).Bool(), true; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+	if got, want := js.Global().Get("c++").Call("Bool", false).Bool(), false; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}

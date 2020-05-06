@@ -20,5 +20,10 @@ int main(int argc, char *argv[]) {
             }
             return go2cpp_autogen::BindingValue{sum};
           });
+  go.Bind("Bool",
+          [](std::vector<go2cpp_autogen::BindingValue> args) -> go2cpp_autogen::BindingValue {
+            bool b = args[0].ToBool();
+            return go2cpp_autogen::BindingValue{b};
+          });
   return go.Run(argc, argv);
 }
