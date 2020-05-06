@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -153,10 +154,10 @@ func (f *wasmFunc) CppImpl(className string, indent string) (string, error) {
 	if f.BodyStr != "" {
 		body = strings.Split(f.BodyStr, "\n")
 	} else if f.Wasm.Body != nil {
-		var idx int
+		idx := len(f.Wasm.Sig.ParamTypes)
 		for _, e := range f.Wasm.Body.Locals {
 			for i := 0; i < int(e.Count); i++ {
-				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).Cpp(), idx+len(f.Wasm.Sig.ParamTypes)))
+				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).Cpp(), idx))
 				idx++
 			}
 		}
@@ -165,6 +166,7 @@ func (f *wasmFunc) CppImpl(className string, indent string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		locals = removeUnusedLocalVariables(locals, body)
 	} else {
 		// TODO: Use error function.
 		ident := identifierFromString(f.Wasm.Name)
@@ -202,6 +204,41 @@ func (f *wasmFunc) CppImpl(className string, indent string) (string, error) {
 		lines = append(lines, indent+line)
 	}
 	return strings.Join(lines, "\n") + "\n", nil
+}
+
+var (
+	localVariableRe = regexp.MustCompile(`local[0-9]+`)
+)
+
+func removeUnusedLocalVariables(decls []string, body []string) []string {
+	decl2name := map[string]string{}
+	for _, d := range decls {
+		decl2name[d] = localVariableRe.FindString(d)
+	}
+
+	unused := map[string]struct{}{}
+	for _, n := range decl2name {
+		unused[n] = struct{}{}
+	}
+
+	for _, l := range body {
+		for _, v := range localVariableRe.FindAllString(l, -1) {
+			delete(unused, v)
+		}
+	}
+	if len(unused) == 0 {
+		return decls
+	}
+
+	r := make([]string, 0, len(decls) - len(unused))
+	for _, d := range decls {
+		v := decl2name[d]
+		if _, ok := unused[v]; ok {
+			continue
+		}
+		r = append(r, d)
+	}
+	return r
 }
 
 type wasmExport struct {
