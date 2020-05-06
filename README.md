@@ -18,6 +18,8 @@ This tool analyses a Wasm file compiled from Go files, and generates C++ files b
 On C++ side, you can register C++ functions via `Go::Bind`:
 
 ```cpp
+#include <autogen/go.h>
+
 int main() {
   go2cpp_autogen::Go go;
   go.Bind("CallTwice",
