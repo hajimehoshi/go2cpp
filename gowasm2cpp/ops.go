@@ -269,7 +269,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	for _, instr := range dis.Code {
 		switch instr.Op.Code {
 		case operators.Unreachable:
-			appendBody(`assert("not reached");`)
+			appendBody(`assert(((void)("not reached"), false));`)
 		case operators.Nop:
 			// Do nothing
 		case operators.Block:
@@ -1062,7 +1062,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 		} else {
 			// Throwing an exception might prevent optimization. Use assertion here.
-			appendBody(`assert("not reached");`)
+			appendBody(`assert(((void)("not reached"), false));`)
 			appendBody(`return 0;`)
 		}
 	default:
