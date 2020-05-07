@@ -141,8 +141,17 @@ var memCppTmpl = template.Must(template.New("mem.cpp").Parse(`// Code generated 
 #include "{{.IncludePath}}mem.h"
 
 #include <algorithm>
+#include <cstring>
 
 namespace {{.Namespace}} {
+
+namespace {
+
+{{range $index, $value := .Data}}const uint8_t data_segment_data{{$index}}[] = {
+  {{range $value2 := $value.Data}}{{$value2}}, {{end}}
+};
+{{end}}
+}
 
 BytesSegment::BytesSegment(std::vector<uint8_t>& bytes, size_type offset, size_type length)
     : bytes_{bytes},
@@ -180,10 +189,7 @@ BytesSegment::const_iterator BytesSegment::end() const {
 
 Mem::Mem()
     : bytes_({{.InitPageNum}} * kPageSize) {
-{{range $value := .Data}}  {
-    uint8_t arr[] = { {{- range $value2 := $value.Data}}{{$value2}},{{end -}} };
-    std::copy(std::begin(arr), std::end(arr), bytes_.begin() + {{$value.Offset}});
-  }
+{{range $index, $value := .Data}}  std::memcpy(&(bytes_[{{$value.Offset}}]), data_segment_data{{$index}}, {{len $value.Data}});
 {{end}}
 }
 
