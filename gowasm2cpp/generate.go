@@ -837,9 +837,14 @@ int Go::Run(const std::vector<std::string>& args) {
     {6, Object{JSObject::Go(std::make_unique<JSValues>(this))}},
   };
   go_ref_counts_.clear();
-  ids_.clear();
-  ids_[values_[5]] = 5;
-  ids_[values_[6]] = 6;
+  ids_ = std::map<Object, int32_t>{
+    {values_[1], 1},
+    {values_[2], 2},
+    {values_[3], 3},
+    {values_[4], 4},
+    {values_[5], 5},
+    {values_[6], 6},
+  };
 
   id_pool_ = std::stack<int32_t>();
   exited_ = false;
@@ -984,16 +989,11 @@ Object Go::LoadValue(int32_t addr) {
 void Go::StoreValue(int32_t addr, Object v) {
   static const int32_t kNaNHead = 0x7FF80000;
 
-  if (v.IsNumber()) {
+  if (v.IsNumber() && v.ToNumber() != 0.0) {
     double n = v.ToNumber();
     if (std::isnan(n)) {
       mem_->StoreInt32(addr + 4, kNaNHead);
       mem_->StoreInt32(addr, 0);
-      return;
-    }
-    if (n == 0) {
-      mem_->StoreInt32(addr + 4, kNaNHead);
-      mem_->StoreInt32(addr, 1);
       return;
     }
     mem_->StoreFloat64(addr, n);
@@ -1002,22 +1002,6 @@ void Go::StoreValue(int32_t addr, Object v) {
 
   if (v.IsUndefined()) {
     mem_->StoreFloat64(addr, 0);
-    return;
-  }
-
-  if (v.IsNull()) {
-    mem_->StoreInt32(addr + 4, kNaNHead);
-    mem_->StoreInt32(addr, 2);
-    return;
-  }
-
-  if (v.IsBool()) {
-    mem_->StoreInt32(addr + 4, kNaNHead);
-    if (v.ToBool()) {
-      mem_->StoreInt32(addr, 3);
-    } else {
-      mem_->StoreInt32(addr, 4);
-    }
     return;
   }
 
@@ -1038,12 +1022,14 @@ void Go::StoreValue(int32_t addr, Object v) {
   }
   go_ref_counts_[id]++;
 
-  int32_t type_flag = 1;
+  int32_t type_flag = 0;
   if (v.IsString()) {
     type_flag = 2;
     // There is no counterpart for Symbol in C++, then type_flag = 3 is not used.
   } else if (v.IsJSObject() && v.ToJSObject().IsFunction()) {
     type_flag = 4;
+  } else if (!v.IsNull() && !v.IsNumber() && !v.IsBool()) {
+    type_flag = 1;
   }
   mem_->StoreInt32(addr + 4, kNaNHead | type_flag);
   mem_->StoreInt32(addr, id);
