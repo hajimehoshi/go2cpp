@@ -111,8 +111,10 @@ var taskqueueCppTmpl = template.Must(template.New("taskqueue.cpp").Parse(`// Cod
 namespace {{.Namespace}} {
 
 void TaskQueue::Enqueue(Task task) {
-  std::lock_guard<std::mutex> lock{mutex_};
-  queue_.push(task);
+  {
+    std::lock_guard<std::mutex> lock{mutex_};
+    queue_.push(task);
+  }
   cond_.notify_one();
 }
 
@@ -141,8 +143,10 @@ Timer::~Timer() {
 }
 
 void Timer::Stop() {
-  std::lock_guard<std::mutex> lock{mutex_};
-  stopped_ = true;
+  {
+    std::lock_guard<std::mutex> lock{mutex_};
+    stopped_ = true;
+  }
   cond_.notify_one();
 }
 
