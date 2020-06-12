@@ -153,7 +153,7 @@ void Timer::Stop() {
 Timer::Result Timer::WaitFor(double milliseconds) {
   std::unique_lock<std::mutex> lock{mutex_};
   auto duration = std::chrono::duration<double, std::milli>(milliseconds);
-  bool result = cond_.wait_for(lock, duration, [this]{return stopped_;});
+  bool result = cond_.wait_for(lock, duration, [this]{ return stopped_; });
   return result ? Result::NoTimeout : Result::Timeout;
 }
 
