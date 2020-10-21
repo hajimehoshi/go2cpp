@@ -5,12 +5,12 @@
 package main
 
 import (
-	"syscall/js"
+	"github.com/hajimehoshi/go2cpp/binding"
 )
 
 func main() {
 	i := 0
-	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+	f := binding.FuncOf(func(args []binding.Value) interface{} {
 		println("Hi", i)
 		i++
 		return nil
@@ -18,5 +18,5 @@ func main() {
 	defer f.Release()
 
 	// For the definition of CallTwice, see main.cpp.
-	js.Global().Get("c++").Call("CallTwice", f)
+	binding.Call("CallTwice", f)
 }
