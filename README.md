@@ -32,24 +32,26 @@ int main() {
 }
 ```
 
-You can invoke the registered functions via `syscall/js.Global().Get("c++")`:
+You can invoke the registered functions via `github.com/hajimehoshi/go2cpp/binding.Call`:
 
 ```go
 package main
 
 import (
-	"syscall/js"
+	"github.com/hajimehoshi/go2cpp/binding"
 )
 
 func main() {
 	i := 0
-	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+	f := binding.FuncOf(func(args []binding.Value) interface{} {
 		println("Hi", i)
 		i++
 		return nil
 	})
 	defer f.Release()
-	js.Global().Get("c++").Call("CallTwice", f)
+
+	// For the definition of CallTwice, see main.cpp.
+	binding.Call("CallTwice", f)
 }
 ```
 
