@@ -605,11 +605,11 @@ public:
 private:
   friend class Go;
 
-  explicit BindingValue(Value object);
+  explicit BindingValue(Value value);
 
   Value ToValue();
 
-  Value object_;
+  Value value_;
 };
 
 class Go {
@@ -727,67 +727,67 @@ BindingValue::BindingValue() {
 }
 
 BindingValue::BindingValue(bool b)
-    : object_{b} {
+    : value_{b} {
 }
 
 BindingValue::BindingValue(double num)
-    : object_{num} {
+    : value_{num} {
 }
 
 BindingValue::BindingValue(const std::string& str)
-    : object_{str} {
+    : value_{str} {
 }
 
 BindingValue::BindingValue(const std::vector<uint8_t>& bytes)
-    : object_{bytes} {
+    : value_{bytes} {
 }
 
-BindingValue::BindingValue(Value object)
-    : object_{object} {
+BindingValue::BindingValue(Value value)
+    : value_{value} {
 }
 
 bool BindingValue::IsNull() const {
-  return object_.IsNull();
+  return value_.IsNull();
 }
 
 bool BindingValue::IsUndefined() const {
-  return object_.IsUndefined();
+  return value_.IsUndefined();
 }
 
 bool BindingValue::IsBool() const {
-  return object_.IsBool();
+  return value_.IsBool();
 }
 
 bool BindingValue::IsNumber() const {
-  return object_.IsNumber();
+  return value_.IsNumber();
 }
 
 bool BindingValue::IsString() const {
-  return object_.IsString();
+  return value_.IsString();
 }
 
 bool BindingValue::IsBytes() const {
-  return object_.IsBytes();
+  return value_.IsBytes();
 }
 
 bool BindingValue::IsFunction() const {
-  return object_.IsJSObject() && object_.ToJSObject().IsFunction();
+  return value_.IsJSObject() && value_.ToJSObject().IsFunction();
 }
 
 bool BindingValue::ToBool() const {
-  return object_.ToBool();
+  return value_.ToBool();
 }
 
 double BindingValue::ToNumber() const {
-  return object_.ToNumber();
+  return value_.ToNumber();
 }
 
 std::string BindingValue::ToString() const {
-  return object_.ToString();
+  return value_.ToString();
 }
 
 const std::vector<uint8_t>& BindingValue::ToBytes() const {
-  return object_.ToBytes();
+  return value_.ToBytes();
 }
 
 BindingValue BindingValue::Invoke() {
@@ -799,11 +799,11 @@ BindingValue BindingValue::Invoke(std::vector<BindingValue> args) {
   for (int i = 0; i < args.size(); i++) {
     objs[i] = args[i].ToValue();
   }
-  return BindingValue{object_.ToJSObject().Invoke(objs)};
+  return BindingValue{value_.ToJSObject().Invoke(objs)};
 }
 
 Value BindingValue::ToValue() {
-  return object_;
+  return value_;
 }
 
 Go::Go()
