@@ -154,12 +154,13 @@ public:
   static Value ReflectConstruct(Value target, std::vector<Value> args);
   static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
-  JSObject(const std::string& name);
+  JSObject();
+  explicit JSObject(const std::string& name);
   JSObject(const std::map<std::string, Value>& values);
-  JSObject(std::unique_ptr<IValues> values);
+  explicit JSObject(std::unique_ptr<IValues> values);
   JSObject(const std::string& name, std::unique_ptr<IValues> values);
   JSObject(const std::string& name, const std::map<std::string, Value>& values);
-  JSObject(JSFunc fn);
+  explicit JSObject(JSFunc fn);
   JSObject(const std::string& name, std::unique_ptr<IValues> values, JSFunc fn, bool ctor);
 
   bool IsFunction() const;
@@ -520,7 +521,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       if (args.size() == 1) {
         error("new Object(" + args[0].Inspect() + ") is not implemented");
       }
-      std::shared_ptr<JSObject> obj = std::make_shared<JSObject>("");
+      std::shared_ptr<JSObject> obj = std::make_shared<JSObject>();
       return Value{obj};
     }, true);
   std::shared_ptr<JSObject> u8 = std::make_shared<JSObject>("Uint8Array", nullptr,
@@ -716,6 +717,9 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
   }
   error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
+}
+
+JSObject::JSObject() {
 }
 
 JSObject::JSObject(const std::string& name)
