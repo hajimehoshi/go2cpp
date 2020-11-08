@@ -605,11 +605,11 @@ public:
 private:
   friend class Go;
 
-  explicit BindingValue(Object object);
+  explicit BindingValue(Value object);
 
-  Object ToObject();
+  Value ToValue();
 
-  Object object_;
+  Value object_;
 };
 
 class Go {
@@ -637,8 +637,8 @@ private:
   class JSValues : public JSObject::IValues {
   public:
     explicit JSValues(Go* go);
-    Object Get(const std::string& key) override;
-    void Set(const std::string& key, Object value) override;
+    Value Get(const std::string& key) override;
+    void Set(const std::string& key, Value value) override;
     void Remove(const std::string& key) override;
 
   private:
@@ -648,8 +648,8 @@ private:
   class Bindings : public JSObject::IValues {
   public:
     explicit Bindings(std::map<std::string, Func> funcs);
-    Object Get(const std::string& key) override;
-    void Set(const std::string& key, Object value) override;
+    Value Get(const std::string& key) override;
+    void Set(const std::string& key, Value value) override;
     void Remove(const std::string& key) override;
 
     void Set(const std::string& key, Func func);
@@ -658,12 +658,12 @@ private:
     std::map<std::string, Func> funcs_;
   };
 
-  Object LoadValue(int32_t addr);
-  void StoreValue(int32_t addr, Object v);
-  std::vector<Object> LoadSliceOfValues(int32_t addr);
+  Value LoadValue(int32_t addr);
+  void StoreValue(int32_t addr, Value v);
+  std::vector<Value> LoadSliceOfValues(int32_t addr);
   void Exit(int32_t code);
   void Resume();
-  Object MakeFuncWrapper(int32_t id);
+  Value MakeFuncWrapper(int32_t id);
   void DebugWrite(BytesSegment bytes);
   int64_t PreciseNowInNanoseconds();
   double UnixNowInMilliseconds();
@@ -676,15 +676,15 @@ private:
   // A TaskQueue must be destructed after the timers are destructed.
   TaskQueue task_queue_;
 
-  Object pending_event_;
+  Value pending_event_;
   std::map<int32_t, std::unique_ptr<Timer>> scheduled_timeouts_;
   int32_t next_callback_timeout_id_ = 1;
 
   std::unique_ptr<Inst> inst_;
   std::unique_ptr<Mem> mem_;
-  std::map<int32_t, Object> values_;
+  std::map<int32_t, Value> values_;
   std::map<int32_t, double> go_ref_counts_;
-  std::map<Object, int32_t> ids_;
+  std::map<Value, int32_t> ids_;
   std::stack<int32_t> id_pool_;
   bool exited_ = false;
   int32_t exit_code_ = 0;
@@ -742,7 +742,7 @@ BindingValue::BindingValue(const std::vector<uint8_t>& bytes)
     : object_{bytes} {
 }
 
-BindingValue::BindingValue(Object object)
+BindingValue::BindingValue(Value object)
     : object_{object} {
 }
 
@@ -795,14 +795,14 @@ BindingValue BindingValue::Invoke() {
 }
 
 BindingValue BindingValue::Invoke(std::vector<BindingValue> args) {
-  std::vector<Object> objs(args.size());
+  std::vector<Value> objs(args.size());
   for (int i = 0; i < args.size(); i++) {
-    objs[i] = args[i].ToObject();
+    objs[i] = args[i].ToValue();
   }
   return BindingValue{object_.ToJSObject().Invoke(objs)};
 }
 
-Object BindingValue::ToObject() {
+Value BindingValue::ToValue() {
   return object_;
 }
 
@@ -824,18 +824,18 @@ int Go::Run(const std::vector<std::string>& args) {
   mem_ = std::make_unique<Mem>();
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
-  Object global = JSObject::Global();
+  Value global = JSObject::Global();
   std::unique_ptr<Bindings> bindings = std::make_unique<Bindings>(std::move(bindings_));
-  global.ToJSObject().Set("c++", Object{std::make_shared<JSObject>(std::move(bindings))});
+  global.ToJSObject().Set("c++", Value{std::make_shared<JSObject>(std::move(bindings))});
 
-  values_ = std::map<int32_t, Object>{
-    {0, Object{std::nan("")}},
-    {1, Object{0.0}},
-    {2, Object{}},
-    {3, Object{true}},
-    {4, Object{false}},
+  values_ = std::map<int32_t, Value>{
+    {0, Value{std::nan("")}},
+    {1, Value{0.0}},
+    {2, Value{}},
+    {3, Value{true}},
+    {4, Value{false}},
     {5, global},
-    {6, Object{JSObject::Go(std::make_unique<JSValues>(this))}},
+    {6, Value{JSObject::Go(std::make_unique<JSValues>(this))}},
   };
   static const double inf = std::numeric_limits<double>::infinity();
   go_ref_counts_ = std::map<int32_t, double>{
@@ -847,7 +847,7 @@ int Go::Run(const std::vector<std::string>& args) {
     {5, inf},
     {6, inf},
   };
-  ids_ = std::map<Object, int32_t>{
+  ids_ = std::map<Value, int32_t>{
     {values_[1], 1},
     {values_[2], 2},
     {values_[3], 3},
@@ -923,10 +923,10 @@ Go::JSValues::JSValues(Go* go)
     : go_(go) {
 }
 
-Object Go::JSValues::Get(const std::string& key) {
+Value Go::JSValues::Get(const std::string& key) {
   if (key == "_makeFuncWrapper") {
-    return Object{std::make_shared<JSObject>(
-      [this](Object self, std::vector<Object> args) -> Object {
+    return Value{std::make_shared<JSObject>(
+      [this](Value self, std::vector<Value> args) -> Value {
         return go_->MakeFuncWrapper(static_cast<int32_t>(args[0].ToNumber()));
       }
     )};
@@ -935,10 +935,10 @@ Object Go::JSValues::Get(const std::string& key) {
     return go_->pending_event_;
   }
   error("Go::JSValues::Get: key not found: " + key);
-  return Object{};
+  return Value{};
 }
 
-void Go::JSValues::Set(const std::string& key, Object value) {
+void Go::JSValues::Set(const std::string& key, Value value) {
   if (key == "_pendingEvent") {
     go_->pending_event_ = value;
     return;
@@ -954,25 +954,25 @@ Go::Bindings::Bindings(std::map<std::string, Func> funcs)
     : funcs_{std::move(funcs)} {
 }
 
-Object Go::Bindings::Get(const std::string& key) {
+Value Go::Bindings::Get(const std::string& key) {
   if (funcs_.find(key) == funcs_.end()) {
     error("Go::Bindings::Get: " + key + " not found");
-    return Object{};
+    return Value{};
   }
   Func& fn = funcs_[key];
   std::shared_ptr<JSObject> jsobj = std::make_shared<JSObject>(
-    [&fn](Object self, std::vector<Object> args) -> Object {
+    [&fn](Value self, std::vector<Value> args) -> Value {
       std::vector<BindingValue> goargs(args.size());
       for (int i = 0; i < goargs.size(); i++) {
         goargs[i] = BindingValue{args[i]};
       }
       BindingValue result = fn(goargs);
-      return result.ToObject();
+      return result.ToValue();
     });
-  return Object{jsobj};
+  return Value{jsobj};
 }
 
-void Go::Bindings::Set(const std::string& key, Object value) {
+void Go::Bindings::Set(const std::string& key, Value value) {
   error("Go::Bindings::Set: not implemented");
 }
 
@@ -984,19 +984,19 @@ void Go::Bindings::Set(const std::string& key, Func func) {
   funcs_[key] = func;
 }
 
-Object Go::LoadValue(int32_t addr) {
+Value Go::LoadValue(int32_t addr) {
   double f = mem_->LoadFloat64(addr);
   if (f == 0) {
-    return Object::Undefined();
+    return Value::Undefined();
   }
   if (!std::isnan(f)) {
-    return Object{f};
+    return Value{f};
   }
   int32_t id = static_cast<int32_t>(mem_->LoadUint32(addr));
   return values_[id];
 }
 
-void Go::StoreValue(int32_t addr, Object v) {
+void Go::StoreValue(int32_t addr, Value v) {
   static const int32_t kNaNHead = 0x7FF80000;
 
   if (v.IsNumber() && v.ToNumber() != 0.0) {
@@ -1045,10 +1045,10 @@ void Go::StoreValue(int32_t addr, Object v) {
   mem_->StoreInt32(addr, id);
 }
 
-std::vector<Object> Go::LoadSliceOfValues(int32_t addr) {
+std::vector<Value> Go::LoadSliceOfValues(int32_t addr) {
   int32_t array = static_cast<int32_t>(mem_->LoadInt64(addr));
   int32_t len = static_cast<int32_t>(mem_->LoadInt64(addr + 8));
-  std::vector<Object> a(len);
+  std::vector<Value> a(len);
   for (int32_t i = 0; i < len; i++) {
     a[i] = LoadValue(array + i * 8);
   }
@@ -1068,13 +1068,13 @@ void Go::Resume() {
   task_queue_.Enqueue(TaskQueue::Task{});
 }
 
-Object Go::MakeFuncWrapper(int32_t id) {
-  return Object{std::make_shared<JSObject>(
-    [this, id](Object self, std::vector<Object> args) -> Object {
-      auto evt = Object{std::make_shared<JSObject>(std::map<std::string, Object>{
-        {"id", Object{static_cast<double>(id)}},
+Value Go::MakeFuncWrapper(int32_t id) {
+  return Value{std::make_shared<JSObject>(
+    [this, id](Value self, std::vector<Value> args) -> Value {
+      auto evt = Value{std::make_shared<JSObject>(std::map<std::string, Value>{
+        {"id", Value{static_cast<double>(id)}},
         {"this", self},
-        {"args", Object{args}},
+        {"args", Value{args}},
       })};
       pending_event_ = evt;
       Resume();

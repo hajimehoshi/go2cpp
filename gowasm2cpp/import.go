@@ -53,17 +53,17 @@ var importFuncBodies = map[string]string{
 	"syscall/js.finalizeRef": `  int32_t id = static_cast<int32_t>(go_->mem_->LoadUint32(local0 + 8));
   go_->go_ref_counts_[id]--;
   if (go_->go_ref_counts_[id] == 0) {
-    Object v = go_->values_[id];
-    go_->values_[id] = Object{};
+    Value v = go_->values_[id];
+    go_->values_[id] = Value{};
     go_->ids_.erase(v);
     go_->id_pool_.push(id);
   }`,
 
 	// func stringVal(value string) ref
-	"syscall/js.stringVal": `  go_->StoreValue(local0 + 24, Object{go_->mem_->LoadString(local0 + 8)});`,
+	"syscall/js.stringVal": `  go_->StoreValue(local0 + 24, Value{go_->mem_->LoadString(local0 + 8)});`,
 
 	// func valueGet(v ref, p string) ref
-	"syscall/js.valueGet": `  Object result = JSObject::ReflectGet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));
+	"syscall/js.valueGet": `  Value result = JSObject::ReflectGet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));
   local0 = go_->inst_->getsp();
   go_->StoreValue(local0 + 32, result);`,
 
@@ -80,32 +80,32 @@ var importFuncBodies = map[string]string{
 	"syscall/js.valueSetIndex": `  JSObject::ReflectSet(go_->LoadValue(local0 + 8), std::to_string(go_->mem_->LoadInt64(local0 + 16)), go_->LoadValue(local0 + 24));`,
 
 	// func valueCall(v ref, m string, args []ref) (ref, bool)
-	"syscall/js.valueCall": `  Object v = go_->LoadValue(local0 + 8);
-  Object m = JSObject::ReflectGet(v, go_->mem_->LoadString(local0 + 16));
-  std::vector<Object> args = go_->LoadSliceOfValues(local0 + 32);
-  Object result = JSObject::ReflectApply(m, v, args);
+	"syscall/js.valueCall": `  Value v = go_->LoadValue(local0 + 8);
+  Value m = JSObject::ReflectGet(v, go_->mem_->LoadString(local0 + 16));
+  std::vector<Value> args = go_->LoadSliceOfValues(local0 + 32);
+  Value result = JSObject::ReflectApply(m, v, args);
   local0 = go_->inst_->getsp();
   go_->StoreValue(local0 + 56, result);
   go_->mem_->StoreInt8(local0 + 64, 1);`,
 
 	// func valueInvoke(v ref, args []ref) (ref, bool)
-	"syscall/js.valueInvoke": `  Object v = go_->LoadValue(local0 + 8);
-  std::vector<Object> args = go_->LoadSliceOfValues(local0 + 16);
-  Object result = JSObject::ReflectApply(v, Object::Undefined(), args);
+	"syscall/js.valueInvoke": `  Value v = go_->LoadValue(local0 + 8);
+  std::vector<Value> args = go_->LoadSliceOfValues(local0 + 16);
+  Value result = JSObject::ReflectApply(v, Value::Undefined(), args);
   local0 = go_->inst_->getsp();
   go_->StoreValue(local0 + 40, result);
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
 	// func valueNew(v ref, args []ref) (ref, bool)
-	"syscall/js.valueNew": `  Object v = go_->LoadValue(local0 + 8);
-  std::vector<Object> args = go_->LoadSliceOfValues(local0 + 16);
-  Object result = JSObject::ReflectConstruct(v, args);
+	"syscall/js.valueNew": `  Value v = go_->LoadValue(local0 + 8);
+  std::vector<Value> args = go_->LoadSliceOfValues(local0 + 16);
+  Value result = JSObject::ReflectConstruct(v, args);
   if (!result.IsNull()) {
     local0 = go_->inst_->getsp();
     go_->StoreValue(local0 + 40, result);
     go_->mem_->StoreInt8(local0 + 48, 1);
   } else {
-    go_->StoreValue(local0 + 40, Object{});
+    go_->StoreValue(local0 + 40, Value{});
     go_->mem_->StoreInt8(local0 + 48, 0);
   }`,
 
@@ -114,7 +114,7 @@ var importFuncBodies = map[string]string{
 
 	// valuePrepareString(v ref) (ref, int)
 	"syscall/js.valuePrepareString": `  std::string str = go_->LoadValue(local0 + 8).ToString();
-  go_->StoreValue(local0 + 16, Object{str});
+  go_->StoreValue(local0 + 16, Value{str});
   go_->mem_->StoreInt64(local0 + 24, static_cast<int64_t>(str.size()));`,
 
 	// valueLoadString(v ref, b []byte)
@@ -130,7 +130,7 @@ var importFuncBodies = map[string]string{
 
 	// func copyBytesToGo(dst []byte, src ref) (int, bool)
 	"syscall/js.copyBytesToGo": `  BytesSegment dst = go_->mem_->LoadSlice(local0 + 8);
-  Object src = go_->LoadValue(local0 + 32);
+  Value src = go_->LoadValue(local0 + 32);
   if (!src.IsBytes()) {
     go_->mem_->StoreInt8(local0 + 48, 0);
     return;
@@ -141,7 +141,7 @@ var importFuncBodies = map[string]string{
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
 	// func copyBytesToJS(dst ref, src []byte) (int, bool)
-	"syscall/js.copyBytesToJS": `  Object dst = go_->LoadValue(local0 + 8);
+	"syscall/js.copyBytesToJS": `  Value dst = go_->LoadValue(local0 + 8);
   BytesSegment src = go_->mem_->LoadSlice(local0 + 16);
   if (!dst.IsBytes()) {
     go_->mem_->StoreInt8(local0 + 48, 0);

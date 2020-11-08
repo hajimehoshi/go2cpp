@@ -76,7 +76,7 @@ private:
 
 class JSObject;
 
-class Object {
+class Value {
 public:
   enum class Type {
     Null,
@@ -87,19 +87,19 @@ public:
     Object,
   };
 
-  static Object Undefined();
+  static Value Undefined();
 
-  Object();
-  explicit Object(bool b);
-  explicit Object(double num);
-  explicit Object(const std::string& str);
-  explicit Object(const std::vector<uint8_t>& bytes);
-  explicit Object(std::shared_ptr<JSObject> jsobject);
-  explicit Object(const std::vector<Object>& array);
+  Value();
+  explicit Value(bool b);
+  explicit Value(double num);
+  explicit Value(const std::string& str);
+  explicit Value(const std::vector<uint8_t>& bytes);
+  explicit Value(std::shared_ptr<JSObject> jsobject);
+  explicit Value(const std::vector<Value>& array);
 
-  Object(const Object& rhs);
-  Object& operator=(const Object& rhs);
-  bool operator<(const Object& rhs) const;
+  Value(const Value& rhs);
+  Value& operator=(const Value& rhs);
+  bool operator<(const Value& rhs) const;
 
   bool IsNull() const;
   bool IsUndefined() const;
@@ -117,19 +117,19 @@ public:
   const std::vector<uint8_t>& ToBytes() const;
   JSObject& ToJSObject();
   const JSObject& ToJSObject() const;
-  std::vector<Object>& ToArray();
+  std::vector<Value>& ToArray();
 
   std::string Inspect() const;
 
 private:
-  explicit Object(Type type);
-  Object(Type type, double num);
+  explicit Value(Type type);
+  Value(Type type, double num);
 
   Type type_ = Type::Null;
   double num_value_ = 0;
   std::shared_ptr<std::vector<uint8_t>> bytes_value_;
   std::shared_ptr<JSObject> jsobject_value_;
-  std::shared_ptr<std::vector<Object>> array_value_;
+  std::shared_ptr<std::vector<Value>> array_value_;
 };
 
 class JSObject {
@@ -137,55 +137,55 @@ public:
   class IValues {
   public:
     virtual ~IValues();
-    virtual Object Get(const std::string& key) = 0;
-    virtual void Set(const std::string& key, Object value) = 0;
+    virtual Value Get(const std::string& key) = 0;
+    virtual void Set(const std::string& key, Value value) = 0;
     virtual void Remove(const std::string& key) = 0;
   };
 
-  using JSFunc = std::function<Object (Object, std::vector<Object>)>;
+  using JSFunc = std::function<Value (Value, std::vector<Value>)>;
 
-  static Object Global();
+  static Value Global();
   static std::shared_ptr<JSObject> Go(std::unique_ptr<IValues> values);
   static std::shared_ptr<JSObject> Enosys(const std::string& name);
 
-  static Object ReflectGet(Object target, const std::string& key);
-  static void ReflectSet(Object target, const std::string& key, Object value);
-  static void ReflectDelete(Object target, const std::string& key);
-  static Object ReflectConstruct(Object target, std::vector<Object> args);
-  static Object ReflectApply(Object target, Object self, std::vector<Object> args);
+  static Value ReflectGet(Value target, const std::string& key);
+  static void ReflectSet(Value target, const std::string& key, Value value);
+  static void ReflectDelete(Value target, const std::string& key);
+  static Value ReflectConstruct(Value target, std::vector<Value> args);
+  static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
   JSObject(const std::string& name);
-  JSObject(const std::map<std::string, Object>& values);
+  JSObject(const std::map<std::string, Value>& values);
   JSObject(std::unique_ptr<IValues> values);
   JSObject(const std::string& name, std::unique_ptr<IValues> values);
-  JSObject(const std::string& name, const std::map<std::string, Object>& values);
+  JSObject(const std::string& name, const std::map<std::string, Value>& values);
   JSObject(JSFunc fn);
   JSObject(const std::string& name, std::unique_ptr<IValues> values, JSFunc fn, bool ctor);
 
   bool IsFunction() const;
-  Object Get(const std::string& key);
-  void Set(const std::string& key, Object value);
+  Value Get(const std::string& key);
+  void Set(const std::string& key, Value value);
   void Delete(const std::string& key);
-  Object Invoke(std::vector<Object> args);
+  Value Invoke(std::vector<Value> args);
 
   std::string ToString() const;
 
 private:
   class DictionaryValues : public IValues {
   public:
-    explicit DictionaryValues(const std::map<std::string, Object>& dict);
-    Object Get(const std::string& key) override;
-    void Set(const std::string& key, Object value) override;
+    explicit DictionaryValues(const std::map<std::string, Value>& dict);
+    Value Get(const std::string& key) override;
+    void Set(const std::string& key, Value value) override;
     void Remove(const std::string& key) override;
 
   private:
-    std::map<std::string, Object> dict_;
+    std::map<std::string, Value> dict_;
   };
 
   class FS {
   public:
     FS();
-    Object Write(Object self, std::vector<Object> args);
+    Value Write(Value self, std::vector<Value> args);
 
   private:
     Writer stdout_;
@@ -225,7 +225,7 @@ void error(const std::string& msg) {
   std::exit(1);
 }
 
-std::string JoinObjects(const std::vector<Object>& objs) {
+std::string JoinObjects(const std::vector<Value>& objs) {
   std::string str;
   for (int i = 0; i < objs.size(); i++) {
     str += objs[i].Inspect();
@@ -236,7 +236,7 @@ std::string JoinObjects(const std::vector<Object>& objs) {
   return str;
 }
 
-void WriteObjects(std::ostream& out, const std::vector<Object>& objs) {
+void WriteObjects(std::ostream& out, const std::vector<Value>& objs) {
   std::vector<std::string> inspects(objs.size());
   for (int i = 0; i < objs.size(); i++) {
     out << objs[i].Inspect();
@@ -267,168 +267,168 @@ void Writer::Write(const std::vector<uint8_t>& bytes) {
   }
 }
 
-Object Object::Undefined() {
-  static Object& undefined = *new Object(Type::Undefined);
+Value Value::Undefined() {
+  static Value& undefined = *new Value(Type::Undefined);
   return undefined;
 }
 
-Object::Object() = default;
+Value::Value() = default;
 
-Object::Object(bool b)
+Value::Value(bool b)
     : type_{Type::Bool},
       num_value_{static_cast<double>(b)}{
 }
 
-Object::Object(double num)
+Value::Value(double num)
     : type_{Type::Number},
       num_value_{num} {
 }
 
-Object::Object(const std::string& str)
+Value::Value(const std::string& str)
     : type_{Type::String},
       bytes_value_{std::make_shared<std::vector<uint8_t>>(str.begin(), str.end())} {
 }
 
-Object::Object(const std::vector<uint8_t>& bytes)
+Value::Value(const std::vector<uint8_t>& bytes)
     : type_{Type::Object},
       bytes_value_{std::make_shared<std::vector<uint8_t>>(bytes.begin(), bytes.end())} {
 }
 
-Object::Object(std::shared_ptr<JSObject> jsobject)
+Value::Value(std::shared_ptr<JSObject> jsobject)
     : type_{Type::Object},
       jsobject_value_{jsobject} {
 }
 
-Object::Object(const std::vector<Object>& array)
+Value::Value(const std::vector<Value>& array)
     : type_{Type::Object},
-      array_value_{std::make_shared<std::vector<Object>>(array.begin(), array.end())} {
+      array_value_{std::make_shared<std::vector<Value>>(array.begin(), array.end())} {
 }
 
-Object::Object(const Object& rhs) = default;
+Value::Value(const Value& rhs) = default;
 
-Object& Object::operator=(const Object& rhs) = default;
+Value& Value::operator=(const Value& rhs) = default;
 
-bool Object::operator<(const Object& rhs) const {
+bool Value::operator<(const Value& rhs) const {
   return std::tie(type_, num_value_, bytes_value_, jsobject_value_, array_value_) <
       std::tie(rhs.type_, rhs.num_value_, rhs.bytes_value_, rhs.jsobject_value_, rhs.array_value_);
 }
 
-Object::Object(Type type)
+Value::Value(Type type)
     : type_{type} {
 }
 
-Object::Object(Type type, double num)
+Value::Value(Type type, double num)
     : type_{type},
       num_value_{num} {
 }
 
-bool Object::IsNull() const {
+bool Value::IsNull() const {
   return type_ == Type::Null;
 }
 
-bool Object::IsUndefined() const {
+bool Value::IsUndefined() const {
   return type_ == Type::Undefined;
 }
 
-bool Object::IsBool() const {
+bool Value::IsBool() const {
   return type_ == Type::Bool;
 }
 
-bool Object::IsNumber() const {
+bool Value::IsNumber() const {
   return type_ == Type::Number;
 }
 
-bool Object::IsString() const {
+bool Value::IsString() const {
   return type_ == Type::String;
 }
 
-bool Object::IsBytes() const {
+bool Value::IsBytes() const {
   return type_ == Type::Object && !jsobject_value_ && !array_value_;
 }
 
-bool Object::IsJSObject() const {
+bool Value::IsJSObject() const {
   return type_ == Type::Object && !!jsobject_value_;
 }
 
-bool Object::IsArray() const {
+bool Value::IsArray() const {
   return type_ == Type::Object && !!array_value_;
 }
 
-bool Object::ToBool() const {
+bool Value::ToBool() const {
   if (type_ != Type::Bool) {
-    error("Object::ToBool: the type must be Type::Bool but not: " + Inspect());
+    error("Value::ToBool: the type must be Type::Bool but not: " + Inspect());
   }
   return static_cast<bool>(num_value_);
 }
 
-double Object::ToNumber() const {
+double Value::ToNumber() const {
   if (type_ != Type::Number) {
-    error("Object::ToNumber: the type must be Type::Number but not: " + Inspect());
+    error("Value::ToNumber: the type must be Type::Number but not: " + Inspect());
   }
   return num_value_;
 }
 
-std::string Object::ToString() const {
+std::string Value::ToString() const {
   if (type_ != Type::String) {
-    error("Object::ToString: the type must be Type::String but not: " + Inspect());
+    error("Value::ToString: the type must be Type::String but not: " + Inspect());
   }
   if (!bytes_value_) {
-    error("Object::ToString: bytes_value_ must not be null");
+    error("Value::ToString: bytes_value_ must not be null");
   }
   return std::string(bytes_value_->begin(), bytes_value_->end());
 }
 
-std::vector<uint8_t>& Object::ToBytes() {
+std::vector<uint8_t>& Value::ToBytes() {
   if (type_ != Type::Object) {
-    error("Object::ToBytes: the type must be Type::Object but not: " + Inspect());
+    error("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
   }
   if (!bytes_value_) {
-    error("Object::ToBytes: bytes_value_ must not be null");
+    error("Value::ToBytes: bytes_value_ must not be null");
   }
   return *bytes_value_;
 }
 
-const std::vector<uint8_t>& Object::ToBytes() const {
+const std::vector<uint8_t>& Value::ToBytes() const {
   if (type_ != Type::Object) {
-    error("Object::ToBytes: the type must be Type::Object but not: " + Inspect());
+    error("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
   }
   if (!bytes_value_) {
-    error("Object::ToBytes: bytes_value_ must not be null");
+    error("Value::ToBytes: bytes_value_ must not be null");
   }
   return *bytes_value_;
 }
 
-JSObject& Object::ToJSObject() {
+JSObject& Value::ToJSObject() {
   if (type_ != Type::Object) {
-    error("Object::ToJSObject: the type must be Type::Object but not: " + Inspect());
+    error("Value::ToJSObject: the type must be Type::Object but not: " + Inspect());
   }
   if (!jsobject_value_) {
-    error("Object::ToJSObject: jsobject_value_ must not be null");
+    error("Value::ToJSObject: jsobject_value_ must not be null");
   }
   return *jsobject_value_;
 }
 
-const JSObject& Object::ToJSObject() const {
+const JSObject& Value::ToJSObject() const {
   if (type_ != Type::Object) {
-    error("Object::ToJSObject: the type must be Type::Object but not: " + Inspect());
+    error("Value::ToJSObject: the type must be Type::Object but not: " + Inspect());
   }
   if (!jsobject_value_) {
-    error("Object::ToJSObject: jsobject_value_ must not be null");
+    error("Value::ToJSObject: jsobject_value_ must not be null");
   }
   return *jsobject_value_;
 }
 
-std::vector<Object>& Object::ToArray() {
+std::vector<Value>& Value::ToArray() {
   if (type_ != Type::Object) {
-    error("Object::ToArray: the type must be Type::Object but not: " + Inspect());
+    error("Value::ToArray: the type must be Type::Object but not: " + Inspect());
   }
   if (!array_value_) {
-    error("Object::ToArray: array_value_ must not be null");
+    error("Value::ToArray: array_value_ must not be null");
   }
   return *array_value_;
 }
 
-std::string Object::Inspect() const {
+std::string Value::Inspect() const {
   switch (type_) {
   case Type::Null:
     return "null";
@@ -453,19 +453,19 @@ std::string Object::Inspect() const {
 
 JSObject::IValues::~IValues() = default;
 
-JSObject::DictionaryValues::DictionaryValues(const std::map<std::string, Object>& dict)
+JSObject::DictionaryValues::DictionaryValues(const std::map<std::string, Value>& dict)
     : dict_{dict} {
 }
 
-Object JSObject::DictionaryValues::Get(const std::string& key) {
+Value JSObject::DictionaryValues::Get(const std::string& key) {
   auto it = dict_.find(key);
   if (it == dict_.end()) {
-    return Object{};
+    return Value{};
   }
   return it->second;
 }
 
-void JSObject::DictionaryValues::Set(const std::string& key, Object object) {
+void JSObject::DictionaryValues::Set(const std::string& key, Value object) {
   dict_[key] = object;
 }
 
@@ -478,20 +478,20 @@ JSObject::FS::FS()
       stderr_{std::cerr} {
 }
 
-Object JSObject::FS::Write(Object self, std::vector<Object> args) {
+Value JSObject::FS::Write(Value self, std::vector<Value> args) {
   int fd = (int)(args[0].ToNumber());
   std::vector<uint8_t>& buf = args[1].ToBytes();
   int offset = (int)(args[2].ToNumber());
   int length = (int)(args[3].ToNumber());
-  Object position = args[4];
-  Object callback = args[5];
+  Value position = args[4];
+  Value callback = args[5];
   if (offset != 0 || length != buf.size()) {
-    ReflectApply(callback, Object{}, std::vector<Object>{ Object{Enosys("write")} });
-    return Object{};
+    ReflectApply(callback, Value{}, std::vector<Value>{ Value{Enosys("write")} });
+    return Value{};
   }
   if (!position.IsNull()) {
-    ReflectApply(callback, Object{}, std::vector<Object>{ Object{Enosys("write")} });
-    return Object{};
+    ReflectApply(callback, Value{}, std::vector<Value>{ Value{Enosys("write")} });
+    return Value{};
   }
   switch (fd) {
   case 1:
@@ -501,15 +501,15 @@ Object JSObject::FS::Write(Object self, std::vector<Object> args) {
     stderr_.Write(buf);
     break;
   default:
-    ReflectApply(callback, Object{}, std::vector<Object>{ Object{Enosys("write")} });
+    ReflectApply(callback, Value{}, std::vector<Value>{ Value{Enosys("write")} });
     break;
   }
-  ReflectApply(callback, Object{}, std::vector<Object>{ Object{}, Object{static_cast<double>(buf.size())} });
-  return Object{};
+  ReflectApply(callback, Value{}, std::vector<Value>{ Value{}, Value{static_cast<double>(buf.size())} });
+  return Value{};
 }
 
-Object JSObject::Global() {
-  static Object& global = *new Object(MakeGlobal());
+Value JSObject::Global() {
+  static Value& global = *new Value(MakeGlobal());
   return global;
 }
 
@@ -517,23 +517,23 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   std::shared_ptr<JSObject> arr = std::make_shared<JSObject>("Array");
   std::shared_ptr<JSObject> obj = std::make_shared<JSObject>("Object");
   std::shared_ptr<JSObject> u8 = std::make_shared<JSObject>("Uint8Array", nullptr,
-    [](Object self, std::vector<Object> args) -> Object {
+    [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
-        return Object{std::vector<uint8_t>{}};
+        return Value{std::vector<uint8_t>{}};
       }
       if (args.size() == 1) {
-        Object len = args[0];
+        Value len = args[0];
         if (len.IsNumber()) {
-          return Object{std::vector<uint8_t>(static_cast<int>(len.ToNumber()))};
+          return Value{std::vector<uint8_t>(static_cast<int>(len.ToNumber()))};
         }
         error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
       }
       error("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
-      return Object{};
+      return Value{};
     }, true);
 
-  Object getRandomValues{std::make_shared<JSObject>(
-    [](Object self, std::vector<Object> args) -> Object {
+  Value getRandomValues{std::make_shared<JSObject>(
+    [](Value self, std::vector<Value> args) -> Value {
       std::vector<uint8_t>& bs = args[0].ToBytes();
       // TODO: Use cryptographically strong random values instead of std::random_device.
       static std::random_device rd;
@@ -541,23 +541,23 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       for (int i = 0; i < bs.size(); i++) {
         bs[i] = dist(rd);
       }
-      return Object{};
+      return Value{};
     })};
-  std::shared_ptr<JSObject> crypto = std::make_shared<JSObject>("crypto", std::map<std::string, Object>{
+  std::shared_ptr<JSObject> crypto = std::make_shared<JSObject>("crypto", std::map<std::string, Value>{
     {"getRandomValues", getRandomValues},
   });
 
-  static Object& writeObjectsToStdout = *new Object(std::make_shared<JSObject>(
-    [](Object self, std::vector<Object> args) -> Object {
+  static Value& writeObjectsToStdout = *new Value(std::make_shared<JSObject>(
+    [](Value self, std::vector<Value> args) -> Value {
       WriteObjects(std::cout, args);
-      return Object{};
+      return Value{};
     }));
-  static Object& writeObjectsToStderr = *new Object(std::make_shared<JSObject>(
-    [](Object self, std::vector<Object> args) -> Object {
+  static Value& writeObjectsToStderr = *new Value(std::make_shared<JSObject>(
+    [](Value self, std::vector<Value> args) -> Value {
       WriteObjects(std::cerr, args);
-      return Object{};
+      return Value{};
     }));
-  std::shared_ptr<JSObject> console = std::make_shared<JSObject>("console", std::map<std::string, Object>{
+  std::shared_ptr<JSObject> console = std::make_shared<JSObject>("console", std::map<std::string, Value>{
     {"error", writeObjectsToStderr},
     {"debug", writeObjectsToStderr},
     {"info", writeObjectsToStdout},
@@ -566,41 +566,41 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   });
 
   std::shared_ptr<JSObject> fetch = std::make_shared<JSObject>(
-    [](Object self, std::vector<Object> args) -> Object {
+    [](Value self, std::vector<Value> args) -> Value {
       // TODO: Implement this.
-      return Object{};
+      return Value{};
     });
 
   static FS& fsimpl = *new FS();
-  std::shared_ptr<JSObject> fs = std::make_shared<JSObject>("fs", std::map<std::string, Object>{
-    {"constants", Object{std::make_shared<JSObject>(std::map<std::string, Object>{
-        {"O_WRONLY", Object{-1.0}},
-        {"O_RDWR", Object{-1.0}},
-        {"O_CREAT", Object{-1.0}},
-        {"O_TRUNC", Object{-1.0}},
-        {"O_APPEND", Object{-1.0}},
-        {"O_EXCL", Object{-1.0}},
+  std::shared_ptr<JSObject> fs = std::make_shared<JSObject>("fs", std::map<std::string, Value>{
+    {"constants", Value{std::make_shared<JSObject>(std::map<std::string, Value>{
+        {"O_WRONLY", Value{-1.0}},
+        {"O_RDWR", Value{-1.0}},
+        {"O_CREAT", Value{-1.0}},
+        {"O_TRUNC", Value{-1.0}},
+        {"O_APPEND", Value{-1.0}},
+        {"O_EXCL", Value{-1.0}},
       })}},
-    {"write", Object{std::make_shared<JSObject>(
-      [](Object self, std::vector<Object> args) -> Object {
+    {"write", Value{std::make_shared<JSObject>(
+      [](Value self, std::vector<Value> args) -> Value {
         return fsimpl.Write(self, args);
       })}},
   });
 
-  std::shared_ptr<JSObject> process = std::make_shared<JSObject>("process", std::map<std::string, Object>{
-    {"pid", Object{-1.0}},
-    {"ppid", Object{-1.0}},
+  std::shared_ptr<JSObject> process = std::make_shared<JSObject>("process", std::map<std::string, Value>{
+    {"pid", Value{-1.0}},
+    {"ppid", Value{-1.0}},
   });
 
-  std::shared_ptr<JSObject> global = std::make_shared<JSObject>("global", std::map<std::string, Object>{
-    {"Array", Object{arr}},
-    {"Object", Object{obj}},
-    {"Uint8Array", Object{u8}},
-    {"console", Object{console}},
-    {"crypto", Object{crypto}},
-    {"fetch", Object{fetch}},
-    {"fs", Object{fs}},
-    {"process", Object{process}},
+  std::shared_ptr<JSObject> global = std::make_shared<JSObject>("global", std::map<std::string, Value>{
+    {"Array", Value{arr}},
+    {"Object", Value{obj}},
+    {"Uint8Array", Value{u8}},
+    {"console", Value{console}},
+    {"crypto", Value{crypto}},
+    {"fetch", Value{fetch}},
+    {"fs", Value{fs}},
+    {"process", Value{process}},
   });
   return global;
 }
@@ -610,20 +610,20 @@ std::shared_ptr<JSObject> JSObject::Go(std::unique_ptr<IValues> values) {
 }
 
 std::shared_ptr<JSObject> JSObject::Enosys(const std::string& name) {
-  return std::make_shared<JSObject>(std::map<std::string, Object>{
-    {"message", Object{name + " not implemented"}},
-    {"code", Object{"ENOSYS"}},
+  return std::make_shared<JSObject>(std::map<std::string, Value>{
+    {"message", Value{name + " not implemented"}},
+    {"code", Value{"ENOSYS"}},
   });
 }
 
-Object JSObject::ReflectGet(Object target, const std::string& key) {
+Value JSObject::ReflectGet(Value target, const std::string& key) {
   if (target.IsUndefined()) {
     error("get on undefined (key: " + key + ") is forbidden");
-    return Object{};
+    return Value{};
   }
   if (target.IsNull()) {
     error("get on null (key: " + key + ") is forbidden");
-    return Object{};
+    return Value{};
   }
   if (target.IsJSObject()) {
     return target.ToJSObject().Get(key);
@@ -635,10 +635,10 @@ Object JSObject::ReflectGet(Object target, const std::string& key) {
     }
   }
   error(target.Inspect() + "." + key + " not found");
-  return Object{};
+  return Value{};
 }
 
-void JSObject::ReflectSet(Object target, const std::string& key, Object value) {
+void JSObject::ReflectSet(Value target, const std::string& key, Value value) {
   if (target.IsUndefined()) {
     error("set on undefined (key: " + key + ") is forbidden");
   }
@@ -652,7 +652,7 @@ void JSObject::ReflectSet(Object target, const std::string& key, Object value) {
   error(target.Inspect() + "." + key + " cannot be set");
 }
 
-void JSObject::ReflectDelete(Object target, const std::string& key) {
+void JSObject::ReflectDelete(Value target, const std::string& key) {
   if (target.IsUndefined()) {
     error("delete on undefined (key: " + key + ") is forbidden");
   }
@@ -666,53 +666,53 @@ void JSObject::ReflectDelete(Object target, const std::string& key) {
   error(target.Inspect() + "." + key + " cannot be deleted");
 }
 
-Object JSObject::ReflectConstruct(Object target, std::vector<Object> args) {
+Value JSObject::ReflectConstruct(Value target, std::vector<Value> args) {
   if (target.IsUndefined()) {
     error("new on undefined is forbidden");
-    return Object{};
+    return Value{};
   }
   if (target.IsNull()) {
     error("new on null is forbidden");
-    return Object{};
+    return Value{};
   }
   if (target.IsJSObject()) {
     JSObject& t = target.ToJSObject();
     if (!t.ctor_) {
       error(t.ToString() + " is not a constructor");
-      return Object{};
+      return Value{};
     }
     return t.fn_(target, args);
   }
   error("new " + target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
-  return Object{};
+  return Value{};
 }
 
-Object JSObject::ReflectApply(Object target, Object self, std::vector<Object> args) {
+Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) {
   if (target.IsUndefined()) {
     error("apply on undefined is forbidden");
-    return Object{};
+    return Value{};
   }
   if (target.IsNull()) {
     error("apply on null is forbidden");
-    return Object{};
+    return Value{};
   }
   if (target.IsJSObject()) {
     JSObject& t = target.ToJSObject();
     if (t.ctor_) {
       error(t.ToString() + " is a constructor");
-      return Object{};
+      return Value{};
     }
     return t.fn_(self, args);
   }
   error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
-  return Object{};
+  return Value{};
 }
 
 JSObject::JSObject(const std::string& name)
     : name_{name} {
 }
 
-JSObject::JSObject(const std::map<std::string, Object>& values)
+JSObject::JSObject(const std::map<std::string, Value>& values)
     : values_{std::make_unique<DictionaryValues>(values)} {
 }
 
@@ -725,7 +725,7 @@ JSObject::JSObject(const std::string& name, std::unique_ptr<IValues> values)
       values_{std::move(values)} {
 }
 
-JSObject::JSObject(const std::string& name, const std::map<std::string, Object>& values)
+JSObject::JSObject(const std::string& name, const std::map<std::string, Value>& values)
     : name_{name},
       values_{std::make_unique<DictionaryValues>(values)} {
 }
@@ -745,16 +745,16 @@ bool JSObject::IsFunction() const {
   return !!fn_;
 }
 
-Object JSObject::Get(const std::string& key) {
+Value JSObject::Get(const std::string& key) {
   if (!values_) {
     error(ToString() + "." + key + " not found");
   }
   return values_->Get(key);
 }
 
-void JSObject::Set(const std::string& key, Object value) {
+void JSObject::Set(const std::string& key, Value value) {
   if (!values_) {
-    values_ = std::make_unique<DictionaryValues>(std::map<std::string, Object>{});
+    values_ = std::make_unique<DictionaryValues>(std::map<std::string, Value>{});
   }
   values_->Set(key, value);
 }
@@ -766,16 +766,16 @@ void JSObject::Delete(const std::string& key) {
   values_->Remove(key);
 }
 
-Object JSObject::Invoke(std::vector<Object> args) {
+Value JSObject::Invoke(std::vector<Value> args) {
   if (!fn_) {
     error(ToString() + " is not invokable since " + ToString() + " is not a function");
-    return Object{};
+    return Value{};
   }
   if (ctor_) {
     error(ToString() + " is not invokable since " + ToString() + " is a constructor");
-    return Object{};
+    return Value{};
   }
-  return fn_(Object{}, args);
+  return fn_(Value{}, args);
 }
 
 std::string JSObject::ToString() const {
