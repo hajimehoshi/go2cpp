@@ -62,3 +62,34 @@ func TestBool(t *testing.T) {
 		t.Errorf("got: %v, want: %v", got, want)
 	}
 }
+
+func TestJSBindingWindow(t *testing.T) {
+	js.Global().Set("foo", 1)
+	if got, want := js.Global().Get("foo").Int(), 1; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+	if got, want := js.Global().Get("window").Get("foo").Int(), 1; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}
+
+func TestJSBindingObject(t *testing.T) {
+	js.Global().Set("foo", js.Global().Get("Object").New())
+	js.Global().Get("foo").Set("bar", 2)
+	if got, want := js.Global().Get("foo").Get("bar").Int(), 2; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}
+
+func TestJSBindingFunc(t *testing.T) {
+	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return 3
+	})
+	defer f.Release()
+
+	js.Global().Set("foo", js.Global().Get("Object").New())
+	js.Global().Get("foo").Set("bar", f)
+	if got, want := js.Global().Get("foo").Get("bar").Invoke().Int(), 3; got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}

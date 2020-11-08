@@ -515,7 +515,14 @@ Value JSObject::Global() {
 
 std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   std::shared_ptr<JSObject> arr = std::make_shared<JSObject>("Array");
-  std::shared_ptr<JSObject> obj = std::make_shared<JSObject>("Object");
+  std::shared_ptr<JSObject> obj = std::make_shared<JSObject>("Object", nullptr,
+    [](Value self, std::vector<Value> args) -> Value {
+      if (args.size() == 1) {
+        error("new Object(" + args[0].Inspect() + ") is not implemented");
+      }
+      std::shared_ptr<JSObject> obj = std::make_shared<JSObject>("");
+      return Value{obj};
+    }, true);
   std::shared_ptr<JSObject> u8 = std::make_shared<JSObject>("Uint8Array", nullptr,
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
@@ -602,6 +609,9 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
     {"fs", Value{fs}},
     {"process", Value{process}},
   });
+
+  global->Set("window", Value{global});
+
   return global;
 }
 
