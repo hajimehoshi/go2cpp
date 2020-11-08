@@ -583,6 +583,7 @@ public:
   BindingValue();
   explicit BindingValue(bool b);
   explicit BindingValue(double num);
+  explicit BindingValue(const char* str);
   explicit BindingValue(const std::string& str);
   explicit BindingValue(const std::vector<uint8_t>& bytes);
 
@@ -732,6 +733,10 @@ BindingValue::BindingValue(bool b)
 
 BindingValue::BindingValue(double num)
     : value_{num} {
+}
+
+BindingValue::BindingValue(const char* str)
+    : value_{str} {
 }
 
 BindingValue::BindingValue(const std::string& str)

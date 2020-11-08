@@ -92,6 +92,7 @@ public:
   Value();
   explicit Value(bool b);
   explicit Value(double num);
+  explicit Value(const char* str);
   explicit Value(const std::string& str);
   explicit Value(const std::vector<uint8_t>& bytes);
   explicit Value(std::shared_ptr<JSObject> jsobject);
@@ -283,6 +284,10 @@ Value::Value(bool b)
 Value::Value(double num)
     : type_{Type::Number},
       num_value_{num} {
+}
+
+Value::Value(const char* str)
+    : Value{std::string(str)} {
 }
 
 Value::Value(const std::string& str)
