@@ -635,7 +635,7 @@ private:
     Go* go_;
   };
 
-  class JSValues : public JSObject::IValues {
+  class JSValues : public IObject {
   public:
     explicit JSValues(Go* go);
     Value Get(const std::string& key) override;
@@ -646,7 +646,7 @@ private:
     Go* go_;
   };
 
-  class Bindings : public JSObject::IValues {
+  class Bindings : public IObject {
   public:
     explicit Bindings(std::map<std::string, Func> funcs);
     Value Get(const std::string& key) override;

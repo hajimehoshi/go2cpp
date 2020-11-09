@@ -133,20 +133,20 @@ private:
   std::shared_ptr<std::vector<Value>> array_value_;
 };
 
+class IObject {
+public:
+  virtual ~IObject();
+  virtual Value Get(const std::string& key) = 0;
+  virtual void Set(const std::string& key, Value value) = 0;
+  virtual void Remove(const std::string& key) = 0;
+};
+
 class JSObject {
 public:
-  class IValues {
-  public:
-    virtual ~IValues();
-    virtual Value Get(const std::string& key) = 0;
-    virtual void Set(const std::string& key, Value value) = 0;
-    virtual void Remove(const std::string& key) = 0;
-  };
-
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
 
   static std::shared_ptr<JSObject> Global();
-  static std::shared_ptr<JSObject> Go(std::unique_ptr<IValues> values);
+  static std::shared_ptr<JSObject> Go(std::unique_ptr<IObject> values);
   static std::shared_ptr<JSObject> Enosys(const std::string& name);
 
   static Value ReflectGet(Value target, const std::string& key);
@@ -158,11 +158,11 @@ public:
   JSObject();
   explicit JSObject(const std::string& name);
   JSObject(const std::map<std::string, Value>& values);
-  explicit JSObject(std::unique_ptr<IValues> values);
-  JSObject(const std::string& name, std::unique_ptr<IValues> values);
+  explicit JSObject(std::unique_ptr<IObject> values);
+  JSObject(const std::string& name, std::unique_ptr<IObject> values);
   JSObject(const std::string& name, const std::map<std::string, Value>& values);
   explicit JSObject(JSFunc fn);
-  JSObject(const std::string& name, std::unique_ptr<IValues> values, JSFunc fn, bool ctor);
+  JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor);
 
   bool IsFunction() const;
   Value Get(const std::string& key);
@@ -173,7 +173,7 @@ public:
   std::string ToString() const;
 
 private:
-  class DictionaryValues : public IValues {
+  class DictionaryValues : public IObject {
   public:
     explicit DictionaryValues(const std::map<std::string, Value>& dict);
     Value Get(const std::string& key) override;
@@ -197,7 +197,7 @@ private:
   static std::shared_ptr<JSObject> MakeGlobal();
 
   const std::string name_ = "(JSObject)";
-  std::unique_ptr<IValues> values_ = nullptr;
+  std::unique_ptr<IObject> values_ = nullptr;
   JSFunc fn_;
   const bool ctor_ = false;
 };
@@ -457,7 +457,7 @@ std::string Value::Inspect() const {
   return "";
 }
 
-JSObject::IValues::~IValues() = default;
+IObject::~IObject() = default;
 
 JSObject::DictionaryValues::DictionaryValues(const std::map<std::string, Value>& dict)
     : dict_{dict} {
@@ -641,7 +641,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   return global;
 }
 
-std::shared_ptr<JSObject> JSObject::Go(std::unique_ptr<IValues> values) {
+std::shared_ptr<JSObject> JSObject::Go(std::unique_ptr<IObject> values) {
   return std::make_shared<JSObject>("go", std::move(values));
 }
 
@@ -755,11 +755,11 @@ JSObject::JSObject(const std::map<std::string, Value>& values)
     : values_{std::make_unique<DictionaryValues>(values)} {
 }
 
-JSObject::JSObject(std::unique_ptr<IValues> values)
+JSObject::JSObject(std::unique_ptr<IObject> values)
     : values_{std::move(values)} {
 }
 
-JSObject::JSObject(const std::string& name, std::unique_ptr<IValues> values)
+JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values)
     : name_{name},
       values_{std::move(values)} {
 }
@@ -773,7 +773,7 @@ JSObject::JSObject(JSFunc fn)
     : fn_{fn} {
 }
 
-JSObject::JSObject(const std::string& name, std::unique_ptr<IValues> values, JSFunc fn, bool ctor)
+JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor)
     : name_{name},
       values_{std::move(values)},
       fn_{fn},
