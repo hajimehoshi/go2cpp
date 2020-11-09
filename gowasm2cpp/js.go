@@ -165,6 +165,7 @@ public:
   JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor);
 
   bool IsFunction() const;
+  bool IsConstructor() const;
   Value Get(const std::string& key);
   void Set(const std::string& key, Value value);
   void Delete(const std::string& key);
@@ -713,7 +714,7 @@ Value JSObject::ReflectConstruct(Value target, std::vector<Value> args) {
   }
   if (target.IsJSObject()) {
     JSObject& t = target.ToJSObject();
-    if (!t.ctor_) {
+    if (!t.IsConstructor()) {
       error(t.ToString() + " is not a constructor");
       return Value{};
     }
@@ -734,7 +735,7 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
   }
   if (target.IsJSObject()) {
     JSObject& t = target.ToJSObject();
-    if (t.ctor_) {
+    if (t.IsConstructor()) {
       error(t.ToString() + " is a constructor");
       return Value{};
     }
@@ -782,6 +783,10 @@ JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values, JSF
 
 bool JSObject::IsFunction() const {
   return !!fn_;
+}
+
+bool JSObject::IsConstructor() const {
+  return ctor_;
 }
 
 Value JSObject::Get(const std::string& key) {
