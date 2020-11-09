@@ -74,7 +74,7 @@ private:
   std::deque<uint8_t> buf_;
 };
 
-class JSObject;
+class IObject;
 
 class Value {
 public:
@@ -95,7 +95,7 @@ public:
   explicit Value(const char* str);
   explicit Value(const std::string& str);
   explicit Value(const std::vector<uint8_t>& bytes);
-  explicit Value(std::shared_ptr<JSObject> object);
+  explicit Value(std::shared_ptr<IObject> object);
   explicit Value(const std::vector<Value>& array);
 
   Value(const Value& rhs);
@@ -116,8 +116,8 @@ public:
   std::string ToString() const;
   std::vector<uint8_t>& ToBytes();
   const std::vector<uint8_t>& ToBytes() const;
-  JSObject& ToObject();
-  const JSObject& ToObject() const;
+  IObject& ToObject();
+  const IObject& ToObject() const;
   std::vector<Value>& ToArray();
 
   std::string Inspect() const;
@@ -129,7 +129,7 @@ private:
   Type type_ = Type::Null;
   double num_value_ = 0;
   std::shared_ptr<std::vector<uint8_t>> bytes_value_;
-  std::shared_ptr<JSObject> object_value_;
+  std::shared_ptr<IObject> object_value_;
   std::shared_ptr<std::vector<Value>> array_value_;
 };
 
@@ -139,9 +139,27 @@ public:
   virtual Value Get(const std::string& key) = 0;
   virtual void Set(const std::string& key, Value value) = 0;
   virtual void Delete(const std::string& key) = 0;
+
+  virtual bool IsFunction() const { return false; }
+  virtual bool IsConstructor() const { return false; }
+  virtual Value Invoke(Value self, std::vector<Value> args) {
+    // TODO: Make this a pure virtual function?
+    assert(false);
+    return Value{};
+  };
+  virtual Value New(std::vector<Value> args) {
+    // TODO: Make this a pure virtual function?
+    assert(false);
+    return Value{};
+  };
+
+  virtual std::string ToString() const {
+    // TODO: Make this a pure virtual function.
+    return "";
+  }
 };
 
-class JSObject {
+class JSObject : public IObject {
 public:
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
 
@@ -164,14 +182,16 @@ public:
   explicit JSObject(JSFunc fn);
   JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor);
 
-  bool IsFunction() const;
-  bool IsConstructor() const;
-  Value Get(const std::string& key);
-  void Set(const std::string& key, Value value);
-  void Delete(const std::string& key);
-  Value Invoke(Value self, std::vector<Value> args);
+  // IObject:
+  bool IsFunction() const override;
+  bool IsConstructor() const override;
+  Value Get(const std::string& key) override;
+  void Set(const std::string& key, Value value) override;
+  void Delete(const std::string& key) override;
+  Value Invoke(Value self, std::vector<Value> args) override;
+  Value New(std::vector<Value> args) override;
 
-  std::string ToString() const;
+  std::string ToString() const override;
 
 private:
   class DictionaryValues : public IObject {
@@ -301,7 +321,7 @@ Value::Value(const std::vector<uint8_t>& bytes)
       bytes_value_{std::make_shared<std::vector<uint8_t>>(bytes.begin(), bytes.end())} {
 }
 
-Value::Value(std::shared_ptr<JSObject> object)
+Value::Value(std::shared_ptr<IObject> object)
     : type_{Type::Object},
       object_value_{object} {
 }
@@ -405,7 +425,7 @@ const std::vector<uint8_t>& Value::ToBytes() const {
   return *bytes_value_;
 }
 
-JSObject& Value::ToObject() {
+IObject& Value::ToObject() {
   if (type_ != Type::Object) {
     error("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
@@ -415,7 +435,7 @@ JSObject& Value::ToObject() {
   return *object_value_;
 }
 
-const JSObject& Value::ToObject() const {
+const IObject& Value::ToObject() const {
   if (type_ != Type::Object) {
     error("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
@@ -713,12 +733,12 @@ Value JSObject::ReflectConstruct(Value target, std::vector<Value> args) {
     return Value{};
   }
   if (target.IsObject()) {
-    JSObject& t = target.ToObject();
+    IObject& t = target.ToObject();
     if (!t.IsConstructor()) {
       error(t.ToString() + " is not a constructor");
       return Value{};
     }
-    return t.fn_(target, args);
+    return t.New(args);
   }
   error("new " + target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
@@ -734,12 +754,12 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
     return Value{};
   }
   if (target.IsObject()) {
-    JSObject& t = target.ToObject();
+    IObject& t = target.ToObject();
     if (t.IsConstructor()) {
       error(t.ToString() + " is a constructor");
       return Value{};
     }
-    return t.fn_(self, args);
+    return t.Invoke(self, args);
   }
   error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
@@ -820,6 +840,19 @@ Value JSObject::Invoke(Value self, std::vector<Value> args) {
     return Value{};
   }
   return fn_(self, args);
+}
+
+Value JSObject::New(std::vector<Value> args) {
+  if (!fn_) {
+    error(ToString() + " is not invokable since " + ToString() + " is not a function");
+    return Value{};
+  }
+  if (!ctor_) {
+    error(ToString() + " is not invokable since " + ToString() + " is not a constructor");
+    return Value{};
+  }
+  // TODO: What should the receiver be?
+  return fn_(Value{}, args);
 }
 
 std::string JSObject::ToString() const {
