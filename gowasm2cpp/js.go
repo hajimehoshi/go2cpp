@@ -138,7 +138,7 @@ public:
   virtual ~IObject();
   virtual Value Get(const std::string& key) = 0;
   virtual void Set(const std::string& key, Value value) = 0;
-  virtual void Remove(const std::string& key) = 0;
+  virtual void Delete(const std::string& key) = 0;
 };
 
 class JSObject {
@@ -178,7 +178,7 @@ private:
     explicit DictionaryValues(const std::map<std::string, Value>& dict);
     Value Get(const std::string& key) override;
     void Set(const std::string& key, Value value) override;
-    void Remove(const std::string& key) override;
+    void Delete(const std::string& key) override;
 
   private:
     std::map<std::string, Value> dict_;
@@ -475,7 +475,7 @@ void JSObject::DictionaryValues::Set(const std::string& key, Value object) {
   dict_[key] = object;
 }
 
-void JSObject::DictionaryValues::Remove(const std::string& key) {
+void JSObject::DictionaryValues::Delete(const std::string& key) {
   dict_.erase(key);
 }
 
@@ -802,7 +802,7 @@ void JSObject::Delete(const std::string& key) {
   if (!values_) {
     return;
   }
-  values_->Remove(key);
+  values_->Delete(key);
 }
 
 Value JSObject::Invoke(std::vector<Value> args) {

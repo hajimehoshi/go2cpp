@@ -640,7 +640,7 @@ private:
     explicit JSValues(Go* go);
     Value Get(const std::string& key) override;
     void Set(const std::string& key, Value value) override;
-    void Remove(const std::string& key) override;
+    void Delete(const std::string& key) override;
 
   private:
     Go* go_;
@@ -651,7 +651,7 @@ private:
     explicit Bindings(std::map<std::string, Func> funcs);
     Value Get(const std::string& key) override;
     void Set(const std::string& key, Value value) override;
-    void Remove(const std::string& key) override;
+    void Delete(const std::string& key) override;
 
     void Set(const std::string& key, Func func);
 
@@ -951,8 +951,8 @@ void Go::JSValues::Set(const std::string& key, Value value) {
   error("key not found: " + key);
 }
 
-void Go::JSValues::Remove(const std::string& key) {
-  error("Go::JSValues::Remove: not implemented");
+void Go::JSValues::Delete(const std::string& key) {
+  error("Go::JSValues::Delete: not implemented");
 }
 
 Go::Bindings::Bindings(std::map<std::string, Func> funcs)
@@ -981,8 +981,8 @@ void Go::Bindings::Set(const std::string& key, Value value) {
   error("Go::Bindings::Set: not implemented");
 }
 
-void Go::Bindings::Remove(const std::string& key) {
-  error("Go::Bindings::Remove: not implemented");
+void Go::Bindings::Delete(const std::string& key) {
+  error("Go::Bindings::Delete: not implemented");
 }
 
 void Go::Bindings::Set(const std::string& key, Func func) {
