@@ -776,7 +776,7 @@ bool BindingValue::IsBytes() const {
 }
 
 bool BindingValue::IsFunction() const {
-  return value_.IsJSObject() && value_.ToJSObject().IsFunction();
+  return value_.IsObject() && value_.ToObject().IsFunction();
 }
 
 bool BindingValue::ToBool() const {
@@ -804,7 +804,7 @@ BindingValue BindingValue::Invoke(std::vector<BindingValue> args) {
   for (int i = 0; i < args.size(); i++) {
     objs[i] = args[i].ToValue();
   }
-  return BindingValue{value_.ToJSObject().Invoke(Value{}, objs)};
+  return BindingValue{value_.ToObject().Invoke(Value{}, objs)};
 }
 
 Value BindingValue::ToValue() {
@@ -1041,7 +1041,7 @@ void Go::StoreValue(int32_t addr, Value v) {
   if (v.IsString()) {
     type_flag = 2;
     // There is no counterpart for Symbol in C++, then type_flag = 3 is not used.
-  } else if (v.IsJSObject() && v.ToJSObject().IsFunction()) {
+  } else if (v.IsObject() && v.ToObject().IsFunction()) {
     type_flag = 4;
   } else if (!v.IsNull() && !v.IsNumber() && !v.IsBool()) {
     type_flag = 1;

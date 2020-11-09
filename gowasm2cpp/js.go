@@ -95,7 +95,7 @@ public:
   explicit Value(const char* str);
   explicit Value(const std::string& str);
   explicit Value(const std::vector<uint8_t>& bytes);
-  explicit Value(std::shared_ptr<JSObject> jsobject);
+  explicit Value(std::shared_ptr<JSObject> object);
   explicit Value(const std::vector<Value>& array);
 
   Value(const Value& rhs);
@@ -108,7 +108,7 @@ public:
   bool IsNumber() const;
   bool IsString() const;
   bool IsBytes() const;
-  bool IsJSObject() const;
+  bool IsObject() const;
   bool IsArray() const;
 
   bool ToBool() const;
@@ -116,8 +116,8 @@ public:
   std::string ToString() const;
   std::vector<uint8_t>& ToBytes();
   const std::vector<uint8_t>& ToBytes() const;
-  JSObject& ToJSObject();
-  const JSObject& ToJSObject() const;
+  JSObject& ToObject();
+  const JSObject& ToObject() const;
   std::vector<Value>& ToArray();
 
   std::string Inspect() const;
@@ -129,7 +129,7 @@ private:
   Type type_ = Type::Null;
   double num_value_ = 0;
   std::shared_ptr<std::vector<uint8_t>> bytes_value_;
-  std::shared_ptr<JSObject> jsobject_value_;
+  std::shared_ptr<JSObject> object_value_;
   std::shared_ptr<std::vector<Value>> array_value_;
 };
 
@@ -301,9 +301,9 @@ Value::Value(const std::vector<uint8_t>& bytes)
       bytes_value_{std::make_shared<std::vector<uint8_t>>(bytes.begin(), bytes.end())} {
 }
 
-Value::Value(std::shared_ptr<JSObject> jsobject)
+Value::Value(std::shared_ptr<JSObject> object)
     : type_{Type::Object},
-      jsobject_value_{jsobject} {
+      object_value_{object} {
 }
 
 Value::Value(const std::vector<Value>& array)
@@ -316,8 +316,8 @@ Value::Value(const Value& rhs) = default;
 Value& Value::operator=(const Value& rhs) = default;
 
 bool Value::operator<(const Value& rhs) const {
-  return std::tie(type_, num_value_, bytes_value_, jsobject_value_, array_value_) <
-      std::tie(rhs.type_, rhs.num_value_, rhs.bytes_value_, rhs.jsobject_value_, rhs.array_value_);
+  return std::tie(type_, num_value_, bytes_value_, object_value_, array_value_) <
+      std::tie(rhs.type_, rhs.num_value_, rhs.bytes_value_, rhs.object_value_, rhs.array_value_);
 }
 
 Value::Value(Type type)
@@ -350,11 +350,11 @@ bool Value::IsString() const {
 }
 
 bool Value::IsBytes() const {
-  return type_ == Type::Object && !jsobject_value_ && !array_value_;
+  return type_ == Type::Object && !object_value_ && !array_value_;
 }
 
-bool Value::IsJSObject() const {
-  return type_ == Type::Object && !!jsobject_value_;
+bool Value::IsObject() const {
+  return type_ == Type::Object && !!object_value_;
 }
 
 bool Value::IsArray() const {
@@ -405,24 +405,24 @@ const std::vector<uint8_t>& Value::ToBytes() const {
   return *bytes_value_;
 }
 
-JSObject& Value::ToJSObject() {
+JSObject& Value::ToObject() {
   if (type_ != Type::Object) {
-    error("Value::ToJSObject: the type must be Type::Object but not: " + Inspect());
+    error("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
-  if (!jsobject_value_) {
-    error("Value::ToJSObject: jsobject_value_ must not be null");
+  if (!object_value_) {
+    error("Value::ToObject: object_value_ must not be null");
   }
-  return *jsobject_value_;
+  return *object_value_;
 }
 
-const JSObject& Value::ToJSObject() const {
+const JSObject& Value::ToObject() const {
   if (type_ != Type::Object) {
-    error("Value::ToJSObject: the type must be Type::Object but not: " + Inspect());
+    error("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
-  if (!jsobject_value_) {
-    error("Value::ToJSObject: jsobject_value_ must not be null");
+  if (!object_value_) {
+    error("Value::ToObject: object_value_ must not be null");
   }
-  return *jsobject_value_;
+  return *object_value_;
 }
 
 std::vector<Value>& Value::ToArray() {
@@ -448,8 +448,8 @@ std::string Value::Inspect() const {
   case Type::String:
     return ToString();
   case Type::Object:
-    if (IsJSObject()) {
-      return ToJSObject().ToString();
+    if (IsObject()) {
+      return ToObject().ToString();
     }
     return "(object)";
   default:
@@ -662,8 +662,8 @@ Value JSObject::ReflectGet(Value target, const std::string& key) {
     error("get on null (key: " + key + ") is forbidden");
     return Value{};
   }
-  if (target.IsJSObject()) {
-    return target.ToJSObject().Get(key);
+  if (target.IsObject()) {
+    return target.ToObject().Get(key);
   }
   if (target.IsArray()) {
     int idx = std::stoi(key);
@@ -682,8 +682,8 @@ void JSObject::ReflectSet(Value target, const std::string& key, Value value) {
   if (target.IsNull()) {
     error("set on null (key: " + key + ") is forbidden");
   }
-  if (target.IsJSObject()) {
-    target.ToJSObject().Set(key, value);
+  if (target.IsObject()) {
+    target.ToObject().Set(key, value);
     return;
   }
   error(target.Inspect() + "." + key + " cannot be set");
@@ -696,8 +696,8 @@ void JSObject::ReflectDelete(Value target, const std::string& key) {
   if (target.IsNull()) {
     error("delete on null (key: " + key + ") is forbidden");
   }
-  if (target.IsJSObject()) {
-    target.ToJSObject().Delete(key);
+  if (target.IsObject()) {
+    target.ToObject().Delete(key);
     return;
   }
   error(target.Inspect() + "." + key + " cannot be deleted");
@@ -712,8 +712,8 @@ Value JSObject::ReflectConstruct(Value target, std::vector<Value> args) {
     error("new on null is forbidden");
     return Value{};
   }
-  if (target.IsJSObject()) {
-    JSObject& t = target.ToJSObject();
+  if (target.IsObject()) {
+    JSObject& t = target.ToObject();
     if (!t.IsConstructor()) {
       error(t.ToString() + " is not a constructor");
       return Value{};
@@ -733,8 +733,8 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
     error("apply on null is forbidden");
     return Value{};
   }
-  if (target.IsJSObject()) {
-    JSObject& t = target.ToJSObject();
+  if (target.IsObject()) {
+    JSObject& t = target.ToObject();
     if (t.IsConstructor()) {
       error(t.ToString() + " is a constructor");
       return Value{};
