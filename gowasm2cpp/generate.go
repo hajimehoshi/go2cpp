@@ -804,7 +804,7 @@ BindingValue BindingValue::Invoke(std::vector<BindingValue> args) {
   for (int i = 0; i < args.size(); i++) {
     objs[i] = args[i].ToValue();
   }
-  return BindingValue{value_.ToJSObject().Invoke(objs)};
+  return BindingValue{value_.ToJSObject().Invoke(Value{}, objs)};
 }
 
 Value BindingValue::ToValue() {

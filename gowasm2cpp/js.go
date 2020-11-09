@@ -168,7 +168,7 @@ public:
   Value Get(const std::string& key);
   void Set(const std::string& key, Value value);
   void Delete(const std::string& key);
-  Value Invoke(std::vector<Value> args);
+  Value Invoke(Value self, std::vector<Value> args);
 
   std::string ToString() const;
 
@@ -805,7 +805,7 @@ void JSObject::Delete(const std::string& key) {
   values_->Delete(key);
 }
 
-Value JSObject::Invoke(std::vector<Value> args) {
+Value JSObject::Invoke(Value self, std::vector<Value> args) {
   if (!fn_) {
     error(ToString() + " is not invokable since " + ToString() + " is not a function");
     return Value{};
@@ -814,7 +814,7 @@ Value JSObject::Invoke(std::vector<Value> args) {
     error(ToString() + " is not invokable since " + ToString() + " is a constructor");
     return Value{};
   }
-  return fn_(Value{}, args);
+  return fn_(self, args);
 }
 
 std::string JSObject::ToString() const {
