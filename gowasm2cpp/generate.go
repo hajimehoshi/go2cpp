@@ -829,9 +829,9 @@ int Go::Run(const std::vector<std::string>& args) {
   mem_ = std::make_unique<Mem>();
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
-  Value global = JSObject::Global();
+  std::shared_ptr<JSObject> global = JSObject::Global();
   std::unique_ptr<Bindings> bindings = std::make_unique<Bindings>(std::move(bindings_));
-  global.ToJSObject().Set("c++", Value{std::make_shared<JSObject>(std::move(bindings))});
+  global->Set("c++", Value{std::make_shared<JSObject>(std::move(bindings))});
 
   values_ = std::map<int32_t, Value>{
     {0, Value{std::nan("")}},
@@ -839,7 +839,7 @@ int Go::Run(const std::vector<std::string>& args) {
     {2, Value{}},
     {3, Value{true}},
     {4, Value{false}},
-    {5, global},
+    {5, Value{global}},
     {6, Value{JSObject::Go(std::make_unique<JSValues>(this))}},
   };
   static const double inf = std::numeric_limits<double>::infinity();

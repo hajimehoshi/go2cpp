@@ -145,7 +145,7 @@ public:
 
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
 
-  static Value Global();
+  static std::shared_ptr<JSObject> Global();
   static std::shared_ptr<JSObject> Go(std::unique_ptr<IValues> values);
   static std::shared_ptr<JSObject> Enosys(const std::string& name);
 
@@ -514,8 +514,8 @@ Value JSObject::FS::Write(Value self, std::vector<Value> args) {
   return Value{};
 }
 
-Value JSObject::Global() {
-  static Value& global = *new Value(MakeGlobal());
+std::shared_ptr<JSObject> JSObject::Global() {
+  static std::shared_ptr<JSObject> global = MakeGlobal();
   return global;
 }
 
