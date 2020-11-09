@@ -3,6 +3,7 @@
 *.o
 *.wasm
 .DS_Store
+.cache
 .vs
 autogen/
 bin/
