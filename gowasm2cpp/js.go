@@ -529,6 +529,25 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       std::shared_ptr<JSObject> obj = std::make_shared<JSObject>();
       return Value{obj};
     }, true);
+
+  std::shared_ptr<JSObject> arrayBuffer = std::make_shared<JSObject>("ArrayBuffer", nullptr,
+    [](Value self, std::vector<Value> args) -> Value {
+      if (args.size() == 0) {
+        error("new ArrayBuffer() is not implemented");
+      }
+      if (args.size() == 1) {
+        Value len = args[0];
+        if (!len.IsNumber()) {
+          error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+        }
+        Value v = Value{std::vector<uint8_t>(static_cast<int>(len.ToNumber()))};
+        // TODO: Add functions and properties like byteLength.
+        return v;
+      }
+      error("new ArrayBuffer with " + std::to_string(args.size()) + " args is not implemented");
+      return Value{};
+    }, true);
+
   std::shared_ptr<JSObject> u8 = std::make_shared<JSObject>("Uint8Array", nullptr,
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
@@ -536,10 +555,10 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       }
       if (args.size() == 1) {
         Value len = args[0];
-        if (len.IsNumber()) {
-          return Value{std::vector<uint8_t>(static_cast<int>(len.ToNumber()))};
+        if (!len.IsNumber()) {
+          error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
         }
-        error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+        return Value{std::vector<uint8_t>(static_cast<int>(len.ToNumber()))};
       }
       error("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
@@ -608,6 +627,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   std::shared_ptr<JSObject> global = std::make_shared<JSObject>("global", std::map<std::string, Value>{
     {"Array", Value{arr}},
     {"Object", Value{obj}},
+    {"ArrayBuffer", Value{arrayBuffer}},
     {"Uint8Array", Value{u8}},
     {"console", Value{console}},
     {"crypto", Value{crypto}},
