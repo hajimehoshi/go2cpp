@@ -142,16 +142,8 @@ public:
 
   virtual bool IsFunction() const { return false; }
   virtual bool IsConstructor() const { return false; }
-  virtual Value Invoke(Value self, std::vector<Value> args) {
-    // TODO: Make this a pure virtual function?
-    assert(false);
-    return Value{};
-  };
-  virtual Value New(std::vector<Value> args) {
-    // TODO: Make this a pure virtual function?
-    assert(false);
-    return Value{};
-  };
+  virtual Value Invoke(Value self, std::vector<Value> args);
+  virtual Value New(std::vector<Value> args);
 
   virtual std::string ToString() const {
     // TODO: Make this a pure virtual function.
@@ -479,6 +471,18 @@ std::string Value::Inspect() const {
 }
 
 IObject::~IObject() = default;
+
+Value IObject::Invoke(Value self, std::vector<Value> args) {
+  // TODO: Make this a pure virtual function?
+  error("IObject::Invoke is not implemented");
+  return Value{};
+};
+
+Value IObject::New(std::vector<Value> args) {
+  // TODO: Make this a pure virtual function?
+  error("IObject::New is not implemented");
+  return Value{};
+};
 
 JSObject::DictionaryValues::DictionaryValues(const std::map<std::string, Value>& dict)
     : dict_{dict} {
