@@ -840,7 +840,7 @@ int Go::Run(const std::vector<std::string>& args) {
     {3, Value{true}},
     {4, Value{false}},
     {5, Value{global}},
-    {6, Value{JSObject::Go(std::make_unique<JSValues>(this))}},
+    {6, Value{std::make_unique<JSValues>(this)}},
   };
   static const double inf = std::numeric_limits<double>::infinity();
   go_ref_counts_ = std::map<int32_t, double>{

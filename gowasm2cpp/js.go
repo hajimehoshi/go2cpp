@@ -201,7 +201,6 @@ public:
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
 
   static std::shared_ptr<JSObject> Global();
-  static std::shared_ptr<JSObject> Go(std::unique_ptr<IObject> values);
 
   static Value ReflectGet(Value target, const std::string& key);
   static void ReflectSet(Value target, const std::string& key, Value value);
@@ -209,7 +208,6 @@ public:
   static Value ReflectConstruct(Value target, std::vector<Value> args);
   static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
-  JSObject(const std::string& name, std::unique_ptr<IObject> values);
   JSObject(const std::string& name, const std::map<std::string, Value>& values);
   JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor);
 
@@ -725,10 +723,6 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
   return global;
 }
 
-std::shared_ptr<JSObject> JSObject::Go(std::unique_ptr<IObject> values) {
-  return std::make_shared<JSObject>("go", std::move(values));
-}
-
 Value JSObject::ReflectGet(Value target, const std::string& key) {
   if (target.IsUndefined()) {
     error("get on undefined (key: " + key + ") is forbidden");
@@ -819,11 +813,6 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
   }
   error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
-}
-
-JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values)
-    : name_{name},
-      values_{std::move(values)} {
 }
 
 JSObject::JSObject(const std::string& name, const std::map<std::string, Value>& values)
