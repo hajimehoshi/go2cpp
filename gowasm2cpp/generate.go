@@ -587,8 +587,8 @@ public:
   explicit BindingValue(const std::string& str);
   explicit BindingValue(const std::vector<uint8_t>& bytes);
 
-  bool IsNull() const;
   bool IsUndefined() const;
+  bool IsNull() const;
   bool IsBool() const;
   bool IsNumber() const;
   bool IsString() const;
@@ -801,7 +801,7 @@ BindingValue BindingValue::Invoke(std::vector<BindingValue> args) {
   for (int i = 0; i < args.size(); i++) {
     objs[i] = args[i].ToValue();
   }
-  return BindingValue{value_.ToObject().Invoke(Value::Undefined(), objs)};
+  return BindingValue{value_.ToObject().Invoke(Value{}, objs)};
 }
 
 Value BindingValue::ToValue() {
@@ -833,7 +833,7 @@ int Go::Run(const std::vector<std::string>& args) {
   values_ = std::map<int32_t, Value>{
     {0, Value{std::nan("")}},
     {1, Value{0.0}},
-    {2, Value{}},
+    {2, Value::Null()},
     {3, Value{true}},
     {4, Value{false}},
     {5, Value{global}},
@@ -972,7 +972,7 @@ Value Go::Bindings::Get(const std::string& key) {
 Value Go::LoadValue(int32_t addr) {
   double f = mem_->LoadFloat64(addr);
   if (f == 0) {
-    return Value::Undefined();
+    return Value{};
   }
   if (!std::isnan(f)) {
     return Value{f};

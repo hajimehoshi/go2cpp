@@ -100,7 +100,7 @@ var importFuncBodies = map[string]string{
 	"syscall/js.valueNew": `  Value v = go_->LoadValue(local0 + 8);
   std::vector<Value> args = go_->LoadSliceOfValues(local0 + 16);
   Value result = JSObject::ReflectConstruct(v, args);
-  if (!result.IsNull()) {
+  if (!result.IsUndefined()) {
     local0 = go_->inst_->getsp();
     go_->StoreValue(local0 + 40, result);
     go_->mem_->StoreInt8(local0 + 48, 1);

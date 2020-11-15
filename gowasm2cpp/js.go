@@ -79,15 +79,15 @@ class IObject;
 class Value {
 public:
   enum class Type {
-    Null,
     Undefined,
+    Null,
     Bool,
     Number,
     String,
     Object,
   };
 
-  static Value Undefined();
+  static Value Null();
 
   Value();
   explicit Value(bool b);
@@ -126,7 +126,7 @@ private:
   explicit Value(Type type);
   Value(Type type, double num);
 
-  Type type_ = Type::Null;
+  Type type_ = Type::Undefined;
   double num_value_ = 0;
   std::shared_ptr<std::vector<uint8_t>> bytes_value_;
   std::shared_ptr<IObject> object_value_;
@@ -291,9 +291,8 @@ void Writer::Write(const std::vector<uint8_t>& bytes) {
   }
 }
 
-Value Value::Undefined() {
-  static Value& undefined = *new Value(Type::Undefined);
-  return undefined;
+Value Value::Null() {
+  return Value{Type::Null};
 }
 
 Value::Value() = default;
@@ -582,7 +581,8 @@ Value FS::Write(Value self, std::vector<Value> args) {
     JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
     break;
   }
-  JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{}, Value{static_cast<double>(buf.size())} });
+  // The first argument must be null or an error. Undefined doesn't work.
+  JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf.size())} });
   return Value{};
 }
 
@@ -591,7 +591,7 @@ FuncObject::FuncObject(IObject::Func fn)
 }
 
 Value FuncObject::Invoke(Value self, std::vector<Value> args) {
-  return fn_(Value::Undefined(), args);
+  return fn_(Value{}, args);
 }
 
 std::shared_ptr<IObject> JSObject::Global() {
@@ -827,7 +827,7 @@ Constructor::Constructor(const std::string& name, IObject::Func fn)
 }
 
 Value Constructor::New(std::vector<Value> args) {
-  return fn_(Value::Undefined(), args);
+  return fn_(Value{}, args);
 }
 
 std::string Constructor::ToString() const {
