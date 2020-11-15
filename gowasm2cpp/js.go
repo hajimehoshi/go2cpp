@@ -482,27 +482,27 @@ std::string Value::Inspect() const {
 IObject::~IObject() = default;
 
 Value IObject::Get(const std::string& key) {
-  error("IObject::Get is not implemented");
+  error("IObject::Get is not implemented: this: " + ToString() + ", key: " + key);
   return Value{};
 }
 
 void IObject::Set(const std::string& key, Value value) {
-  error("IObject::Set is not implemented");
+  error("IObject::Set is not implemented: this: " + ToString() + ", key: " + key + ", value: " + value.Inspect());
 }
 
 void IObject::Delete(const std::string& key) {
-  error("IObject::Delete is not implemented");
+  error("IObject::Delete is not implemented: this: " + ToString() + ", key: " + key);
 }
 
 Value IObject::Invoke(Value self, std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  error("IObject::Invoke is not implemented");
+  error("IObject::Invoke is not implemented: this: " + ToString() + ", self: " + self.Inspect());
   return Value{};
 };
 
 Value IObject::New(std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  error("IObject::New is not implemented");
+  error("IObject::New is not implemented: this: " + ToString());
   return Value{};
 };
 
