@@ -930,7 +930,7 @@ Go::JSValues::JSValues(Go* go)
 
 Value Go::JSValues::Get(const std::string& key) {
   if (key == "_makeFuncWrapper") {
-    return Value{std::make_shared<JSObject>(
+    return Value{std::make_shared<FuncObject>(
       [this](Value self, std::vector<Value> args) -> Value {
         return go_->MakeFuncWrapper(static_cast<int32_t>(args[0].ToNumber()));
       }
@@ -965,7 +965,7 @@ Value Go::Bindings::Get(const std::string& key) {
     return Value{};
   }
   Func& fn = funcs_[key];
-  std::shared_ptr<JSObject> jsobj = std::make_shared<JSObject>(
+  return Value{std::make_shared<FuncObject>(
     [&fn](Value self, std::vector<Value> args) -> Value {
       std::vector<BindingValue> goargs(args.size());
       for (int i = 0; i < goargs.size(); i++) {
@@ -973,8 +973,7 @@ Value Go::Bindings::Get(const std::string& key) {
       }
       BindingValue result = fn(goargs);
       return result.ToValue();
-    });
-  return Value{jsobj};
+    })};
 }
 
 void Go::Bindings::Set(const std::string& key, Value value) {
@@ -1074,7 +1073,7 @@ void Go::Resume() {
 }
 
 Value Go::MakeFuncWrapper(int32_t id) {
-  return Value{std::make_shared<JSObject>(
+  return Value{std::make_shared<FuncObject>(
     [this, id](Value self, std::vector<Value> args) -> Value {
       auto evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
         {"id", Value{static_cast<double>(id)}},

@@ -184,6 +184,23 @@ private:
   Writer stderr_;
 };
 
+class FuncObject : public IObject {
+public:
+  using Func = std::function<Value (Value, std::vector<Value>)>;
+
+  explicit FuncObject(Func fn);
+
+  Value Get(const std::string& key) override;
+  void Set(const std::string& key, Value value) override;
+  void Delete(const std::string& key) override;
+  bool IsFunction() const override { return true; }
+  bool IsConstructor() const override { return false; }
+  Value Invoke(Value self, std::vector<Value> args) override;
+
+private:
+  Func fn_;
+};
+
 class JSObject : public IObject {
 public:
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
@@ -200,7 +217,6 @@ public:
   explicit JSObject(const std::string& name);
   JSObject(const std::string& name, std::unique_ptr<IObject> values);
   JSObject(const std::string& name, const std::map<std::string, Value>& values);
-  explicit JSObject(JSFunc fn);
   JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor);
 
   // IObject:
@@ -572,6 +588,27 @@ Value FS::Write(Value self, std::vector<Value> args) {
   return Value{};
 }
 
+FuncObject::FuncObject(Func fn)
+    : fn_(fn) {
+}
+
+Value FuncObject::Get(const std::string& key) {
+  error("FuncObject::Get is not implemented");
+  return Value{};
+}
+
+void FuncObject::Set(const std::string& key, Value value) {
+  error("FuncObject::Set is not implemented");
+}
+
+void FuncObject::Delete(const std::string& key) {
+  error("FuncObject::Delete is not implemented");
+}
+
+Value FuncObject::Invoke(Value self, std::vector<Value> args) {
+  return fn_(Value::Undefined(), args);
+}
+
 std::shared_ptr<JSObject> JSObject::Global() {
   static std::shared_ptr<JSObject> global = MakeGlobal();
   return global;
@@ -621,7 +658,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       return Value{};
     }, true);
 
-  Value getRandomValues{std::make_shared<JSObject>(
+  Value getRandomValues{std::make_shared<FuncObject>(
     [](Value self, std::vector<Value> args) -> Value {
       std::vector<uint8_t>& bs = args[0].ToBytes();
       // TODO: Use cryptographically strong random values instead of std::random_device.
@@ -636,12 +673,12 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
     {"getRandomValues", getRandomValues},
   });
 
-  static Value& writeObjectsToStdout = *new Value(std::make_shared<JSObject>(
+  static Value& writeObjectsToStdout = *new Value(std::make_shared<FuncObject>(
     [](Value self, std::vector<Value> args) -> Value {
       WriteObjects(std::cout, args);
       return Value{};
     }));
-  static Value& writeObjectsToStderr = *new Value(std::make_shared<JSObject>(
+  static Value& writeObjectsToStderr = *new Value(std::make_shared<FuncObject>(
     [](Value self, std::vector<Value> args) -> Value {
       WriteObjects(std::cerr, args);
       return Value{};
@@ -654,7 +691,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
     {"warm", writeObjectsToStderr},
   });
 
-  std::shared_ptr<JSObject> fetch = std::make_shared<JSObject>(
+  std::shared_ptr<FuncObject> fetch = std::make_shared<FuncObject>(
     [](Value self, std::vector<Value> args) -> Value {
       // TODO: Implement this.
       return Value{};
@@ -670,7 +707,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
         {"O_APPEND", Value{-1.0}},
         {"O_EXCL", Value{-1.0}},
       })}},
-    {"write", Value{std::make_shared<JSObject>(
+    {"write", Value{std::make_shared<FuncObject>(
       [](Value self, std::vector<Value> args) -> Value {
         return fsimpl.Write(self, args);
       })}},
@@ -806,10 +843,6 @@ JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values)
 JSObject::JSObject(const std::string& name, const std::map<std::string, Value>& values)
     : name_{name},
       values_{std::make_unique<DictionaryValues>(values)} {
-}
-
-JSObject::JSObject(JSFunc fn)
-    : fn_{fn} {
 }
 
 JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor)
