@@ -91,7 +91,7 @@ var importFuncBodies = map[string]string{
 	// func valueInvoke(v ref, args []ref) (ref, bool)
 	"syscall/js.valueInvoke": `  Value v = go_->LoadValue(local0 + 8);
   std::vector<Value> args = go_->LoadSliceOfValues(local0 + 16);
-  Value result = JSObject::ReflectApply(v, Value::Undefined(), args);
+  Value result = JSObject::ReflectApply(v, Value{}, args);
   local0 = go_->inst_->getsp();
   go_->StoreValue(local0 + 40, result);
   go_->mem_->StoreInt8(local0 + 48, 1);`,
