@@ -136,9 +136,9 @@ private:
 class IObject {
 public:
   virtual ~IObject();
-  virtual Value Get(const std::string& key) = 0;
-  virtual void Set(const std::string& key, Value value) = 0;
-  virtual void Delete(const std::string& key) = 0;
+  virtual Value Get(const std::string& key);
+  virtual void Set(const std::string& key, Value value);
+  virtual void Delete(const std::string& key);
 
   virtual bool IsFunction() const { return false; }
   virtual bool IsConstructor() const { return false; }
@@ -167,8 +167,6 @@ class Enosys : public IObject {
 public:
   explicit Enosys(const std::string& name);
   Value Get(const std::string& key) override;
-  void Set(const std::string& key, Value value) override;
-  void Delete(const std::string& key) override;
 
 private:
   std::string name_;
@@ -190,9 +188,6 @@ public:
 
   explicit FuncObject(Func fn);
 
-  Value Get(const std::string& key) override;
-  void Set(const std::string& key, Value value) override;
-  void Delete(const std::string& key) override;
   bool IsFunction() const override { return true; }
   bool IsConstructor() const override { return false; }
   Value Invoke(Value self, std::vector<Value> args) override;
@@ -496,6 +491,19 @@ std::string Value::Inspect() const {
 
 IObject::~IObject() = default;
 
+Value IObject::Get(const std::string& key) {
+  error("IObject::Get is not implemented");
+  return Value{};
+}
+
+void IObject::Set(const std::string& key, Value value) {
+  error("IObject::Set is not implemented");
+}
+
+void IObject::Delete(const std::string& key) {
+  error("IObject::Delete is not implemented");
+}
+
 Value IObject::Invoke(Value self, std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
   error("IObject::Invoke is not implemented");
@@ -545,14 +553,6 @@ Value Enosys::Get(const std::string& key) {
   return Value{};
 }
 
-void Enosys::Set(const std::string& key, Value value) {
-  // TODO: error?
-}
-
-void Enosys::Delete(const std::string& key) {
-  // TODO: error?
-}
-
 FS::FS()
     : stdout_{std::cout},
       stderr_{std::cerr} {
@@ -590,19 +590,6 @@ Value FS::Write(Value self, std::vector<Value> args) {
 
 FuncObject::FuncObject(Func fn)
     : fn_(fn) {
-}
-
-Value FuncObject::Get(const std::string& key) {
-  error("FuncObject::Get is not implemented");
-  return Value{};
-}
-
-void FuncObject::Set(const std::string& key, Value value) {
-  error("FuncObject::Set is not implemented");
-}
-
-void FuncObject::Delete(const std::string& key) {
-  error("FuncObject::Delete is not implemented");
 }
 
 Value FuncObject::Invoke(Value self, std::vector<Value> args) {
