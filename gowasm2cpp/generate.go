@@ -641,6 +641,7 @@ private:
     Value Get(const std::string& key) override;
     void Set(const std::string& key, Value value) override;
     void Delete(const std::string& key) override;
+    std::string ToString() const override { return "(JSValue)"; }
 
   private:
     Go* go_;
@@ -652,6 +653,7 @@ private:
     Value Get(const std::string& key) override;
     void Set(const std::string& key, Value value) override;
     void Delete(const std::string& key) override;
+    std::string ToString() const override { return "(Bindings)"; }
 
     void Set(const std::string& key, Go::Func func);
 

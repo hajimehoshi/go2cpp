@@ -147,10 +147,7 @@ public:
   virtual Value Invoke(Value self, std::vector<Value> args);
   virtual Value New(std::vector<Value> args);
 
-  virtual std::string ToString() const {
-    // TODO: Make this a pure virtual function.
-    return "";
-  }
+  virtual std::string ToString() const = 0;
 };
 
 class DictionaryValues : public IObject {
@@ -160,6 +157,7 @@ public:
   Value Get(const std::string& key) override;
   void Set(const std::string& key, Value value) override;
   void Delete(const std::string& key) override;
+  std::string ToString() const override;
 
 private:
   std::map<std::string, Value> dict_;
@@ -169,6 +167,7 @@ class Enosys : public IObject {
 public:
   explicit Enosys(const std::string& name);
   Value Get(const std::string& key) override;
+  std::string ToString() const override;
 
 private:
   std::string name_;
@@ -191,6 +190,7 @@ public:
   bool IsFunction() const override { return true; }
   bool IsConstructor() const override { return false; }
   Value Invoke(Value self, std::vector<Value> args) override;
+  std::string ToString() const override { return "(function)"; }
 
 private:
   IObject::Func fn_;
@@ -203,6 +203,7 @@ public:
   bool IsFunction() const override { return true; }
   bool IsConstructor() const override { return true; }
   Value New(std::vector<Value> args) override;
+  std::string ToString() const override;
 
 private:
   std::string name_;
@@ -528,6 +529,10 @@ void DictionaryValues::Delete(const std::string& key) {
   dict_.erase(key);
 }
 
+std::string DictionaryValues::ToString() const {
+  return "(object)";
+}
+
 Enosys::Enosys(const std::string& name)
     : name_(name) {
 }
@@ -540,6 +545,10 @@ Value Enosys::Get(const std::string& key) {
     return Value{"ENOSYS"};
   }
   return Value{};
+}
+
+std::string Enosys::ToString() const {
+  return "ENOSYS: " + name_;
 }
 
 FS::FS()
@@ -814,6 +823,10 @@ Constructor::Constructor(const std::string& name, IObject::Func fn)
 
 Value Constructor::New(std::vector<Value> args) {
   return fn_(Value::Undefined(), args);
+}
+
+std::string Constructor::ToString() const {
+  return name_;
 }
 
 }
