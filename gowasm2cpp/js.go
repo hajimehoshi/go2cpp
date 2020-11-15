@@ -702,6 +702,10 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
       })}},
   });
 
+  std::shared_ptr<DictionaryValues> navigator = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+    {"userAgent", Value{"go2cpp"}},
+  });
+
   std::shared_ptr<DictionaryValues> process = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"pid", Value{-1.0}},
     {"ppid", Value{-1.0}},
@@ -716,6 +720,7 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
     {"crypto", Value{crypto}},
     {"fetch", Value{fetch}},
     {"fs", Value{fs}},
+    {"navigator", Value{navigator}},
     {"process", Value{process}},
   });
 
