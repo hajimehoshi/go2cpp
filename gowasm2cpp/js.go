@@ -196,6 +196,19 @@ private:
   IObject::Func fn_;
 };
 
+class Constructor : public IObject {
+public:
+  Constructor(const std::string& name, IObject::Func fn);
+
+  bool IsFunction() const override { return true; }
+  bool IsConstructor() const override { return true; }
+  Value New(std::vector<Value> args) override;
+
+private:
+  std::string name_;
+  IObject::Func fn_;
+};
+
 class JSObject : public IObject {
 public:
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
@@ -207,8 +220,6 @@ public:
   static void ReflectDelete(Value target, const std::string& key);
   static Value ReflectConstruct(Value target, std::vector<Value> args);
   static Value ReflectApply(Value target, Value self, std::vector<Value> args);
-
-  JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor);
 
   // IObject:
   bool IsFunction() const override;
@@ -598,20 +609,20 @@ std::shared_ptr<IObject> JSObject::Global() {
 }
 
 std::shared_ptr<IObject> JSObject::MakeGlobal() {
-  std::shared_ptr<JSObject> arr = std::make_shared<JSObject>("Array", nullptr,
+  std::shared_ptr<Constructor> arr = std::make_shared<Constructor>("Array",
     [](Value self, std::vector<Value> args) -> Value {
       // TODO: Implement this.
       return Value{};
-    }, true);
-  std::shared_ptr<JSObject> obj = std::make_shared<JSObject>("Object", nullptr,
+    });
+  std::shared_ptr<Constructor> obj = std::make_shared<Constructor>("Object",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 1) {
         error("new Object(" + args[0].Inspect() + ") is not implemented");
       }
       return Value{std::make_shared<DictionaryValues>()};
-    }, true);
+    });
 
-  std::shared_ptr<JSObject> arrayBuffer = std::make_shared<JSObject>("ArrayBuffer", nullptr,
+  std::shared_ptr<Constructor> arrayBuffer = std::make_shared<Constructor>("ArrayBuffer",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
         error("new ArrayBuffer() is not implemented");
@@ -627,9 +638,9 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
       }
       error("new ArrayBuffer with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
-    }, true);
+    });
 
-  std::shared_ptr<JSObject> u8 = std::make_shared<JSObject>("Uint8Array", nullptr,
+  std::shared_ptr<Constructor> u8 = std::make_shared<Constructor>("Uint8Array",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
         return Value{std::vector<uint8_t>{}};
@@ -643,7 +654,7 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
       }
       error("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
-    }, true);
+    });
 
   Value getRandomValues{std::make_shared<FuncObject>(
     [](Value self, std::vector<Value> args) -> Value {
@@ -814,11 +825,13 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
   return Value{};
 }
 
-JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor)
-    : name_{name},
-      values_{std::move(values)},
-      fn_{fn},
-      ctor_{ctor} {
+Constructor::Constructor(const std::string& name, IObject::Func fn)
+    : name_(name),
+      fn_(fn) {
+}
+
+Value Constructor::New(std::vector<Value> args) {
+  return fn_(Value::Undefined(), args);
 }
 
 bool JSObject::IsFunction() const {
