@@ -211,8 +211,6 @@ private:
 
 class JSObject : public IObject {
 public:
-  using JSFunc = std::function<Value (Value, std::vector<Value>)>;
-
   static std::shared_ptr<IObject> Global();
 
   static Value ReflectGet(Value target, const std::string& key);
@@ -221,24 +219,8 @@ public:
   static Value ReflectConstruct(Value target, std::vector<Value> args);
   static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
-  // IObject:
-  bool IsFunction() const override;
-  bool IsConstructor() const override;
-  Value Get(const std::string& key) override;
-  void Set(const std::string& key, Value value) override;
-  void Delete(const std::string& key) override;
-  Value Invoke(Value self, std::vector<Value> args) override;
-  Value New(std::vector<Value> args) override;
-
-  std::string ToString() const override;
-
 private:
   static std::shared_ptr<IObject> MakeGlobal();
-
-  const std::string name_ = "(JSObject)";
-  std::unique_ptr<IObject> values_ = nullptr;
-  JSFunc fn_;
-  const bool ctor_ = false;
 };
 
 }
@@ -832,64 +814,6 @@ Constructor::Constructor(const std::string& name, IObject::Func fn)
 
 Value Constructor::New(std::vector<Value> args) {
   return fn_(Value::Undefined(), args);
-}
-
-bool JSObject::IsFunction() const {
-  return !!fn_;
-}
-
-bool JSObject::IsConstructor() const {
-  return ctor_;
-}
-
-Value JSObject::Get(const std::string& key) {
-  if (!values_) {
-    error(ToString() + "." + key + " not found");
-  }
-  return values_->Get(key);
-}
-
-void JSObject::Set(const std::string& key, Value value) {
-  if (!values_) {
-    values_ = std::make_unique<DictionaryValues>(std::map<std::string, Value>{});
-  }
-  values_->Set(key, value);
-}
-
-void JSObject::Delete(const std::string& key) {
-  if (!values_) {
-    return;
-  }
-  values_->Delete(key);
-}
-
-Value JSObject::Invoke(Value self, std::vector<Value> args) {
-  if (!fn_) {
-    error(ToString() + " is not invokable since " + ToString() + " is not a function");
-    return Value{};
-  }
-  if (ctor_) {
-    error(ToString() + " is not invokable since " + ToString() + " is a constructor");
-    return Value{};
-  }
-  return fn_(self, args);
-}
-
-Value JSObject::New(std::vector<Value> args) {
-  if (!fn_) {
-    error(ToString() + " is not invokable since " + ToString() + " is not a function");
-    return Value{};
-  }
-  if (!ctor_) {
-    error(ToString() + " is not invokable since " + ToString() + " is not a constructor");
-    return Value{};
-  }
-  // TODO: What should the receiver be?
-  return fn_(Value{}, args);
-}
-
-std::string JSObject::ToString() const {
-  return name_;
 }
 
 }
