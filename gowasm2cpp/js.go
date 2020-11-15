@@ -200,7 +200,7 @@ class JSObject : public IObject {
 public:
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
 
-  static std::shared_ptr<JSObject> Global();
+  static std::shared_ptr<IObject> Global();
 
   static Value ReflectGet(Value target, const std::string& key);
   static void ReflectSet(Value target, const std::string& key, Value value);
@@ -208,7 +208,6 @@ public:
   static Value ReflectConstruct(Value target, std::vector<Value> args);
   static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
-  JSObject(const std::string& name, const std::map<std::string, Value>& values);
   JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor);
 
   // IObject:
@@ -223,7 +222,7 @@ public:
   std::string ToString() const override;
 
 private:
-  static std::shared_ptr<JSObject> MakeGlobal();
+  static std::shared_ptr<IObject> MakeGlobal();
 
   const std::string name_ = "(JSObject)";
   std::unique_ptr<IObject> values_ = nullptr;
@@ -593,12 +592,12 @@ Value FuncObject::Invoke(Value self, std::vector<Value> args) {
   return fn_(Value::Undefined(), args);
 }
 
-std::shared_ptr<JSObject> JSObject::Global() {
-  static std::shared_ptr<JSObject> global = MakeGlobal();
+std::shared_ptr<IObject> JSObject::Global() {
+  static std::shared_ptr<IObject> global = MakeGlobal();
   return global;
 }
 
-std::shared_ptr<JSObject> JSObject::MakeGlobal() {
+std::shared_ptr<IObject> JSObject::MakeGlobal() {
   std::shared_ptr<JSObject> arr = std::make_shared<JSObject>("Array", nullptr,
     [](Value self, std::vector<Value> args) -> Value {
       // TODO: Implement this.
@@ -657,7 +656,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       }
       return Value{};
     })};
-  std::shared_ptr<JSObject> crypto = std::make_shared<JSObject>("crypto", std::map<std::string, Value>{
+  std::shared_ptr<DictionaryValues> crypto = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"getRandomValues", getRandomValues},
   });
 
@@ -671,7 +670,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       WriteObjects(std::cerr, args);
       return Value{};
     }));
-  std::shared_ptr<JSObject> console = std::make_shared<JSObject>("console", std::map<std::string, Value>{
+  std::shared_ptr<DictionaryValues> console = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"error", writeObjectsToStderr},
     {"debug", writeObjectsToStderr},
     {"info", writeObjectsToStdout},
@@ -686,7 +685,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
     });
 
   static FS& fsimpl = *new FS();
-  std::shared_ptr<JSObject> fs = std::make_shared<JSObject>("fs", std::map<std::string, Value>{
+  std::shared_ptr<DictionaryValues> fs = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"constants", Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
         {"O_WRONLY", Value{-1.0}},
         {"O_RDWR", Value{-1.0}},
@@ -701,12 +700,12 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       })}},
   });
 
-  std::shared_ptr<JSObject> process = std::make_shared<JSObject>("process", std::map<std::string, Value>{
+  std::shared_ptr<DictionaryValues> process = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"pid", Value{-1.0}},
     {"ppid", Value{-1.0}},
   });
 
-  std::shared_ptr<JSObject> global = std::make_shared<JSObject>("global", std::map<std::string, Value>{
+  std::shared_ptr<DictionaryValues> global = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"Array", Value{arr}},
     {"Object", Value{obj}},
     {"ArrayBuffer", Value{arrayBuffer}},
@@ -813,11 +812,6 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
   }
   error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
-}
-
-JSObject::JSObject(const std::string& name, const std::map<std::string, Value>& values)
-    : name_{name},
-      values_{std::make_unique<DictionaryValues>(values)} {
 }
 
 JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values, JSFunc fn, bool ctor)

@@ -829,7 +829,7 @@ int Go::Run(const std::vector<std::string>& args) {
   mem_ = std::make_unique<Mem>();
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
-  std::shared_ptr<JSObject> global = JSObject::Global();
+  std::shared_ptr<IObject> global = JSObject::Global();
   std::shared_ptr<Bindings> bindings = std::make_shared<Bindings>(std::move(bindings_));
   global->Set("c++", Value{std::move(bindings)});
 
