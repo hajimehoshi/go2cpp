@@ -153,6 +153,7 @@ public:
 
 class DictionaryValues : public IObject {
 public:
+  DictionaryValues();
   explicit DictionaryValues(const std::map<std::string, Value>& dict);
   Value Get(const std::string& key) override;
   void Set(const std::string& key, Value value) override;
@@ -196,7 +197,6 @@ public:
   static Value ReflectConstruct(Value target, std::vector<Value> args);
   static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
-  JSObject();
   explicit JSObject(const std::string& name);
   JSObject(const std::string& name, std::unique_ptr<IObject> values);
   JSObject(const std::string& name, const std::map<std::string, Value>& values);
@@ -492,6 +492,9 @@ Value IObject::New(std::vector<Value> args) {
   return Value{};
 };
 
+DictionaryValues::DictionaryValues() {
+}
+
 DictionaryValues::DictionaryValues(const std::map<std::string, Value>& dict)
     : dict_{dict} {
 }
@@ -581,8 +584,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
       if (args.size() == 1) {
         error("new Object(" + args[0].Inspect() + ") is not implemented");
       }
-      std::shared_ptr<JSObject> obj = std::make_shared<JSObject>();
-      return Value{obj};
+      return Value{std::make_shared<DictionaryValues>()};
     }, true);
 
   std::shared_ptr<JSObject> arrayBuffer = std::make_shared<JSObject>("ArrayBuffer", nullptr,
@@ -790,9 +792,6 @@ Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) 
   }
   error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
-}
-
-JSObject::JSObject() {
 }
 
 JSObject::JSObject(const std::string& name)
