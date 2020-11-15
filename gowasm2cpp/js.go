@@ -198,8 +198,6 @@ public:
 
   JSObject();
   explicit JSObject(const std::string& name);
-  JSObject(const std::map<std::string, Value>& values);
-  explicit JSObject(std::unique_ptr<IObject> values);
   JSObject(const std::string& name, std::unique_ptr<IObject> values);
   JSObject(const std::string& name, const std::map<std::string, Value>& values);
   explicit JSObject(JSFunc fn);
@@ -662,7 +660,7 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
 
   static FS& fsimpl = *new FS();
   std::shared_ptr<JSObject> fs = std::make_shared<JSObject>("fs", std::map<std::string, Value>{
-    {"constants", Value{std::make_shared<JSObject>(std::map<std::string, Value>{
+    {"constants", Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
         {"O_WRONLY", Value{-1.0}},
         {"O_RDWR", Value{-1.0}},
         {"O_CREAT", Value{-1.0}},
@@ -799,14 +797,6 @@ JSObject::JSObject() {
 
 JSObject::JSObject(const std::string& name)
     : name_{name} {
-}
-
-JSObject::JSObject(const std::map<std::string, Value>& values)
-    : values_{std::make_unique<DictionaryValues>(values)} {
-}
-
-JSObject::JSObject(std::unique_ptr<IObject> values)
-    : values_{std::move(values)} {
 }
 
 JSObject::JSObject(const std::string& name, std::unique_ptr<IObject> values)

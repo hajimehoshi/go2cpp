@@ -830,8 +830,8 @@ int Go::Run(const std::vector<std::string>& args) {
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
   std::shared_ptr<JSObject> global = JSObject::Global();
-  std::unique_ptr<Bindings> bindings = std::make_unique<Bindings>(std::move(bindings_));
-  global->Set("c++", Value{std::make_shared<JSObject>(std::move(bindings))});
+  std::shared_ptr<Bindings> bindings = std::make_shared<Bindings>(std::move(bindings_));
+  global->Set("c++", Value{std::move(bindings)});
 
   values_ = std::map<int32_t, Value>{
     {0, Value{std::nan("")}},
@@ -1076,7 +1076,7 @@ void Go::Resume() {
 Value Go::MakeFuncWrapper(int32_t id) {
   return Value{std::make_shared<JSObject>(
     [this, id](Value self, std::vector<Value> args) -> Value {
-      auto evt = Value{std::make_shared<JSObject>(std::map<std::string, Value>{
+      auto evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
         {"id", Value{static_cast<double>(id)}},
         {"this", self},
         {"args", Value{args}},
