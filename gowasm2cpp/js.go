@@ -135,6 +135,8 @@ private:
 
 class IObject {
 public:
+  using Func = std::function<Value (Value, std::vector<Value>)>;
+
   virtual ~IObject();
   virtual Value Get(const std::string& key);
   virtual void Set(const std::string& key, Value value);
@@ -184,16 +186,14 @@ private:
 
 class FuncObject : public IObject {
 public:
-  using Func = std::function<Value (Value, std::vector<Value>)>;
-
-  explicit FuncObject(Func fn);
+  explicit FuncObject(IObject::Func fn);
 
   bool IsFunction() const override { return true; }
   bool IsConstructor() const override { return false; }
   Value Invoke(Value self, std::vector<Value> args) override;
 
 private:
-  Func fn_;
+  IObject::Func fn_;
 };
 
 class JSObject : public IObject {
@@ -587,7 +587,7 @@ Value FS::Write(Value self, std::vector<Value> args) {
   return Value{};
 }
 
-FuncObject::FuncObject(Func fn)
+FuncObject::FuncObject(IObject::Func fn)
     : fn_(fn) {
 }
 

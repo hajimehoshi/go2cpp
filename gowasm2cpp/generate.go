@@ -621,7 +621,7 @@ public:
   int Run();
   int Run(int argc, char** argv);
   int Run(const std::vector<std::string>& args);
-  void Bind(const std::string& name, Func func);
+  void Bind(const std::string& name, Go::Func func);
 
 private:
   class Import : public IImport {
@@ -648,15 +648,15 @@ private:
 
   class Bindings : public IObject {
   public:
-    explicit Bindings(std::map<std::string, Func> funcs);
+    explicit Bindings(std::map<std::string, Go::Func> funcs);
     Value Get(const std::string& key) override;
     void Set(const std::string& key, Value value) override;
     void Delete(const std::string& key) override;
 
-    void Set(const std::string& key, Func func);
+    void Set(const std::string& key, Go::Func func);
 
   private:
-    std::map<std::string, Func> funcs_;
+    std::map<std::string, Go::Func> funcs_;
   };
 
   Value LoadValue(int32_t addr);
@@ -692,7 +692,7 @@ private:
 
   std::chrono::high_resolution_clock::time_point start_time_point_ = std::chrono::high_resolution_clock::now();
 
-  std::map<std::string, Func> bindings_;
+  std::map<std::string, Go::Func> bindings_;
 };
 
 }
@@ -913,7 +913,7 @@ int Go::Run(const std::vector<std::string>& args) {
   return static_cast<int>(exit_code_);
 }
 
-void Go::Bind(const std::string& name, Func func) {
+void Go::Bind(const std::string& name, Go::Func func) {
   bindings_[name] = std::move(func);
 }
 
@@ -955,7 +955,7 @@ void Go::JSValues::Delete(const std::string& key) {
   error("Go::JSValues::Delete: not implemented");
 }
 
-Go::Bindings::Bindings(std::map<std::string, Func> funcs)
+Go::Bindings::Bindings(std::map<std::string, Go::Func> funcs)
     : funcs_{std::move(funcs)} {
 }
 
@@ -964,7 +964,7 @@ Value Go::Bindings::Get(const std::string& key) {
     error("Go::Bindings::Get: " + key + " not found");
     return Value{};
   }
-  Func& fn = funcs_[key];
+  Go::Func& fn = funcs_[key];
   return Value{std::make_shared<FuncObject>(
     [&fn](Value self, std::vector<Value> args) -> Value {
       std::vector<BindingValue> goargs(args.size());
@@ -984,7 +984,7 @@ void Go::Bindings::Delete(const std::string& key) {
   error("Go::Bindings::Delete: not implemented");
 }
 
-void Go::Bindings::Set(const std::string& key, Func func) {
+void Go::Bindings::Set(const std::string& key, Go::Func func) {
   funcs_[key] = func;
 }
 
