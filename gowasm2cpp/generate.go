@@ -635,13 +635,12 @@ private:
     Go* go_;
   };
 
-  class JSValues : public IObject {
+  class GoObject : public IObject {
   public:
-    explicit JSValues(Go* go);
+    explicit GoObject(Go* go);
     Value Get(const std::string& key) override;
     void Set(const std::string& key, Value value) override;
-    void Delete(const std::string& key) override;
-    std::string ToString() const override { return "(JSValue)"; }
+    std::string ToString() const override { return "GoObject"; }
 
   private:
     Go* go_;
@@ -651,11 +650,7 @@ private:
   public:
     explicit Bindings(std::map<std::string, Go::Func> funcs);
     Value Get(const std::string& key) override;
-    void Set(const std::string& key, Value value) override;
-    void Delete(const std::string& key) override;
-    std::string ToString() const override { return "(Bindings)"; }
-
-    void Set(const std::string& key, Go::Func func);
+    std::string ToString() const override { return "Bindings"; }
 
   private:
     std::map<std::string, Go::Func> funcs_;
@@ -842,7 +837,7 @@ int Go::Run(const std::vector<std::string>& args) {
     {3, Value{true}},
     {4, Value{false}},
     {5, Value{global}},
-    {6, Value{std::make_unique<JSValues>(this)}},
+    {6, Value{std::make_unique<GoObject>(this)}},
   };
   static const double inf = std::numeric_limits<double>::infinity();
   go_ref_counts_ = std::map<int32_t, double>{
@@ -926,11 +921,11 @@ Go::Import::Import(Go* go)
 {{range $value := .ImportFuncs}}{{$value.CppImpl "Go::Import" ""}}
 {{end}}
 
-Go::JSValues::JSValues(Go* go)
+Go::GoObject::GoObject(Go* go)
     : go_(go) {
 }
 
-Value Go::JSValues::Get(const std::string& key) {
+Value Go::GoObject::Get(const std::string& key) {
   if (key == "_makeFuncWrapper") {
     return Value{std::make_shared<FuncObject>(
       [this](Value self, std::vector<Value> args) -> Value {
@@ -941,20 +936,16 @@ Value Go::JSValues::Get(const std::string& key) {
   if (key == "_pendingEvent") {
     return go_->pending_event_;
   }
-  error("Go::JSValues::Get: key not found: " + key);
+  error("Go::GoObject::Get: key not found: " + key);
   return Value{};
 }
 
-void Go::JSValues::Set(const std::string& key, Value value) {
+void Go::GoObject::Set(const std::string& key, Value value) {
   if (key == "_pendingEvent") {
     go_->pending_event_ = value;
     return;
   }
   error("key not found: " + key);
-}
-
-void Go::JSValues::Delete(const std::string& key) {
-  error("Go::JSValues::Delete: not implemented");
 }
 
 Go::Bindings::Bindings(std::map<std::string, Go::Func> funcs)
@@ -976,18 +967,6 @@ Value Go::Bindings::Get(const std::string& key) {
       BindingValue result = fn(goargs);
       return result.ToValue();
     })};
-}
-
-void Go::Bindings::Set(const std::string& key, Value value) {
-  error("Go::Bindings::Set: not implemented");
-}
-
-void Go::Bindings::Delete(const std::string& key) {
-  error("Go::Bindings::Delete: not implemented");
-}
-
-void Go::Bindings::Set(const std::string& key, Go::Func func) {
-  funcs_[key] = func;
 }
 
 Value Go::LoadValue(int32_t addr) {
