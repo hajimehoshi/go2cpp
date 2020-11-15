@@ -151,13 +151,44 @@ public:
   }
 };
 
+class DictionaryValues : public IObject {
+public:
+  explicit DictionaryValues(const std::map<std::string, Value>& dict);
+  Value Get(const std::string& key) override;
+  void Set(const std::string& key, Value value) override;
+  void Delete(const std::string& key) override;
+
+private:
+  std::map<std::string, Value> dict_;
+};
+
+class Enosys : public IObject {
+public:
+  explicit Enosys(const std::string& name);
+  Value Get(const std::string& key) override;
+  void Set(const std::string& key, Value value) override;
+  void Delete(const std::string& key) override;
+
+private:
+  std::string name_;
+};
+
+class FS {
+public:
+  FS();
+  Value Write(Value self, std::vector<Value> args);
+
+private:
+  Writer stdout_;
+  Writer stderr_;
+};
+
 class JSObject : public IObject {
 public:
   using JSFunc = std::function<Value (Value, std::vector<Value>)>;
 
   static std::shared_ptr<JSObject> Global();
   static std::shared_ptr<JSObject> Go(std::unique_ptr<IObject> values);
-  static std::shared_ptr<JSObject> Enosys(const std::string& name);
 
   static Value ReflectGet(Value target, const std::string& key);
   static void ReflectSet(Value target, const std::string& key, Value value);
@@ -186,27 +217,6 @@ public:
   std::string ToString() const override;
 
 private:
-  class DictionaryValues : public IObject {
-  public:
-    explicit DictionaryValues(const std::map<std::string, Value>& dict);
-    Value Get(const std::string& key) override;
-    void Set(const std::string& key, Value value) override;
-    void Delete(const std::string& key) override;
-
-  private:
-    std::map<std::string, Value> dict_;
-  };
-
-  class FS {
-  public:
-    FS();
-    Value Write(Value self, std::vector<Value> args);
-
-  private:
-    Writer stdout_;
-    Writer stderr_;
-  };
-
   static std::shared_ptr<JSObject> MakeGlobal();
 
   const std::string name_ = "(JSObject)";
@@ -484,11 +494,11 @@ Value IObject::New(std::vector<Value> args) {
   return Value{};
 };
 
-JSObject::DictionaryValues::DictionaryValues(const std::map<std::string, Value>& dict)
+DictionaryValues::DictionaryValues(const std::map<std::string, Value>& dict)
     : dict_{dict} {
 }
 
-Value JSObject::DictionaryValues::Get(const std::string& key) {
+Value DictionaryValues::Get(const std::string& key) {
   auto it = dict_.find(key);
   if (it == dict_.end()) {
     return Value{};
@@ -496,20 +506,42 @@ Value JSObject::DictionaryValues::Get(const std::string& key) {
   return it->second;
 }
 
-void JSObject::DictionaryValues::Set(const std::string& key, Value object) {
+void DictionaryValues::Set(const std::string& key, Value object) {
   dict_[key] = object;
 }
 
-void JSObject::DictionaryValues::Delete(const std::string& key) {
+void DictionaryValues::Delete(const std::string& key) {
   dict_.erase(key);
 }
 
-JSObject::FS::FS()
+Enosys::Enosys(const std::string& name)
+    : name_(name) {
+}
+
+Value Enosys::Get(const std::string& key) {
+  if (key == "message") {
+    return Value{name_ + " not implemented"};
+  }
+  if (key == "code") {
+    return Value{"ENOSYS"};
+  }
+  return Value{};
+}
+
+void Enosys::Set(const std::string& key, Value value) {
+  // TODO: error?
+}
+
+void Enosys::Delete(const std::string& key) {
+  // TODO: error?
+}
+
+FS::FS()
     : stdout_{std::cout},
       stderr_{std::cerr} {
 }
 
-Value JSObject::FS::Write(Value self, std::vector<Value> args) {
+Value FS::Write(Value self, std::vector<Value> args) {
   int fd = (int)(args[0].ToNumber());
   std::vector<uint8_t>& buf = args[1].ToBytes();
   int offset = (int)(args[2].ToNumber());
@@ -517,11 +549,11 @@ Value JSObject::FS::Write(Value self, std::vector<Value> args) {
   Value position = args[4];
   Value callback = args[5];
   if (offset != 0 || length != buf.size()) {
-    ReflectApply(callback, Value{}, std::vector<Value>{ Value{Enosys("write")} });
+    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
     return Value{};
   }
   if (!position.IsNull()) {
-    ReflectApply(callback, Value{}, std::vector<Value>{ Value{Enosys("write")} });
+    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
     return Value{};
   }
   switch (fd) {
@@ -532,10 +564,10 @@ Value JSObject::FS::Write(Value self, std::vector<Value> args) {
     stderr_.Write(buf);
     break;
   default:
-    ReflectApply(callback, Value{}, std::vector<Value>{ Value{Enosys("write")} });
+    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
     break;
   }
-  ReflectApply(callback, Value{}, std::vector<Value>{ Value{}, Value{static_cast<double>(buf.size())} });
+  JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{}, Value{static_cast<double>(buf.size())} });
   return Value{};
 }
 
@@ -668,13 +700,6 @@ std::shared_ptr<JSObject> JSObject::MakeGlobal() {
 
 std::shared_ptr<JSObject> JSObject::Go(std::unique_ptr<IObject> values) {
   return std::make_shared<JSObject>("go", std::move(values));
-}
-
-std::shared_ptr<JSObject> JSObject::Enosys(const std::string& name) {
-  return std::make_shared<JSObject>(std::map<std::string, Value>{
-    {"message", Value{name + " not implemented"}},
-    {"code", Value{"ENOSYS"}},
-  });
 }
 
 Value JSObject::ReflectGet(Value target, const std::string& key) {
