@@ -94,7 +94,6 @@ public:
   explicit Value(double num);
   explicit Value(const char* str);
   explicit Value(const std::string& str);
-  explicit Value(const std::vector<uint8_t>& bytes);
   explicit Value(std::shared_ptr<IObject> object);
   explicit Value(const std::vector<Value>& array);
 
@@ -114,8 +113,7 @@ public:
   bool ToBool() const;
   double ToNumber() const;
   std::string ToString() const;
-  std::vector<uint8_t>& ToBytes();
-  const std::vector<uint8_t>& ToBytes() const;
+  std::shared_ptr<std::vector<uint8_t>> ToBytes();
   IObject& ToObject();
   const IObject& ToObject() const;
   std::vector<Value>& ToArray();
@@ -128,7 +126,7 @@ private:
 
   Type type_ = Type::Undefined;
   double num_value_ = 0;
-  std::shared_ptr<std::vector<uint8_t>> bytes_value_;
+  std::string str_value_;
   std::shared_ptr<IObject> object_value_;
   std::shared_ptr<std::vector<Value>> array_value_;
 };
@@ -146,6 +144,8 @@ public:
   virtual bool IsConstructor() const { return false; }
   virtual Value Invoke(Value self, std::vector<Value> args);
   virtual Value New(std::vector<Value> args);
+
+  virtual std::shared_ptr<std::vector<uint8_t>> ToBytes() { return nullptr; }
 
   virtual std::string ToString() const = 0;
 };
@@ -271,6 +271,68 @@ void WriteObjects(std::ostream& out, const std::vector<Value>& objs) {
   out << std::endl;
 }
 
+class ArrayBuffer : public IObject {
+public:
+  explicit ArrayBuffer(size_t size)
+      : bytes_{std::make_shared<std::vector<uint8_t>>(size)} {
+  }
+
+  Value Get(const std::string& key) override {
+    // TODO: Add functions and properties like byteLength.
+    return Value{};
+  }
+
+  void Set(const std::string& key, Value value) override {
+    error("ArrayBuffer::Set is not implemented");
+  }
+
+  void Delete(const std::string& key) override {
+    error("ArrayBuffer::Delete is not implemented");
+  }
+
+  std::shared_ptr<std::vector<uint8_t>> ToBytes() override {
+    return bytes_;
+  }
+
+  std::string ToString() const override {
+    return "ArrayBuffer";
+  }
+
+private:
+  std::shared_ptr<std::vector<uint8_t>> bytes_;
+};
+
+class Uint8Array : public IObject {
+public:
+  explicit Uint8Array(size_t size)
+      : array_buffer_{std::make_shared<ArrayBuffer>(size)} {
+  }
+
+  Value Get(const std::string& key) override {
+    // TODO: Add functions and properties like byteLength.
+    return Value{};
+  }
+
+  void Set(const std::string& key, Value value) override {
+    error("Uint8Array::Set is not implemented");
+  }
+
+  void Delete(const std::string& key) override {
+    error("Uint8Array::Delete is not implemented");
+  }
+
+  std::shared_ptr<std::vector<uint8_t>> ToBytes() override {
+    return array_buffer_->ToBytes();
+  }
+
+  std::string ToString() const override {
+    return "Uint8Array";
+  }
+
+private:
+  std::shared_ptr<ArrayBuffer> array_buffer_;
+};
+
 }  // namespace
 
 Writer::Writer(std::ostream& out)
@@ -313,12 +375,7 @@ Value::Value(const char* str)
 
 Value::Value(const std::string& str)
     : type_{Type::String},
-      bytes_value_{std::make_shared<std::vector<uint8_t>>(str.begin(), str.end())} {
-}
-
-Value::Value(const std::vector<uint8_t>& bytes)
-    : type_{Type::Object},
-      bytes_value_{std::make_shared<std::vector<uint8_t>>(bytes.begin(), bytes.end())} {
+      str_value_{str} {
 }
 
 Value::Value(std::shared_ptr<IObject> object)
@@ -336,8 +393,8 @@ Value::Value(const Value& rhs) = default;
 Value& Value::operator=(const Value& rhs) = default;
 
 bool Value::operator<(const Value& rhs) const {
-  return std::tie(type_, num_value_, bytes_value_, object_value_, array_value_) <
-      std::tie(rhs.type_, rhs.num_value_, rhs.bytes_value_, rhs.object_value_, rhs.array_value_);
+  return std::tie(type_, num_value_, str_value_, object_value_, array_value_) <
+      std::tie(rhs.type_, rhs.num_value_, rhs.str_value_, rhs.object_value_, rhs.array_value_);
 }
 
 Value::Value(Type type)
@@ -370,7 +427,7 @@ bool Value::IsString() const {
 }
 
 bool Value::IsBytes() const {
-  return type_ == Type::Object && !object_value_ && !array_value_;
+  return type_ == Type::Object && !!object_value_->ToBytes();
 }
 
 bool Value::IsObject() const {
@@ -399,30 +456,18 @@ std::string Value::ToString() const {
   if (type_ != Type::String) {
     error("Value::ToString: the type must be Type::String but not: " + Inspect());
   }
-  if (!bytes_value_) {
-    error("Value::ToString: bytes_value_ must not be null");
-  }
-  return std::string(bytes_value_->begin(), bytes_value_->end());
+  return str_value_;
 }
 
-std::vector<uint8_t>& Value::ToBytes() {
+std::shared_ptr<std::vector<uint8_t>> Value::ToBytes() {
   if (type_ != Type::Object) {
     error("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
   }
-  if (!bytes_value_) {
-    error("Value::ToBytes: bytes_value_ must not be null");
+  std::shared_ptr<std::vector<uint8_t>> bytes = object_value_->ToBytes();
+  if (!bytes) {
+    error("Value::ToBytes: object_value_->ToBytes() must not be null");
   }
-  return *bytes_value_;
-}
-
-const std::vector<uint8_t>& Value::ToBytes() const {
-  if (type_ != Type::Object) {
-    error("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
-  }
-  if (!bytes_value_) {
-    error("Value::ToBytes: bytes_value_ must not be null");
-  }
-  return *bytes_value_;
+  return bytes;
 }
 
 IObject& Value::ToObject() {
@@ -557,12 +602,12 @@ FS::FS()
 
 Value FS::Write(Value self, std::vector<Value> args) {
   int fd = (int)(args[0].ToNumber());
-  std::vector<uint8_t>& buf = args[1].ToBytes();
+  std::shared_ptr<std::vector<uint8_t>> buf = args[1].ToBytes();
   int offset = (int)(args[2].ToNumber());
   int length = (int)(args[3].ToNumber());
   Value position = args[4];
   Value callback = args[5];
-  if (offset != 0 || length != buf.size()) {
+  if (offset != 0 || length != buf->size()) {
     JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
     return Value{};
   }
@@ -572,17 +617,17 @@ Value FS::Write(Value self, std::vector<Value> args) {
   }
   switch (fd) {
   case 1:
-    stdout_.Write(buf);
+    stdout_.Write(*buf);
     break;
   case 2:
-    stderr_.Write(buf);
+    stderr_.Write(*buf);
     break;
   default:
     JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
     break;
   }
   // The first argument must be null or an error. Undefined doesn't work.
-  JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf.size())} });
+  JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf->size())} });
   return Value{};
 }
 
@@ -619,13 +664,12 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
         error("new ArrayBuffer() is not implemented");
       }
       if (args.size() == 1) {
-        Value len = args[0];
-        if (!len.IsNumber()) {
+        Value vlen = args[0];
+        if (!vlen.IsNumber()) {
           error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
         }
-        Value v = Value{std::vector<uint8_t>(static_cast<int>(len.ToNumber()))};
-        // TODO: Add functions and properties like byteLength.
-        return v;
+        size_t len = static_cast<size_t>(vlen.ToNumber());
+        return Value{std::make_shared<ArrayBuffer>(len)};
       }
       error("new ArrayBuffer with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
@@ -634,14 +678,15 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
   std::shared_ptr<Constructor> u8 = std::make_shared<Constructor>("Uint8Array",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
-        return Value{std::vector<uint8_t>{}};
+        return Value{std::make_shared<Uint8Array>(0)};
       }
       if (args.size() == 1) {
-        Value len = args[0];
-        if (!len.IsNumber()) {
+        Value vlen = args[0];
+        if (!vlen.IsNumber()) {
           error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
         }
-        return Value{std::vector<uint8_t>(static_cast<int>(len.ToNumber()))};
+        size_t len = static_cast<size_t>(vlen.ToNumber());
+        return Value{std::make_shared<Uint8Array>(len)};
       }
       error("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
@@ -649,12 +694,12 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
 
   Value getRandomValues{std::make_shared<FuncObject>(
     [](Value self, std::vector<Value> args) -> Value {
-      std::vector<uint8_t>& bs = args[0].ToBytes();
+      std::shared_ptr<std::vector<uint8_t>> bs = args[0].ToBytes();
       // TODO: Use cryptographically strong random values instead of std::random_device.
       static std::random_device rd;
       std::uniform_int_distribution<uint8_t> dist(0, 255);
-      for (int i = 0; i < bs.size(); i++) {
-        bs[i] = dist(rd);
+      for (int i = 0; i < bs->size(); i++) {
+        (*bs)[i] = dist(rd);
       }
       return Value{};
     })};

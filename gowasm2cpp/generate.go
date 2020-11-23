@@ -585,20 +585,17 @@ public:
   explicit BindingValue(double num);
   explicit BindingValue(const char* str);
   explicit BindingValue(const std::string& str);
-  explicit BindingValue(const std::vector<uint8_t>& bytes);
 
   bool IsUndefined() const;
   bool IsNull() const;
   bool IsBool() const;
   bool IsNumber() const;
   bool IsString() const;
-  bool IsBytes() const;
   bool IsFunction() const;
 
   bool ToBool() const;
   double ToNumber() const;
   std::string ToString() const;
-  const std::vector<uint8_t>& ToBytes() const;
 
   BindingValue Invoke();
   BindingValue Invoke(std::vector<BindingValue> args);
@@ -740,10 +737,6 @@ BindingValue::BindingValue(const std::string& str)
     : value_{str} {
 }
 
-BindingValue::BindingValue(const std::vector<uint8_t>& bytes)
-    : value_{bytes} {
-}
-
 BindingValue::BindingValue(Value value)
     : value_{value} {
 }
@@ -768,10 +761,6 @@ bool BindingValue::IsString() const {
   return value_.IsString();
 }
 
-bool BindingValue::IsBytes() const {
-  return value_.IsBytes();
-}
-
 bool BindingValue::IsFunction() const {
   return value_.IsObject() && value_.ToObject().IsFunction();
 }
@@ -786,10 +775,6 @@ double BindingValue::ToNumber() const {
 
 std::string BindingValue::ToString() const {
   return value_.ToString();
-}
-
-const std::vector<uint8_t>& BindingValue::ToBytes() const {
-  return value_.ToBytes();
 }
 
 BindingValue BindingValue::Invoke() {
