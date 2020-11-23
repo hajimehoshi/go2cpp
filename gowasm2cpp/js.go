@@ -163,26 +163,6 @@ private:
   std::map<std::string, Value> dict_;
 };
 
-class Enosys : public IObject {
-public:
-  explicit Enosys(const std::string& name);
-  Value Get(const std::string& key) override;
-  std::string ToString() const override;
-
-private:
-  std::string name_;
-};
-
-class FS {
-public:
-  FS();
-  Value Write(Value self, std::vector<Value> args);
-
-private:
-  Writer stdout_;
-  Writer stderr_;
-};
-
 class FuncObject : public IObject {
 public:
   explicit FuncObject(IObject::Func fn);
@@ -288,14 +268,6 @@ public:
     return Value{};
   }
 
-  void Set(const std::string& key, Value value) override {
-    panic("ArrayBuffer::Set is not implemented");
-  }
-
-  void Delete(const std::string& key) override {
-    panic("ArrayBuffer::Delete is not implemented");
-  }
-
   std::shared_ptr<std::vector<uint8_t>> ToBytes() override {
     return bytes_;
   }
@@ -319,14 +291,6 @@ public:
     return Value{};
   }
 
-  void Set(const std::string& key, Value value) override {
-    panic("Uint8Array::Set is not implemented");
-  }
-
-  void Delete(const std::string& key) override {
-    panic("Uint8Array::Delete is not implemented");
-  }
-
   std::shared_ptr<std::vector<uint8_t>> ToBytes() override {
     return array_buffer_->ToBytes();
   }
@@ -337,6 +301,73 @@ public:
 
 private:
   std::shared_ptr<ArrayBuffer> array_buffer_;
+};
+
+class Enosys : public IObject {
+public:
+  explicit Enosys(const std::string& name)
+    : name_(name) {
+  }
+
+  Value Get(const std::string& key) override {
+    if (key == "message") {
+      return Value{name_ + " not implemented"};
+    }
+    if (key == "code") {
+      return Value{"ENOSYS"};
+    }
+    return Value{};
+  }
+
+  std::string ToString() const override {
+    return "ENOSYS: " + name_;
+  }
+
+private:
+  std::string name_;
+};
+
+class FS {
+public:
+  FS()
+      : stdout_{std::cout},
+        stderr_{std::cerr} {
+  }
+
+  Value Write(Value self, std::vector<Value> args) {
+    int fd = (int)(args[0].ToNumber());
+    std::shared_ptr<std::vector<uint8_t>> buf = args[1].ToBytes();
+    int offset = (int)(args[2].ToNumber());
+    int length = (int)(args[3].ToNumber());
+    Value position = args[4];
+    Value callback = args[5];
+    if (offset != 0 || length != buf->size()) {
+      JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
+      return Value{};
+    }
+    if (!position.IsNull()) {
+      JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
+      return Value{};
+    }
+    switch (fd) {
+    case 1:
+      stdout_.Write(*buf);
+      break;
+    case 2:
+      stderr_.Write(*buf);
+      break;
+    default:
+      JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
+      break;
+    }
+    // The first argument must be null or an error. Undefined doesn't work.
+    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf->size())} });
+    return Value{};
+  }
+
+private:
+  Writer stdout_;
+  Writer stderr_;
 };
 
 }  // namespace
@@ -581,60 +612,6 @@ void DictionaryValues::Delete(const std::string& key) {
 
 std::string DictionaryValues::ToString() const {
   return "(object)";
-}
-
-Enosys::Enosys(const std::string& name)
-    : name_(name) {
-}
-
-Value Enosys::Get(const std::string& key) {
-  if (key == "message") {
-    return Value{name_ + " not implemented"};
-  }
-  if (key == "code") {
-    return Value{"ENOSYS"};
-  }
-  return Value{};
-}
-
-std::string Enosys::ToString() const {
-  return "ENOSYS: " + name_;
-}
-
-FS::FS()
-    : stdout_{std::cout},
-      stderr_{std::cerr} {
-}
-
-Value FS::Write(Value self, std::vector<Value> args) {
-  int fd = (int)(args[0].ToNumber());
-  std::shared_ptr<std::vector<uint8_t>> buf = args[1].ToBytes();
-  int offset = (int)(args[2].ToNumber());
-  int length = (int)(args[3].ToNumber());
-  Value position = args[4];
-  Value callback = args[5];
-  if (offset != 0 || length != buf->size()) {
-    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
-    return Value{};
-  }
-  if (!position.IsNull()) {
-    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
-    return Value{};
-  }
-  switch (fd) {
-  case 1:
-    stdout_.Write(*buf);
-    break;
-  case 2:
-    stderr_.Write(*buf);
-    break;
-  default:
-    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
-    break;
-  }
-  // The first argument must be null or an error. Undefined doesn't work.
-  JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf->size())} });
-  return Value{};
 }
 
 FuncObject::FuncObject(IObject::Func fn)
