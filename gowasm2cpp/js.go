@@ -77,6 +77,8 @@ private:
   std::deque<uint8_t> buf_;
 };
 
+class ArrayBuffer;
+
 class Value {
 public:
   enum class Type {
@@ -118,6 +120,7 @@ public:
   IObject& ToObject();
   const IObject& ToObject() const;
   std::vector<Value>& ToArray();
+  std::shared_ptr<ArrayBuffer> ToArrayBuffer();
 
   std::string Inspect() const;
 
@@ -149,6 +152,19 @@ public:
   virtual BytesSpan ToBytes() { return BytesSpan{}; }
 
   virtual std::string ToString() const = 0;
+};
+
+class ArrayBuffer : public IObject {
+public:
+  explicit ArrayBuffer(size_t size);
+
+  size_t ByteLength() const;
+  Value Get(const std::string& key) override;
+  BytesSpan ToBytes() override;
+  std::string ToString() const override;
+
+private:
+  std::vector<uint8_t> data_;
 };
 
 class DictionaryValues : public IObject {
@@ -258,42 +274,28 @@ void WriteObjects(std::ostream& out, const std::vector<Value>& objs) {
   out << std::endl;
 }
 
-class ArrayBuffer : public IObject {
-public:
-  explicit ArrayBuffer(size_t size)
-      : bytes_(size) {
-  }
-
-  Value Get(const std::string& key) override {
-    // TODO: Add functions and properties like byteLength.
-    return Value{};
-  }
-
-  BytesSpan ToBytes() override {
-    return BytesSpan{&*bytes_.begin(), bytes_.size()};
-  }
-
-  std::string ToString() const override {
-    return "ArrayBuffer";
-  }
-
-private:
-  std::vector<uint8_t> bytes_;
-};
-
 class Uint8Array : public IObject {
 public:
   explicit Uint8Array(size_t size)
       : array_buffer_{std::make_shared<ArrayBuffer>(size)} {
   }
 
+  Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+      : array_buffer_{arrayBuffer},
+        offset_{offset},
+        length_{length} {
+  }
+
   Value Get(const std::string& key) override {
-    // TODO: Add functions and properties like byteLength.
+    if (key == "byteLength") {
+      return Value{static_cast<double>(length_)};
+    }
     return Value{};
   }
 
   BytesSpan ToBytes() override {
-    return array_buffer_->ToBytes();
+    auto bs = array_buffer_->ToBytes();
+    return BytesSpan{bs.begin() + offset_, length_};
   }
 
   std::string ToString() const override {
@@ -302,6 +304,8 @@ public:
 
 private:
   std::shared_ptr<ArrayBuffer> array_buffer_;
+  size_t offset_;
+  size_t length_;
 };
 
 class Enosys : public IObject {
@@ -538,6 +542,16 @@ std::vector<Value>& Value::ToArray() {
   return *array_value_;
 }
 
+std::shared_ptr<ArrayBuffer> Value::ToArrayBuffer() {
+  if (type_ != Type::Object) {
+    panic("Value::ToArrayBuffer: the type must be Type::Object but not: " + Inspect());
+  }
+  if (!object_value_) {
+    panic("Value::ToArrayBuffer: object_value_ must not be null");
+  }
+  return std::static_pointer_cast<ArrayBuffer>(object_value_);
+}
+
 std::string Value::Inspect() const {
   switch (type_) {
   case Type::Null:
@@ -587,6 +601,29 @@ Value IObject::New(std::vector<Value> args) {
   panic("IObject::New is not implemented: this: " + ToString());
   return Value{};
 };
+
+ArrayBuffer::ArrayBuffer(size_t size)
+    : data_(size) {
+}
+
+size_t ArrayBuffer::ByteLength() const {
+  return data_.size();
+}
+
+Value ArrayBuffer::Get(const std::string& key) {
+  if (key == "byteLength") {
+    return Value{static_cast<double>(ByteLength())};
+  }
+  return Value{};
+}
+
+BytesSpan ArrayBuffer::ToBytes() {
+  return BytesSpan{&*data_.begin(), data_.size()};
+}
+
+std::string ArrayBuffer::ToString() const {
+  return "ArrayBuffer";
+}
 
 DictionaryValues::DictionaryValues() {
 }
@@ -671,6 +708,22 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
         }
         size_t len = static_cast<size_t>(vlen.ToNumber());
         return Value{std::make_shared<Uint8Array>(len)};
+      }
+      if (args.size() == 3) {
+        if (!args[0].IsObject()) {
+          panic("new Uint8Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
+        }
+        if (!args[1].IsNumber()) {
+          panic("new Uint8Array's second argument must be a number but " + args[1].Inspect());
+        }
+        if (!args[2].IsNumber()) {
+          panic("new Uint8Array's third argument must be a number but " + args[2].Inspect());
+        }
+        std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
+        size_t offset = static_cast<size_t>(args[1].ToNumber());
+        size_t length = static_cast<size_t>(args[2].ToNumber());
+        auto u8 = std::make_shared<Uint8Array>(ab, offset, length);
+        return Value{u8};
       }
       panic("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
