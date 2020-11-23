@@ -274,13 +274,13 @@ void WriteObjects(std::ostream& out, const std::vector<Value>& objs) {
   out << std::endl;
 }
 
-class Uint8Array : public IObject {
+class TypedArray : public IObject {
 public:
-  explicit Uint8Array(size_t size)
+  explicit TypedArray(size_t size)
       : array_buffer_{std::make_shared<ArrayBuffer>(size)} {
   }
 
-  Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+  TypedArray(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
       : array_buffer_{arrayBuffer},
         offset_{offset},
         length_{length} {
@@ -289,6 +289,12 @@ public:
   Value Get(const std::string& key) override {
     if (key == "byteLength") {
       return Value{static_cast<double>(length_)};
+    }
+    if (key == "byteOffset") {
+      return Value{static_cast<double>(offset_)};
+    }
+    if (key == "buffer") {
+      return Value{array_buffer_};
     }
     return Value{};
   }
@@ -299,13 +305,38 @@ public:
   }
 
   std::string ToString() const override {
-    return "Uint8Array";
+    return "TypedArray";
   }
 
 private:
   std::shared_ptr<ArrayBuffer> array_buffer_;
-  size_t offset_;
-  size_t length_;
+  size_t offset_ = 0;
+  size_t length_ = 0;
+};
+
+class Uint8Array : public TypedArray {
+public:
+  explicit Uint8Array(size_t size)
+      : TypedArray(size) {
+  }
+
+  Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+      : TypedArray(arrayBuffer, offset, length) {
+  }
+};
+
+class Uint16Array : public TypedArray {
+public:
+  Uint16Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+      : TypedArray(arrayBuffer, offset, length) {
+  }
+};
+
+class Float32Array : public TypedArray {
+public:
+  Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+      : TypedArray(arrayBuffer, offset, length) {
+  }
 };
 
 class Enosys : public IObject {
@@ -687,7 +718,7 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
       if (args.size() == 1) {
         Value vlen = args[0];
         if (!vlen.IsNumber()) {
-          panic("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+          panic("new ArrayBuffer(" + args[0].Inspect() + ") is not implemented");
         }
         size_t len = static_cast<size_t>(vlen.ToNumber());
         return Value{std::make_shared<ArrayBuffer>(len)};
@@ -726,6 +757,50 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
         return Value{u8};
       }
       panic("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
+      return Value{};
+    });
+
+  std::shared_ptr<Constructor> u16 = std::make_shared<Constructor>("Uint16Array",
+    [](Value self, std::vector<Value> args) -> Value {
+      if (args.size() == 3) {
+        if (!args[0].IsObject()) {
+          panic("new Uint16Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
+        }
+        if (!args[1].IsNumber()) {
+          panic("new Uint16Array's second argument must be a number but " + args[1].Inspect());
+        }
+        if (!args[2].IsNumber()) {
+          panic("new Uint16Array's third argument must be a number but " + args[2].Inspect());
+        }
+        std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
+        size_t offset = static_cast<size_t>(args[1].ToNumber());
+        size_t length = static_cast<size_t>(args[2].ToNumber());
+        auto u8 = std::make_shared<Uint16Array>(ab, offset, length);
+        return Value{u8};
+      }
+      panic("new Uint16Array with " + std::to_string(args.size()) + " args is not implemented");
+      return Value{};
+    });
+
+  std::shared_ptr<Constructor> f32 = std::make_shared<Constructor>("Float32Array",
+    [](Value self, std::vector<Value> args) -> Value {
+      if (args.size() == 3) {
+        if (!args[0].IsObject()) {
+          panic("new Float32Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
+        }
+        if (!args[1].IsNumber()) {
+          panic("new Float32Array's second argument must be a number but " + args[1].Inspect());
+        }
+        if (!args[2].IsNumber()) {
+          panic("new Float32Array's third argument must be a number but " + args[2].Inspect());
+        }
+        std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
+        size_t offset = static_cast<size_t>(args[1].ToNumber());
+        size_t length = static_cast<size_t>(args[2].ToNumber());
+        auto u8 = std::make_shared<Float32Array>(ab, offset, length);
+        return Value{u8};
+      }
+      panic("new Float32Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
     });
 
@@ -794,6 +869,8 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
     {"Object", Value{obj}},
     {"ArrayBuffer", Value{arrayBuffer}},
     {"Uint8Array", Value{u8}},
+    {"Uint16Array", Value{u16}},
+    {"Float32Array", Value{f32}},
     {"console", Value{console}},
     {"crypto", Value{crypto}},
     {"fetch", Value{fetch}},
