@@ -277,7 +277,8 @@ void WriteObjects(std::ostream& out, const std::vector<Value>& objs) {
 class TypedArray : public IObject {
 public:
   explicit TypedArray(size_t size)
-      : array_buffer_{std::make_shared<ArrayBuffer>(size)} {
+      : array_buffer_{std::make_shared<ArrayBuffer>(size)},
+        length_{size} {
   }
 
   TypedArray(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
