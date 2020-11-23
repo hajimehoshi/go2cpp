@@ -135,8 +135,8 @@ var importFuncBodies = map[string]string{
     go_->mem_->StoreInt8(local0 + 48, 0);
     return;
   }
-  std::shared_ptr<std::vector<uint8_t>> srcbs = src.ToBytes();
-  std::copy(srcbs->begin(), srcbs->end(), dst.begin());
+  BytesSpan srcbs = src.ToBytes();
+  std::copy(srcbs.begin(), srcbs.end(), dst.begin());
   go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dst.size()));
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
@@ -147,9 +147,9 @@ var importFuncBodies = map[string]string{
     go_->mem_->StoreInt8(local0 + 48, 0);
     return;
   }
-  std::shared_ptr<std::vector<uint8_t>> dstbs = dst.ToBytes();
-  std::copy(src.begin(), src.end(), dstbs->begin());
-  go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dstbs->size()));
+  BytesSpan dstbs = dst.ToBytes();
+  std::copy(src.begin(), src.end(), dstbs.begin());
+  go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dstbs.size()));
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
 	"debug": `  std::cout << local0 << std::endl;`,
