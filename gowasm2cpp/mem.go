@@ -96,8 +96,8 @@ public:
   void StoreFloat64(int32_t addr, double val);
   void StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes);
 
-  BytesSegment LoadSlice(int32_t addr);
-  BytesSegment LoadSliceDirectly(int64_t array, int32_t len);
+  BytesSpan LoadSlice(int32_t addr);
+  BytesSpan LoadSliceDirectly(int64_t array, int32_t len);
   std::string LoadString(int32_t addr) const;
 
 private:
@@ -209,14 +209,14 @@ void Mem::StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes) {
   std::copy(bytes.begin(), bytes.end(), bytes_.begin() + addr);
 }
 
-BytesSegment Mem::LoadSlice(int32_t addr) {
+BytesSpan Mem::LoadSlice(int32_t addr) {
   int64_t array = LoadInt64(addr);
   int64_t len = LoadInt64(addr + 8);
-  return BytesSegment{bytes_, static_cast<BytesSegment::size_type>(array), static_cast<BytesSegment::size_type>(len)};
+  return BytesSpan{&*(bytes_.begin() + array), static_cast<BytesSpan::size_type>(len)};
 }
 
-BytesSegment Mem::LoadSliceDirectly(int64_t array, int32_t len) {
-  return BytesSegment{bytes_, static_cast<BytesSegment::size_type>(array), static_cast<BytesSegment::size_type>(len)};
+BytesSpan Mem::LoadSliceDirectly(int64_t array, int32_t len) {
+  return BytesSpan{&*(bytes_.begin() + array), static_cast<BytesSpan::size_type>(len)};
 }
 
 std::string Mem::LoadString(int32_t addr) const {

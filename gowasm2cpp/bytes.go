@@ -61,31 +61,16 @@ namespace {{.Namespace}} {
 // TODO: Replace this with std::span in the C++20 era.
 class BytesSpan {
 public:
+  using size_type = size_t;
+  using reference = uint8_t&;
+  using const_reference = const uint8_t&;
+  using iterator = uint8_t*;
+  using const_iterator = const uint8_t*;
+
   BytesSpan();
   BytesSpan(uint8_t* data, size_t size);
   BytesSpan(const BytesSpan& span);
   BytesSpan& operator=(BytesSpan& span);
-
-  uint8_t* begin();
-  uint8_t* end();
-  size_t size() const;
-
-  bool IsNull() const;
-
-private:
-  uint8_t* data_ = nullptr;
-  size_t size_ = 0;
-};
-
-class BytesSegment {
-public:
-  using size_type = std::vector<uint8_t>::size_type;
-  using reference = std::vector<uint8_t>::reference;
-  using const_reference = std::vector<uint8_t>::const_reference;
-  using iterator = std::vector<uint8_t>::iterator;
-  using const_iterator = std::vector<uint8_t>::const_iterator;
-
-  BytesSegment(std::vector<uint8_t>& bytes, size_type offset, size_type length);
 
   reference operator[](size_type n);
   const_reference operator[](size_type n) const;
@@ -95,10 +80,11 @@ public:
   iterator end();
   const_iterator end() const;
 
+  bool IsNull() const;
+
 private:
-  std::vector<uint8_t>& bytes_;
-  const size_type offset_ = 0;
-  const size_type length_ = 0;
+  uint8_t* data_ = nullptr;
+  size_t size_ = 0;
 };
 
 }
@@ -123,54 +109,36 @@ BytesSpan::BytesSpan(const BytesSpan& span) = default;
 
 BytesSpan& BytesSpan::operator=(BytesSpan& span) = default;
 
-uint8_t* BytesSpan::begin() {
+BytesSpan::reference BytesSpan::operator[](size_type n) {
+  return data_[n];
+}
+
+BytesSpan::const_reference BytesSpan::operator[](size_type n) const {
+  return data_[n];
+}
+
+BytesSpan::size_type BytesSpan::size() const {
+  return size_;
+}
+
+BytesSpan::iterator BytesSpan::begin() {
   return data_;
 }
 
-uint8_t* BytesSpan::end() {
+BytesSpan::const_iterator BytesSpan::begin() const {
+  return data_;
+}
+
+BytesSpan::iterator BytesSpan::end() {
   return data_ + size_;
 }
 
-size_t BytesSpan::size() const {
-  return size_;
+BytesSpan::const_iterator BytesSpan::end() const {
+  return data_ + size_;
 }
 
 bool BytesSpan::IsNull() const {
   return !data_;
-}
-
-BytesSegment::BytesSegment(std::vector<uint8_t>& bytes, size_type offset, size_type length)
-    : bytes_{bytes},
-      offset_{offset},
-      length_{length} {
-}
-
-BytesSegment::reference BytesSegment::operator[](size_type n) {
-  return bytes_[n + offset_];
-}
-
-BytesSegment::const_reference BytesSegment::operator[](size_type n) const {
-  return bytes_[n + offset_];
-}
-
-BytesSegment::size_type BytesSegment::size() const {
-  return length_;
-}
-
-BytesSegment::iterator BytesSegment::begin() {
-  return bytes_.begin() + offset_;
-}
-
-BytesSegment::const_iterator BytesSegment::begin() const {
-  return bytes_.begin() + offset_;
-}
-
-BytesSegment::iterator BytesSegment::end() {
-  return bytes_.begin() + offset_ + length_;
-}
-
-BytesSegment::const_iterator BytesSegment::end() const {
-  return bytes_.begin() + offset_ + length_;
 }
 
 }

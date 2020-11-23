@@ -46,7 +46,7 @@ var importFuncBodies = map[string]string{
   go_->ClearTimeout(id);`,
 
 	// func getRandomData(r []byte)
-	"runtime.getRandomData": `  BytesSegment slice = go_->mem_->LoadSlice(local0 + 8);
+	"runtime.getRandomData": `  BytesSpan slice = go_->mem_->LoadSlice(local0 + 8);
   go_->GetRandomBytes(slice);`,
 
 	// func finalizeRef(v ref)
@@ -119,7 +119,7 @@ var importFuncBodies = map[string]string{
 
 	// valueLoadString(v ref, b []byte)
 	"syscall/js.valueLoadString": `  std::string src = go_->LoadValue(local0 + 8).ToString();
-  BytesSegment dst = go_->mem_->LoadSlice(local0 + 16);
+  BytesSpan dst = go_->mem_->LoadSlice(local0 + 16);
   int len = std::min(dst.size(), src.size());
   std::copy(src.begin(), src.begin() + len, dst.begin());`,
 
@@ -129,7 +129,7 @@ var importFuncBodies = map[string]string{
 	},*/
 
 	// func copyBytesToGo(dst []byte, src ref) (int, bool)
-	"syscall/js.copyBytesToGo": `  BytesSegment dst = go_->mem_->LoadSlice(local0 + 8);
+	"syscall/js.copyBytesToGo": `  BytesSpan dst = go_->mem_->LoadSlice(local0 + 8);
   Value src = go_->LoadValue(local0 + 32);
   if (!src.IsBytes()) {
     go_->mem_->StoreInt8(local0 + 48, 0);
@@ -142,7 +142,7 @@ var importFuncBodies = map[string]string{
 
 	// func copyBytesToJS(dst ref, src []byte) (int, bool)
 	"syscall/js.copyBytesToJS": `  Value dst = go_->LoadValue(local0 + 8);
-  BytesSegment src = go_->mem_->LoadSlice(local0 + 16);
+  BytesSpan src = go_->mem_->LoadSlice(local0 + 16);
   if (!dst.IsBytes()) {
     go_->mem_->StoreInt8(local0 + 48, 0);
     return;

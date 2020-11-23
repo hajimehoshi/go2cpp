@@ -682,8 +682,8 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
       // TODO: Use cryptographically strong random values instead of std::random_device.
       static std::random_device rd;
       std::uniform_int_distribution<uint8_t> dist(0, 255);
-      for (uint8_t* it = bs.begin(); it != bs.end(); ++it) {
-        *it = dist(rd);
+      for (size_t i = 0; i < bs.size(); i++) {
+        bs[i] = dist(rd);
       }
       return Value{};
     })};

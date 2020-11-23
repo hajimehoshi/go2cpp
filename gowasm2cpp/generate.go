@@ -663,12 +663,12 @@ private:
   void Exit(int32_t code);
   void Resume();
   Value MakeFuncWrapper(int32_t id);
-  void DebugWrite(BytesSegment bytes);
+  void DebugWrite(BytesSpan bytes);
   int64_t PreciseNowInNanoseconds();
   double UnixNowInMilliseconds();
   int32_t SetTimeout(double interval);
   void ClearTimeout(int32_t id);
-  void GetRandomBytes(BytesSegment bytes);
+  void GetRandomBytes(BytesSpan bytes);
 
   Import import_;
   Writer debug_writer_;
@@ -1057,8 +1057,8 @@ Value Go::MakeFuncWrapper(int32_t id) {
   )};
 }
 
-void Go::DebugWrite(BytesSegment bytes) {
-  debug_writer_.Write(BytesSpan{&*bytes.begin(), bytes.size()});
+void Go::DebugWrite(BytesSpan bytes) {
+  debug_writer_.Write(bytes);
 }
 
 int64_t Go::PreciseNowInNanoseconds() {
@@ -1097,7 +1097,7 @@ void Go::ClearTimeout(int32_t id) {
   scheduled_timeouts_.erase(id);
 }
 
-void Go::GetRandomBytes(BytesSegment bytes) {
+void Go::GetRandomBytes(BytesSpan bytes) {
   // TODO: Use cryptographically strong random values instead of std::random_device.
   static std::random_device rd;
   std::uniform_int_distribution<uint8_t> dist(0, 255);
