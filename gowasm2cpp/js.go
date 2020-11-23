@@ -243,10 +243,16 @@ namespace {{.Namespace}} {
 
 namespace {
 
-void error(const std::string& msg) {
-  std::cerr << msg << std::endl;
-  assert(false);
-  std::exit(1);
+void panic(const std::string& msg) {
+  // TODO: Can we call a Go function without registering _panic?
+  auto handler = JSObject::Global()->Get("_panic");
+  if (handler.IsUndefined()) {
+    std::cerr << msg << std::endl;
+    assert(false);
+    std::exit(1);
+    return;
+  }
+  handler.ToObject().Invoke(Value{}, std::vector<Value>{Value{msg}});
 }
 
 std::string JoinObjects(const std::vector<Value>& objs) {
@@ -283,11 +289,11 @@ public:
   }
 
   void Set(const std::string& key, Value value) override {
-    error("ArrayBuffer::Set is not implemented");
+    panic("ArrayBuffer::Set is not implemented");
   }
 
   void Delete(const std::string& key) override {
-    error("ArrayBuffer::Delete is not implemented");
+    panic("ArrayBuffer::Delete is not implemented");
   }
 
   std::shared_ptr<std::vector<uint8_t>> ToBytes() override {
@@ -314,11 +320,11 @@ public:
   }
 
   void Set(const std::string& key, Value value) override {
-    error("Uint8Array::Set is not implemented");
+    panic("Uint8Array::Set is not implemented");
   }
 
   void Delete(const std::string& key) override {
-    error("Uint8Array::Delete is not implemented");
+    panic("Uint8Array::Delete is not implemented");
   }
 
   std::shared_ptr<std::vector<uint8_t>> ToBytes() override {
@@ -440,62 +446,62 @@ bool Value::IsArray() const {
 
 bool Value::ToBool() const {
   if (type_ != Type::Bool) {
-    error("Value::ToBool: the type must be Type::Bool but not: " + Inspect());
+    panic("Value::ToBool: the type must be Type::Bool but not: " + Inspect());
   }
   return static_cast<bool>(num_value_);
 }
 
 double Value::ToNumber() const {
   if (type_ != Type::Number) {
-    error("Value::ToNumber: the type must be Type::Number but not: " + Inspect());
+    panic("Value::ToNumber: the type must be Type::Number but not: " + Inspect());
   }
   return num_value_;
 }
 
 std::string Value::ToString() const {
   if (type_ != Type::String) {
-    error("Value::ToString: the type must be Type::String but not: " + Inspect());
+    panic("Value::ToString: the type must be Type::String but not: " + Inspect());
   }
   return str_value_;
 }
 
 std::shared_ptr<std::vector<uint8_t>> Value::ToBytes() {
   if (type_ != Type::Object) {
-    error("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
+    panic("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
   }
   std::shared_ptr<std::vector<uint8_t>> bytes = object_value_->ToBytes();
   if (!bytes) {
-    error("Value::ToBytes: object_value_->ToBytes() must not be null");
+    panic("Value::ToBytes: object_value_->ToBytes() must not be null");
   }
   return bytes;
 }
 
 IObject& Value::ToObject() {
   if (type_ != Type::Object) {
-    error("Value::ToObject: the type must be Type::Object but not: " + Inspect());
+    panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
   if (!object_value_) {
-    error("Value::ToObject: object_value_ must not be null");
+    panic("Value::ToObject: object_value_ must not be null");
   }
   return *object_value_;
 }
 
 const IObject& Value::ToObject() const {
   if (type_ != Type::Object) {
-    error("Value::ToObject: the type must be Type::Object but not: " + Inspect());
+    panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
   if (!object_value_) {
-    error("Value::ToObject: object_value_ must not be null");
+    panic("Value::ToObject: object_value_ must not be null");
   }
   return *object_value_;
 }
 
 std::vector<Value>& Value::ToArray() {
   if (type_ != Type::Object) {
-    error("Value::ToArray: the type must be Type::Object but not: " + Inspect());
+    panic("Value::ToArray: the type must be Type::Object but not: " + Inspect());
   }
   if (!array_value_) {
-    error("Value::ToArray: array_value_ must not be null");
+    panic("Value::ToArray: array_value_ must not be null");
   }
   return *array_value_;
 }
@@ -518,7 +524,7 @@ std::string Value::Inspect() const {
     }
     return "(object)";
   default:
-    error("invalid type: " + std::to_string(static_cast<int>(type_)));
+    panic("invalid type: " + std::to_string(static_cast<int>(type_)));
   }
   return "";
 }
@@ -526,27 +532,27 @@ std::string Value::Inspect() const {
 IObject::~IObject() = default;
 
 Value IObject::Get(const std::string& key) {
-  error("IObject::Get is not implemented: this: " + ToString() + ", key: " + key);
+  panic("IObject::Get is not implemented: this: " + ToString() + ", key: " + key);
   return Value{};
 }
 
 void IObject::Set(const std::string& key, Value value) {
-  error("IObject::Set is not implemented: this: " + ToString() + ", key: " + key + ", value: " + value.Inspect());
+  panic("IObject::Set is not implemented: this: " + ToString() + ", key: " + key + ", value: " + value.Inspect());
 }
 
 void IObject::Delete(const std::string& key) {
-  error("IObject::Delete is not implemented: this: " + ToString() + ", key: " + key);
+  panic("IObject::Delete is not implemented: this: " + ToString() + ", key: " + key);
 }
 
 Value IObject::Invoke(Value self, std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  error("IObject::Invoke is not implemented: this: " + ToString() + ", self: " + self.Inspect());
+  panic("IObject::Invoke is not implemented: this: " + ToString() + ", self: " + self.Inspect());
   return Value{};
 };
 
 Value IObject::New(std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  error("IObject::New is not implemented: this: " + ToString());
+  panic("IObject::New is not implemented: this: " + ToString());
   return Value{};
 };
 
@@ -653,7 +659,7 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
   std::shared_ptr<Constructor> obj = std::make_shared<Constructor>("Object",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 1) {
-        error("new Object(" + args[0].Inspect() + ") is not implemented");
+        panic("new Object(" + args[0].Inspect() + ") is not implemented");
       }
       return Value{std::make_shared<DictionaryValues>()};
     });
@@ -661,17 +667,17 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
   std::shared_ptr<Constructor> arrayBuffer = std::make_shared<Constructor>("ArrayBuffer",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
-        error("new ArrayBuffer() is not implemented");
+        panic("new ArrayBuffer() is not implemented");
       }
       if (args.size() == 1) {
         Value vlen = args[0];
         if (!vlen.IsNumber()) {
-          error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+          panic("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
         }
         size_t len = static_cast<size_t>(vlen.ToNumber());
         return Value{std::make_shared<ArrayBuffer>(len)};
       }
-      error("new ArrayBuffer with " + std::to_string(args.size()) + " args is not implemented");
+      panic("new ArrayBuffer with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
     });
 
@@ -683,12 +689,12 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
       if (args.size() == 1) {
         Value vlen = args[0];
         if (!vlen.IsNumber()) {
-          error("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+          panic("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
         }
         size_t len = static_cast<size_t>(vlen.ToNumber());
         return Value{std::make_shared<Uint8Array>(len)};
       }
-      error("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
+      panic("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
     });
 
@@ -769,11 +775,11 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
 
 Value JSObject::ReflectGet(Value target, const std::string& key) {
   if (target.IsUndefined()) {
-    error("get on undefined (key: " + key + ") is forbidden");
+    panic("get on undefined (key: " + key + ") is forbidden");
     return Value{};
   }
   if (target.IsNull()) {
-    error("get on null (key: " + key + ") is forbidden");
+    panic("get on null (key: " + key + ") is forbidden");
     return Value{};
   }
   if (target.IsObject()) {
@@ -785,77 +791,77 @@ Value JSObject::ReflectGet(Value target, const std::string& key) {
       return target.ToArray()[idx];
     }
   }
-  error(target.Inspect() + "." + key + " not found");
+  panic(target.Inspect() + "." + key + " not found");
   return Value{};
 }
 
 void JSObject::ReflectSet(Value target, const std::string& key, Value value) {
   if (target.IsUndefined()) {
-    error("set on undefined (key: " + key + ") is forbidden");
+    panic("set on undefined (key: " + key + ") is forbidden");
   }
   if (target.IsNull()) {
-    error("set on null (key: " + key + ") is forbidden");
+    panic("set on null (key: " + key + ") is forbidden");
   }
   if (target.IsObject()) {
     target.ToObject().Set(key, value);
     return;
   }
-  error(target.Inspect() + "." + key + " cannot be set");
+  panic(target.Inspect() + "." + key + " cannot be set");
 }
 
 void JSObject::ReflectDelete(Value target, const std::string& key) {
   if (target.IsUndefined()) {
-    error("delete on undefined (key: " + key + ") is forbidden");
+    panic("delete on undefined (key: " + key + ") is forbidden");
   }
   if (target.IsNull()) {
-    error("delete on null (key: " + key + ") is forbidden");
+    panic("delete on null (key: " + key + ") is forbidden");
   }
   if (target.IsObject()) {
     target.ToObject().Delete(key);
     return;
   }
-  error(target.Inspect() + "." + key + " cannot be deleted");
+  panic(target.Inspect() + "." + key + " cannot be deleted");
 }
 
 Value JSObject::ReflectConstruct(Value target, std::vector<Value> args) {
   if (target.IsUndefined()) {
-    error("new on undefined is forbidden");
+    panic("new on undefined is forbidden");
     return Value{};
   }
   if (target.IsNull()) {
-    error("new on null is forbidden");
+    panic("new on null is forbidden");
     return Value{};
   }
   if (target.IsObject()) {
     IObject& t = target.ToObject();
     if (!t.IsConstructor()) {
-      error(t.ToString() + " is not a constructor");
+      panic(t.ToString() + " is not a constructor");
       return Value{};
     }
     return t.New(args);
   }
-  error("new " + target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
+  panic("new " + target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
 }
 
 Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) {
   if (target.IsUndefined()) {
-    error("apply on undefined is forbidden");
+    panic("apply on undefined is forbidden");
     return Value{};
   }
   if (target.IsNull()) {
-    error("apply on null is forbidden");
+    panic("apply on null is forbidden");
     return Value{};
   }
   if (target.IsObject()) {
     IObject& t = target.ToObject();
     if (t.IsConstructor()) {
-      error(t.ToString() + " is a constructor");
+      panic(t.ToString() + " is a constructor");
       return Value{};
     }
     return t.Invoke(self, args);
   }
-  error(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
+  panic(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
 }
 
