@@ -329,14 +329,14 @@ public:
 class Uint16Array : public TypedArray {
 public:
   Uint16Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
-      : TypedArray(arrayBuffer, offset, length) {
+      : TypedArray(arrayBuffer, offset*2, length*2) {
   }
 };
 
 class Float32Array : public TypedArray {
 public:
   Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
-      : TypedArray(arrayBuffer, offset, length) {
+      : TypedArray(arrayBuffer, offset*4, length*4) {
   }
 };
 
@@ -776,8 +776,8 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
         std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
         size_t offset = static_cast<size_t>(args[1].ToNumber());
         size_t length = static_cast<size_t>(args[2].ToNumber());
-        auto u8 = std::make_shared<Uint16Array>(ab, offset, length);
-        return Value{u8};
+        auto u16 = std::make_shared<Uint16Array>(ab, offset, length);
+        return Value{u16};
       }
       panic("new Uint16Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
@@ -798,8 +798,8 @@ std::shared_ptr<IObject> JSObject::MakeGlobal() {
         std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
         size_t offset = static_cast<size_t>(args[1].ToNumber());
         size_t length = static_cast<size_t>(args[2].ToNumber());
-        auto u8 = std::make_shared<Float32Array>(ab, offset, length);
-        return Value{u8};
+        auto f32 = std::make_shared<Float32Array>(ab, offset, length);
+        return Value{f32};
       }
       panic("new Float32Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
