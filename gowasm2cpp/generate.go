@@ -623,6 +623,7 @@ public:
   int Run(int argc, char** argv);
   int Run(const std::vector<std::string>& args);
   void Bind(const std::string& name, Go::Func func);
+  void EnqueueTask(std::function<void()> task);
 
 private:
   class Import : public IImport {
@@ -713,7 +714,6 @@ namespace {{.Namespace}} {
 
 namespace {
 
-// TODO: Merge this with the same one in js.cpp.
 void error(const std::string& msg) {
   std::cerr << msg << std::endl;
   assert(false);
@@ -1104,6 +1104,10 @@ void Go::GetRandomBytes(BytesSpan bytes) {
   for (int i = 0; i < bytes.size(); i++) {
     bytes[i] = dist(rd);
   }
+}
+
+void Go::EnqueueTask(std::function<void()> task) {
+  task_queue_.Enqueue(task);
 }
 
 }
