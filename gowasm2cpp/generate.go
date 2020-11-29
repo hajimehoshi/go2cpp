@@ -535,6 +535,9 @@ func Generate(outDir string, include string, wasmFile string, namespace string) 
 		return writeBits(outDir, incpath, namespace)
 	})
 	g.Go(func() error {
+		return writeGL(outDir, incpath, namespace)
+	})
+	g.Go(func() error {
 		return writeJS(outDir, incpath, namespace)
 	})
 	g.Go(func() error {
