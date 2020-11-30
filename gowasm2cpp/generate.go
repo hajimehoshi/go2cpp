@@ -701,7 +701,7 @@ int Go::Run(const std::vector<std::string>& args) {
     {2, Value::Null()},
     {3, Value{true}},
     {4, Value{false}},
-    {5, JSObject::Global()},
+    {5, Value::Global()},
     {6, Value{std::make_unique<GoObject>(this)}},
   };
   static const double inf = std::numeric_limits<double>::infinity();
@@ -903,7 +903,7 @@ Value Go::MakeFuncWrapper(int32_t id) {
       })};
       pending_event_ = evt;
       Resume();
-      return JSObject::ReflectGet(evt, "result");
+      return Value::ReflectGet(evt, "result");
     }
   )};
 }

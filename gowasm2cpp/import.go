@@ -63,27 +63,27 @@ var importFuncBodies = map[string]string{
 	"syscall/js.stringVal": `  go_->StoreValue(local0 + 24, Value{go_->mem_->LoadString(local0 + 8)});`,
 
 	// func valueGet(v ref, p string) ref
-	"syscall/js.valueGet": `  Value result = JSObject::ReflectGet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));
+	"syscall/js.valueGet": `  Value result = Value::ReflectGet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));
   local0 = go_->inst_->getsp();
   go_->StoreValue(local0 + 32, result);`,
 
 	// func valueSet(v ref, p string, x ref)
-	"syscall/js.valueSet": `  JSObject::ReflectSet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16), go_->LoadValue(local0 + 32));`,
+	"syscall/js.valueSet": `  Value::ReflectSet(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16), go_->LoadValue(local0 + 32));`,
 
 	// func valueDelete(v ref, p string)
-	"syscall/js.valueDelete": `  JSObject::ReflectDelete(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));`,
+	"syscall/js.valueDelete": `  Value::ReflectDelete(go_->LoadValue(local0 + 8), go_->mem_->LoadString(local0 + 16));`,
 
 	// func valueIndex(v ref, i int) ref
-	"syscall/js.valueIndex": `  go_->StoreValue(local0 + 24, JSObject::ReflectGet(go_->LoadValue(local0 + 8), std::to_string(go_->mem_->LoadInt64(local0 + 16))));`,
+	"syscall/js.valueIndex": `  go_->StoreValue(local0 + 24, Value::ReflectGet(go_->LoadValue(local0 + 8), std::to_string(go_->mem_->LoadInt64(local0 + 16))));`,
 
 	// valueSetIndex(v ref, i int, x ref)
-	"syscall/js.valueSetIndex": `  JSObject::ReflectSet(go_->LoadValue(local0 + 8), std::to_string(go_->mem_->LoadInt64(local0 + 16)), go_->LoadValue(local0 + 24));`,
+	"syscall/js.valueSetIndex": `  Value::ReflectSet(go_->LoadValue(local0 + 8), std::to_string(go_->mem_->LoadInt64(local0 + 16)), go_->LoadValue(local0 + 24));`,
 
 	// func valueCall(v ref, m string, args []ref) (ref, bool)
 	"syscall/js.valueCall": `  Value v = go_->LoadValue(local0 + 8);
-  Value m = JSObject::ReflectGet(v, go_->mem_->LoadString(local0 + 16));
+  Value m = Value::ReflectGet(v, go_->mem_->LoadString(local0 + 16));
   std::vector<Value> args = go_->LoadSliceOfValues(local0 + 32);
-  Value result = JSObject::ReflectApply(m, v, args);
+  Value result = Value::ReflectApply(m, v, args);
   local0 = go_->inst_->getsp();
   go_->StoreValue(local0 + 56, result);
   go_->mem_->StoreInt8(local0 + 64, 1);`,
@@ -91,7 +91,7 @@ var importFuncBodies = map[string]string{
 	// func valueInvoke(v ref, args []ref) (ref, bool)
 	"syscall/js.valueInvoke": `  Value v = go_->LoadValue(local0 + 8);
   std::vector<Value> args = go_->LoadSliceOfValues(local0 + 16);
-  Value result = JSObject::ReflectApply(v, Value{}, args);
+  Value result = Value::ReflectApply(v, Value{}, args);
   local0 = go_->inst_->getsp();
   go_->StoreValue(local0 + 40, result);
   go_->mem_->StoreInt8(local0 + 48, 1);`,
@@ -99,7 +99,7 @@ var importFuncBodies = map[string]string{
 	// func valueNew(v ref, args []ref) (ref, bool)
 	"syscall/js.valueNew": `  Value v = go_->LoadValue(local0 + 8);
   std::vector<Value> args = go_->LoadSliceOfValues(local0 + 16);
-  Value result = JSObject::ReflectConstruct(v, args);
+  Value result = Value::ReflectConstruct(v, args);
   if (!result.IsUndefined()) {
     local0 = go_->inst_->getsp();
     go_->StoreValue(local0 + 40, result);

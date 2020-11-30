@@ -91,6 +91,12 @@ public:
   };
 
   static Value Null();
+  static Value Global();
+  static Value ReflectGet(Value target, const std::string& key);
+  static void ReflectSet(Value target, const std::string& key, Value value);
+  static void ReflectDelete(Value target, const std::string& key);
+  static Value ReflectConstruct(Value target, std::vector<Value> args);
+  static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
   Value();
   explicit Value(bool b);
@@ -125,6 +131,8 @@ public:
   std::string Inspect() const;
 
 private:
+  static Value MakeGlobal();
+
   explicit Value(Type type);
   Value(Type type, double num);
 
@@ -207,20 +215,6 @@ private:
   Object::Func fn_;
 };
 
-class JSObject {
-public:
-  static Value Global();
-
-  static Value ReflectGet(Value target, const std::string& key);
-  static void ReflectSet(Value target, const std::string& key, Value value);
-  static void ReflectDelete(Value target, const std::string& key);
-  static Value ReflectConstruct(Value target, std::vector<Value> args);
-  static Value ReflectApply(Value target, Value self, std::vector<Value> args);
-
-private:
-  static Value MakeGlobal();
-};
-
 }
 
 #endif  // {{.IncludeGuard}}
@@ -242,7 +236,7 @@ namespace {
 
 void panic(const std::string& msg) {
   // TODO: Can we call a Go function without registering _panic?
-  auto handler = JSObject::Global().ToObject().Get("_panic");
+  auto handler = Value::Global().ToObject().Get("_panic");
   if (handler.IsUndefined()) {
     std::cerr << msg << std::endl;
     assert(false);
@@ -379,11 +373,11 @@ public:
     Value position = args[4];
     Value callback = args[5];
     if (offset != 0 || length != buf.size()) {
-      JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
+      Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
       return Value{};
     }
     if (!position.IsNull()) {
-      JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
+      Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
       return Value{};
     }
     switch (fd) {
@@ -394,11 +388,11 @@ public:
       stderr_.Write(buf);
       break;
     default:
-      JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
+      Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
       break;
     }
     // The first argument must be null or an error. Undefined doesn't work.
-    JSObject::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf.size())} });
+    Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf.size())} });
     return Value{};
   }
 
@@ -692,12 +686,12 @@ Value Function::Invoke(Value self, std::vector<Value> args) {
   return fn_(Value{}, args);
 }
 
-Value JSObject::Global() {
+Value Value::Global() {
   static Value global = MakeGlobal();
   return global;
 }
 
-Value JSObject::MakeGlobal() {
+Value Value::MakeGlobal() {
   std::shared_ptr<Constructor> arr = std::make_shared<Constructor>("Array",
     [](Value self, std::vector<Value> args) -> Value {
       // TODO: Implement this.
@@ -882,7 +876,7 @@ Value JSObject::MakeGlobal() {
   return Value{global};
 }
 
-Value JSObject::ReflectGet(Value target, const std::string& key) {
+Value Value::ReflectGet(Value target, const std::string& key) {
   if (target.IsUndefined()) {
     panic("get on undefined (key: " + key + ") is forbidden");
     return Value{};
@@ -904,7 +898,7 @@ Value JSObject::ReflectGet(Value target, const std::string& key) {
   return Value{};
 }
 
-void JSObject::ReflectSet(Value target, const std::string& key, Value value) {
+void Value::ReflectSet(Value target, const std::string& key, Value value) {
   if (target.IsUndefined()) {
     panic("set on undefined (key: " + key + ") is forbidden");
   }
@@ -918,7 +912,7 @@ void JSObject::ReflectSet(Value target, const std::string& key, Value value) {
   panic(target.Inspect() + "." + key + " cannot be set");
 }
 
-void JSObject::ReflectDelete(Value target, const std::string& key) {
+void Value::ReflectDelete(Value target, const std::string& key) {
   if (target.IsUndefined()) {
     panic("delete on undefined (key: " + key + ") is forbidden");
   }
@@ -932,7 +926,7 @@ void JSObject::ReflectDelete(Value target, const std::string& key) {
   panic(target.Inspect() + "." + key + " cannot be deleted");
 }
 
-Value JSObject::ReflectConstruct(Value target, std::vector<Value> args) {
+Value Value::ReflectConstruct(Value target, std::vector<Value> args) {
   if (target.IsUndefined()) {
     panic("new on undefined is forbidden");
     return Value{};
@@ -953,7 +947,7 @@ Value JSObject::ReflectConstruct(Value target, std::vector<Value> args) {
   return Value{};
 }
 
-Value JSObject::ReflectApply(Value target, Value self, std::vector<Value> args) {
+Value Value::ReflectApply(Value target, Value self, std::vector<Value> args) {
   if (target.IsUndefined()) {
     panic("apply on undefined is forbidden");
     return Value{};
