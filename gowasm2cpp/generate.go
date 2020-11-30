@@ -790,7 +790,7 @@ Go::GoObject::GoObject(Go* go)
 
 Value Go::GoObject::Get(const std::string& key) {
   if (key == "_makeFuncWrapper") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
       [this](Value self, std::vector<Value> args) -> Value {
         return go_->MakeFuncWrapper(static_cast<int32_t>(args[0].ToNumber()));
       }
@@ -896,7 +896,7 @@ void Go::Resume() {
 }
 
 Value Go::MakeFuncWrapper(int32_t id) {
-  return Value{std::make_shared<FuncObject>(
+  return Value{std::make_shared<Function>(
     [this, id](Value self, std::vector<Value> args) -> Value {
       auto evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
         {"id", Value{static_cast<double>(id)}},

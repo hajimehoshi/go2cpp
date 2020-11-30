@@ -180,9 +180,9 @@ private:
   std::map<std::string, Value> dict_;
 };
 
-class FuncObject : public Object {
+class Function : public Object {
 public:
-  explicit FuncObject(Object::Func fn);
+  explicit Function(Object::Func fn);
 
   bool IsFunction() const override { return true; }
   bool IsConstructor() const override { return false; }
@@ -684,11 +684,11 @@ std::string DictionaryValues::ToString() const {
   return "(object)";
 }
 
-FuncObject::FuncObject(Object::Func fn)
+Function::Function(Object::Func fn)
     : fn_(fn) {
 }
 
-Value FuncObject::Invoke(Value self, std::vector<Value> args) {
+Value Function::Invoke(Value self, std::vector<Value> args) {
   return fn_(Value{}, args);
 }
 
@@ -805,7 +805,7 @@ std::shared_ptr<Object> JSObject::MakeGlobal() {
       return Value{};
     });
 
-  Value getRandomValues{std::make_shared<FuncObject>(
+  Value getRandomValues{std::make_shared<Function>(
     [](Value self, std::vector<Value> args) -> Value {
       BytesSpan bs = args[0].ToBytes();
       // TODO: Use cryptographically strong random values instead of std::random_device.
@@ -820,12 +820,12 @@ std::shared_ptr<Object> JSObject::MakeGlobal() {
     {"getRandomValues", getRandomValues},
   });
 
-  static Value& writeObjectsToStdout = *new Value(std::make_shared<FuncObject>(
+  static Value& writeObjectsToStdout = *new Value(std::make_shared<Function>(
     [](Value self, std::vector<Value> args) -> Value {
       WriteObjects(std::cout, args);
       return Value{};
     }));
-  static Value& writeObjectsToStderr = *new Value(std::make_shared<FuncObject>(
+  static Value& writeObjectsToStderr = *new Value(std::make_shared<Function>(
     [](Value self, std::vector<Value> args) -> Value {
       WriteObjects(std::cerr, args);
       return Value{};
@@ -838,7 +838,7 @@ std::shared_ptr<Object> JSObject::MakeGlobal() {
     {"warm", writeObjectsToStderr},
   });
 
-  std::shared_ptr<FuncObject> fetch = std::make_shared<FuncObject>(
+  std::shared_ptr<Function> fetch = std::make_shared<Function>(
     [](Value self, std::vector<Value> args) -> Value {
       // TODO: Implement this.
       return Value{};
@@ -854,7 +854,7 @@ std::shared_ptr<Object> JSObject::MakeGlobal() {
         {"O_APPEND", Value{-1.0}},
         {"O_EXCL", Value{-1.0}},
       })}},
-    {"write", Value{std::make_shared<FuncObject>(
+    {"write", Value{std::make_shared<Function>(
       [](Value self, std::vector<Value> args) -> Value {
         return fsimpl.Write(self, args);
       })}},

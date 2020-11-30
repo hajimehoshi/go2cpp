@@ -210,7 +210,7 @@ GL::GL(std::function<void*(const char*)> get_proc_address) {
 
 Value GL::Get(const std::string &key) {
   if (key == "activeTexture") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum texture = static_cast<GLenum>(args[0].ToNumber());
           using f = void(*)(GLenum texture);
@@ -219,7 +219,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "attachShader") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           GLuint shader = static_cast<GLuint>(args[1].ToNumber());
@@ -229,7 +229,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "bindAttribLocation") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           GLuint index = static_cast<GLuint>(args[1].ToNumber());
@@ -241,7 +241,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "bindBuffer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLuint buffer = static_cast<GLuint>(args[1].ToNumber());
@@ -251,7 +251,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "bindFramebuffer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLuint framebuffer = static_cast<GLuint>(args[1].ToNumber());
@@ -261,7 +261,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "bindTexture") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLuint texture = static_cast<GLuint>(args[1].ToNumber());
@@ -271,7 +271,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "blendFunc") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum sfactor = static_cast<GLenum>(args[0].ToNumber());
           GLenum dfactor = static_cast<GLenum>(args[1].ToNumber());
@@ -281,7 +281,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "bufferData") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLsizeiptr size = static_cast<GLsizeiptr>(args[1].ToNumber());
@@ -293,7 +293,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "bufferSubData") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLintptr offset = static_cast<GLintptr>(args[1].ToNumber());
@@ -304,7 +304,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "checkFramebufferStatus") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           using f = GLenum(*)(GLenum);
@@ -313,7 +313,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "compileShader") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint shader = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLuint);
@@ -322,7 +322,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "createBuffer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint buffer;
           using f = void(*)(GLsizei, GLuint*);
@@ -331,7 +331,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "createFramebuffer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint framebuffer;
           using f = void(*)(GLsizei, GLuint*);
@@ -340,7 +340,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "createProgram") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           using f = GLuint(*)();
           GLuint program = reinterpret_cast<f>(glCreateProgram_)();
@@ -348,7 +348,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "createShader") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum shaderType = static_cast<GLenum>(args[0].ToNumber());
           using f = GLuint(*)(GLenum);
@@ -357,7 +357,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "createTexture") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint texture;
           using f = void(*)(GLsizei, GLuint*);
@@ -366,7 +366,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "deleteBuffer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint buffer = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLsizei, GLuint*);
@@ -375,7 +375,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "deleteFramebuffer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint framebuffer = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLsizei, GLuint*);
@@ -384,7 +384,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "deleteProgram") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLuint);
@@ -393,7 +393,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "deleteShader") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint shader = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLuint);
@@ -402,7 +402,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "deleteTexture") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint texture = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLsizei, GLuint*);
@@ -411,7 +411,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "disableVertexAttribArray") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint index = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLuint);
@@ -420,7 +420,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "drawElements") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum mode = static_cast<GLenum>(args[0].ToNumber());
           GLsizei count = static_cast<GLsizei>(args[1].ToNumber());
@@ -439,7 +439,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "enable") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum cap = static_cast<GLenum>(args[0].ToNumber());
           using f = void(*)(GLenum);
@@ -448,7 +448,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "enableVertexAttribArray") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint index = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLuint);
@@ -457,7 +457,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "flush") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           using f = void(*)();
           reinterpret_cast<f>(glFlush_)();
@@ -465,7 +465,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "framebufferTexture2D") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLenum attachment = static_cast<GLenum>(args[1].ToNumber());
@@ -479,7 +479,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "getError") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           using f = GLenum(*)();
           GLenum error = reinterpret_cast<f>(glGetError_)();
@@ -487,14 +487,14 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "getExtension") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [](Value self, std::vector<Value> args) -> Value {
           // Do nothing.
           return Value{};
         })};
   }
   if (key == "getParameter") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum pname = static_cast<GLenum>(args[0].ToNumber());
           GLint data;
@@ -504,7 +504,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "getProgramInfoLog") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           GLint buflen;
@@ -520,7 +520,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "getProgramParameter") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           GLenum pname = static_cast<GLenum>(args[1].ToNumber());
@@ -538,7 +538,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "getShaderInfoLog") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint shader = static_cast<GLuint>(args[0].ToNumber());
           GLint buflen;
@@ -554,7 +554,7 @@ Value GL::Get(const std::string &key) {
       })};
   }
   if (key == "getShaderParameter") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint shader = static_cast<GLuint>(args[0].ToNumber());
           GLenum pname = static_cast<GLenum>(args[1].ToNumber());
@@ -571,7 +571,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "getShaderPrecisionFormat") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [](Value self, std::vector<Value> args) -> Value {
           GLenum shaderType = static_cast<GLenum>(args[0].ToNumber());
           GLenum precisionType = static_cast<GLenum>(args[1].ToNumber());
@@ -592,7 +592,7 @@ Value GL::Get(const std::string &key) {
         })};
 }
   if (key == "getUniformLocation") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           std::string name = args[1].ToString();
@@ -602,13 +602,13 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "isContextLost") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [](Value self, std::vector<Value> args) -> Value {
           return Value{false};
         })};
   }
   if (key == "isFramebuffer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint framebuffer = static_cast<GLuint>(args[0].ToNumber());
           using f = GLboolean(*)(GLuint);
@@ -617,7 +617,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "isProgram") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           using f = GLboolean(*)(GLuint);
@@ -626,7 +626,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "isTexture") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint texture = static_cast<GLuint>(args[0].ToNumber());
           using f = GLboolean(*)(GLuint);
@@ -635,7 +635,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "linkProgram") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLuint);
@@ -644,7 +644,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "pixelStorei") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum pname = static_cast<GLenum>(args[0].ToNumber());
           GLint param = static_cast<GLint>(args[1].ToNumber());
@@ -654,7 +654,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "readPixels") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint x = static_cast<GLint>(args[0].ToNumber());
           GLint y = static_cast<GLint>(args[1].ToNumber());
@@ -676,7 +676,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "scissor") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint x = static_cast<GLint>(args[0].ToNumber());
           GLint y = static_cast<GLint>(args[1].ToNumber());
@@ -688,7 +688,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "shaderSource") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint shader = static_cast<GLuint>(args[0].ToNumber());
           std::string str = args[1].ToString();
@@ -699,7 +699,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "texImage2D") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLint level = static_cast<GLint>(args[1].ToNumber());
@@ -720,7 +720,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "texParameteri") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLenum pname = static_cast<GLenum>(args[1].ToNumber());
@@ -731,7 +731,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "texSubImage2D") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLint level = static_cast<GLint>(args[1].ToNumber());
@@ -752,7 +752,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniform1f") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLfloat v0 = static_cast<GLfloat>(args[1].ToNumber());
@@ -762,7 +762,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniform1fv") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
@@ -774,7 +774,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniform1i") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLint v0 = static_cast<GLint>(args[1].ToNumber());
@@ -784,7 +784,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniform2fv") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
@@ -796,7 +796,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniform3fv") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
@@ -808,7 +808,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniform4fv") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
@@ -820,7 +820,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniformMatrix2fv") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
@@ -833,7 +833,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniformMatrix3fv") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
@@ -846,7 +846,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "uniformMatrix4fv") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
@@ -859,7 +859,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "useProgram") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint program = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLuint);
@@ -868,7 +868,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "vertexAttribPointer") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLuint index = static_cast<GLuint>(args[0].ToNumber());
           GLint size = static_cast<GLint>(args[1].ToNumber());
@@ -890,7 +890,7 @@ Value GL::Get(const std::string &key) {
         })};
   }
   if (key == "viewport") {
-    return Value{std::make_shared<FuncObject>(
+    return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint x = static_cast<GLint>(args[0].ToNumber());
           GLint y = static_cast<GLint>(args[1].ToNumber());
