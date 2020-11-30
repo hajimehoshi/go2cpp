@@ -695,15 +695,13 @@ int Go::Run(const std::vector<std::string>& args) {
   mem_ = std::make_unique<Mem>();
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
-  std::shared_ptr<Object> global = JSObject::Global();
-
   values_ = std::map<int32_t, Value>{
     {0, Value{std::nan("")}},
     {1, Value{0.0}},
     {2, Value::Null()},
     {3, Value{true}},
     {4, Value{false}},
-    {5, Value{global}},
+    {5, JSObject::Global()},
     {6, Value{std::make_unique<GoObject>(this)}},
   };
   static const double inf = std::numeric_limits<double>::infinity();

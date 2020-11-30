@@ -209,7 +209,7 @@ private:
 
 class JSObject {
 public:
-  static std::shared_ptr<Object> Global();
+  static Value Global();
 
   static Value ReflectGet(Value target, const std::string& key);
   static void ReflectSet(Value target, const std::string& key, Value value);
@@ -218,7 +218,7 @@ public:
   static Value ReflectApply(Value target, Value self, std::vector<Value> args);
 
 private:
-  static std::shared_ptr<Object> MakeGlobal();
+  static Value MakeGlobal();
 };
 
 }
@@ -242,7 +242,7 @@ namespace {
 
 void panic(const std::string& msg) {
   // TODO: Can we call a Go function without registering _panic?
-  auto handler = JSObject::Global()->Get("_panic");
+  auto handler = JSObject::Global().ToObject().Get("_panic");
   if (handler.IsUndefined()) {
     std::cerr << msg << std::endl;
     assert(false);
@@ -692,12 +692,12 @@ Value Function::Invoke(Value self, std::vector<Value> args) {
   return fn_(Value{}, args);
 }
 
-std::shared_ptr<Object> JSObject::Global() {
-  static std::shared_ptr<Object> global = MakeGlobal();
+Value JSObject::Global() {
+  static Value global = MakeGlobal();
   return global;
 }
 
-std::shared_ptr<Object> JSObject::MakeGlobal() {
+Value JSObject::MakeGlobal() {
   std::shared_ptr<Constructor> arr = std::make_shared<Constructor>("Array",
     [](Value self, std::vector<Value> args) -> Value {
       // TODO: Implement this.
@@ -879,7 +879,7 @@ std::shared_ptr<Object> JSObject::MakeGlobal() {
     {"process", Value{process}},
   });
 
-  return global;
+  return Value{global};
 }
 
 Value JSObject::ReflectGet(Value target, const std::string& key) {
