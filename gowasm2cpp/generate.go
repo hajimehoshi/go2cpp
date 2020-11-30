@@ -604,7 +604,7 @@ private:
     Go* go_;
   };
 
-  class GoObject : public IObject {
+  class GoObject : public Object {
   public:
     explicit GoObject(Go* go);
     Value Get(const std::string& key) override;
@@ -695,7 +695,7 @@ int Go::Run(const std::vector<std::string>& args) {
   mem_ = std::make_unique<Mem>();
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
-  std::shared_ptr<IObject> global = JSObject::Global();
+  std::shared_ptr<Object> global = JSObject::Global();
 
   values_ = std::map<int32_t, Value>{
     {0, Value{std::nan("")}},
