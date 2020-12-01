@@ -640,8 +640,8 @@ private:
 
   std::unique_ptr<Inst> inst_;
   std::unique_ptr<Mem> mem_;
-  std::unordered_map<int32_t, Value> values_;
-  std::unordered_map<int32_t, double> go_ref_counts_;
+  std::vector<Value> values_;
+  std::vector<double> go_ref_counts_;
   std::unordered_map<Value, int32_t, Value::Hash> ids_;
   std::stack<int32_t> id_pool_;
   bool exited_ = false;
@@ -697,24 +697,16 @@ int Go::Run(const std::vector<std::string>& args) {
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
   values_ = {
-    {0, Value{std::nan("")}},
-    {1, Value{0.0}},
-    {2, Value::Null()},
-    {3, Value{true}},
-    {4, Value{false}},
-    {5, Value::Global()},
-    {6, Value{std::make_unique<GoObject>(this)}},
+    Value{std::nan("")},
+    Value{0.0},
+    Value::Null(),
+    Value{true},
+    Value{false},
+    Value::Global(),
+    Value{std::make_unique<GoObject>(this)},
   };
-  static const double inf = std::numeric_limits<double>::infinity();
-  go_ref_counts_ = {
-    {0, inf},
-    {1, inf},
-    {2, inf},
-    {3, inf},
-    {4, inf},
-    {5, inf},
-    {6, inf},
-  };
+  static constexpr double inf = std::numeric_limits<double>::infinity();
+  go_ref_counts_ = {inf, inf, inf, inf, inf, inf};
   ids_ = {
     {values_[1], 1},
     {values_[2], 2},
@@ -819,6 +811,9 @@ Value Go::LoadValue(int32_t addr) {
     return Value{f};
   }
   int32_t id = static_cast<int32_t>(mem_->LoadUint32(addr));
+  if (values_.size() <= id) {
+    return Value{};
+  }
   return values_[id];
 }
 
@@ -852,7 +847,13 @@ void Go::StoreValue(int32_t addr, Value v) {
     } else {
       id = values_.size();
     }
+    if (values_.size() <= id) {
+      values_.resize(id+1);
+    }
     values_[id] = v;
+    if (go_ref_counts_.size() <= id) {
+      go_ref_counts_.resize(id+1);
+    }
     go_ref_counts_[id] = 0;
     ids_[v] = id;
   }
