@@ -640,8 +640,8 @@ private:
 
   std::unique_ptr<Inst> inst_;
   std::unique_ptr<Mem> mem_;
-  std::map<int32_t, Value> values_;
-  std::map<int32_t, double> go_ref_counts_;
+  std::unordered_map<int32_t, Value> values_;
+  std::unordered_map<int32_t, double> go_ref_counts_;
   std::unordered_map<Value, int32_t, Value::Hash> ids_;
   std::stack<int32_t> id_pool_;
   bool exited_ = false;
@@ -696,7 +696,7 @@ int Go::Run(const std::vector<std::string>& args) {
   mem_ = std::make_unique<Mem>();
   inst_ = std::make_unique<Inst>(mem_.get(), &import_);
 
-  values_ = std::map<int32_t, Value>{
+  values_ = {
     {0, Value{std::nan("")}},
     {1, Value{0.0}},
     {2, Value::Null()},
@@ -706,7 +706,7 @@ int Go::Run(const std::vector<std::string>& args) {
     {6, Value{std::make_unique<GoObject>(this)}},
   };
   static const double inf = std::numeric_limits<double>::infinity();
-  go_ref_counts_ = std::map<int32_t, double>{
+  go_ref_counts_ = {
     {0, inf},
     {1, inf},
     {2, inf},
