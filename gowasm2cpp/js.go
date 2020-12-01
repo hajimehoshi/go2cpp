@@ -427,11 +427,13 @@ void Writer::Write(BytesSpan bytes) {
 }
 
 std::size_t Value::Hash::operator()(const Value& value) const {
-  return std::hash<decltype(value.type_)>()(value.type_) ^
-      std::hash<decltype(value.num_value_)>()(value.num_value_) ^
-      std::hash<decltype(value.str_value_)>()(value.str_value_) ^
-      std::hash<decltype(value.object_value_)>()(value.object_value_) ^
-      std::hash<decltype(value.array_value_)>()(value.array_value_);
+  size_t h = 17;
+  h = h * 31 + std::hash<decltype(value.type_)>()(value.type_);
+  h = h * 31 + std::hash<decltype(value.num_value_)>()(value.num_value_);
+  h = h * 31 + std::hash<decltype(value.str_value_)>()(value.str_value_);
+  h = h * 31 + std::hash<decltype(value.object_value_)>()(value.object_value_);
+  h = h * 31 + std::hash<decltype(value.array_value_)>()(value.array_value_);
+  return h;
 }
 
 Value Value::Null() {
