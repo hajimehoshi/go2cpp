@@ -10,7 +10,7 @@ var importFuncBodies = map[string]string{
   go_->values_.clear();
   go_->go_ref_counts_.clear();
   go_->ids_.clear();
-  go_->id_pool_ = std::stack<int32_t>();
+  go_->id_pool_ = {};
   go_->Exit(code);`,
 
 	// func wasmWrite(fd uintptr, p unsafe.Pointer, n int32)

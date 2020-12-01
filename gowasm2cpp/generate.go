@@ -643,7 +643,7 @@ private:
   std::vector<Value> values_;
   std::vector<double> go_ref_counts_;
   std::unordered_map<Value, int32_t, Value::Hash> ids_;
-  std::stack<int32_t> id_pool_;
+  std::stack<int32_t, std::vector<int32_t>> id_pool_;
   bool exited_ = false;
   int32_t exit_code_ = 0;
 
@@ -716,7 +716,7 @@ int Go::Run(const std::vector<std::string>& args) {
     {values_[6], 6},
   };
 
-  id_pool_ = std::stack<int32_t>();
+  id_pool_ = {};
   exited_ = false;
   exit_code_ = 0;
 
