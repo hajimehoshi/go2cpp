@@ -90,6 +90,11 @@ public:
     Object,
   };
 
+  class Hash {
+  public:
+    std::size_t operator()(const Value& value) const;
+  };
+
   static Value Null();
   static Value Global();
   static Value ReflectGet(Value target, const std::string& key);
@@ -108,7 +113,7 @@ public:
 
   Value(const Value& rhs);
   Value& operator=(const Value& rhs);
-  bool operator<(const Value& rhs) const;
+  bool operator==(const Value& rhs) const;
 
   bool IsNull() const;
   bool IsUndefined() const;
@@ -421,6 +426,14 @@ void Writer::Write(BytesSpan bytes) {
   }
 }
 
+std::size_t Value::Hash::operator()(const Value& value) const {
+  return std::hash<decltype(value.type_)>()(value.type_) ^
+      std::hash<decltype(value.num_value_)>()(value.num_value_) ^
+      std::hash<decltype(value.str_value_)>()(value.str_value_) ^
+      std::hash<decltype(value.object_value_)>()(value.object_value_) ^
+      std::hash<decltype(value.array_value_)>()(value.array_value_);
+}
+
 Value Value::Null() {
   return Value{Type::Null};
 }
@@ -460,9 +473,12 @@ Value::Value(const Value& rhs) = default;
 
 Value& Value::operator=(const Value& rhs) = default;
 
-bool Value::operator<(const Value& rhs) const {
-  return std::tie(type_, num_value_, str_value_, object_value_, array_value_) <
-      std::tie(rhs.type_, rhs.num_value_, rhs.str_value_, rhs.object_value_, rhs.array_value_);
+bool Value::operator==(const Value& rhs) const {
+  return type_ == rhs.type_ &&
+      num_value_ == rhs.num_value_ &&
+      str_value_ == rhs.str_value_ &&
+      object_value_ == rhs.object_value_ &&
+      array_value_ == rhs.array_value_;
 }
 
 Value::Value(Type type)
