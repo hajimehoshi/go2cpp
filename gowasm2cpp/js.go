@@ -162,9 +162,10 @@ public:
   virtual Value Invoke(Value self, std::vector<Value> args);
   virtual Value New(std::vector<Value> args);
 
-  virtual BytesSpan ToBytes() { return BytesSpan{}; }
+  virtual BytesSpan ToBytes();
 
   virtual std::string ToString() const = 0;
+  virtual std::string Inspect() const;
 };
 
 class ArrayBuffer : public Object {
@@ -188,6 +189,7 @@ public:
   void Set(const std::string& key, Value value) override;
   void Delete(const std::string& key) override;
   std::string ToString() const override;
+  std::string Inspect() const override;
 
 private:
   std::map<std::string, Value> dict_;
@@ -622,10 +624,18 @@ std::string Value::Inspect() const {
     return ToString();
   case Type::Object:
     if (IsArray()) {
-      return "(array)";
+      std::string str = "[";
+      for (auto& v : *array_value_) {
+        str += v.Inspect() + " ";
+      }
+      if (array_value_->size()) {
+        str.resize(str.size()-1);
+      }
+      str += "]";
+      return str;
     }
     if (IsObject()) {
-      return ToObject().ToString();
+      return ToObject().Inspect();
     }
     return "(object)";
   default:
@@ -637,29 +647,37 @@ std::string Value::Inspect() const {
 Object::~Object() = default;
 
 Value Object::Get(const std::string& key) {
-  panic("Object::Get is not implemented: this: " + ToString() + ", key: " + key);
+  panic("Object::Get is not implemented: this: " + Inspect() + ", key: " + key);
   return Value{};
 }
 
 void Object::Set(const std::string& key, Value value) {
-  panic("Object::Set is not implemented: this: " + ToString() + ", key: " + key + ", value: " + value.Inspect());
+  panic("Object::Set is not implemented: this: " + Inspect() + ", key: " + key + ", value: " + value.Inspect());
 }
 
 void Object::Delete(const std::string& key) {
-  panic("Object::Delete is not implemented: this: " + ToString() + ", key: " + key);
+  panic("Object::Delete is not implemented: this: " + Inspect() + ", key: " + key);
 }
 
 Value Object::Invoke(Value self, std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  panic("Object::Invoke is not implemented: this: " + ToString() + ", self: " + self.Inspect());
+  panic("Object::Invoke is not implemented: this: " + Inspect() + ", self: " + self.Inspect());
   return Value{};
 };
 
 Value Object::New(std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  panic("Object::New is not implemented: this: " + ToString());
+  panic("Object::New is not implemented: this: " + Inspect());
   return Value{};
 };
+
+BytesSpan Object::ToBytes() {
+  return BytesSpan{};
+}
+
+std::string Object::Inspect() const {
+  return ToString();
+}
 
 ArrayBuffer::ArrayBuffer(size_t size)
     : data_(size) {
@@ -708,7 +726,19 @@ void DictionaryValues::Delete(const std::string& key) {
 }
 
 std::string DictionaryValues::ToString() const {
-  return "(object)";
+  return "DictionaryValues";
+}
+
+std::string DictionaryValues::Inspect() const {
+  std::string str = "{";
+  for (auto& kv : dict_) {
+    str += kv.first + ":" + kv.second.Inspect() + " ";
+  }
+  if (dict_.size()) {
+    str.resize(str.size()-1);
+  }
+  str += "}";
+  return str;
 }
 
 Function::Function(Object::Func fn)
