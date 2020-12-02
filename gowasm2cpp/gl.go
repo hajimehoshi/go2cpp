@@ -117,8 +117,11 @@ private:
   void *glUniform1f_;
   void *glUniform1fv_;
   void *glUniform1i_;
+  void *glUniform2f_;
   void *glUniform2fv_;
+  void *glUniform3f_;
   void *glUniform3fv_;
+  void *glUniform4f_;
   void *glUniform4fv_;
   void *glUniformMatrix2fv_;
   void *glUniformMatrix3fv_;
@@ -197,8 +200,11 @@ GL::GL(std::function<void*(const char*)> get_proc_address) {
   glUniform1f_ = get_proc_address("glUniform1f");
   glUniform1fv_ = get_proc_address("glUniform1fv");
   glUniform1i_ = get_proc_address("glUniform1i");
+  glUniform2f_ = get_proc_address("glUniform2f");
   glUniform2fv_ = get_proc_address("glUniform2fv");
+  glUniform3f_ = get_proc_address("glUniform3f");
   glUniform3fv_ = get_proc_address("glUniform3fv");
+  glUniform4f_ = get_proc_address("glUniform4f");
   glUniform4fv_ = get_proc_address("glUniform4fv");
   glUniformMatrix2fv_ = get_proc_address("glUniformMatrix2fv");
   glUniformMatrix3fv_ = get_proc_address("glUniformMatrix3fv");
@@ -783,6 +789,17 @@ Value GL::Get(const std::string &key) {
           return Value{};
         })};
   }
+  if (key == "uniform2f") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLint location = static_cast<GLint>(args[0].ToNumber());
+          GLfloat v0 = static_cast<GLfloat>(args[1].ToNumber());
+          GLfloat v1 = static_cast<GLfloat>(args[2].ToNumber());
+          using f = void(*)(GLint, GLfloat, GLfloat);
+          reinterpret_cast<f>(glUniform2f_)(location, v0, v1);
+          return Value{};
+        })};
+  }
   if (key == "uniform2fv") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
@@ -795,6 +812,18 @@ Value GL::Get(const std::string &key) {
           return Value{};
         })};
   }
+  if (key == "uniform3f") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLint location = static_cast<GLint>(args[0].ToNumber());
+          GLfloat v0 = static_cast<GLfloat>(args[1].ToNumber());
+          GLfloat v1 = static_cast<GLfloat>(args[2].ToNumber());
+          GLfloat v2 = static_cast<GLfloat>(args[3].ToNumber());
+          using f = void(*)(GLint, GLfloat, GLfloat, GLfloat);
+          reinterpret_cast<f>(glUniform3f_)(location, v0, v1, v2);
+          return Value{};
+        })};
+  }
   if (key == "uniform3fv") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
@@ -804,6 +833,19 @@ Value GL::Get(const std::string &key) {
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLfloat*);
           reinterpret_cast<f>(glUniform3fv_)(location, count, value);
+          return Value{};
+        })};
+  }
+  if (key == "uniform4f") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLint location = static_cast<GLint>(args[0].ToNumber());
+          GLfloat v0 = static_cast<GLfloat>(args[1].ToNumber());
+          GLfloat v1 = static_cast<GLfloat>(args[2].ToNumber());
+          GLfloat v2 = static_cast<GLfloat>(args[3].ToNumber());
+          GLfloat v3 = static_cast<GLfloat>(args[4].ToNumber());
+          using f = void(*)(GLint, GLfloat, GLfloat, GLfloat, GLfloat);
+          reinterpret_cast<f>(glUniform4f_)(location, v0, v1, v2, v3);
           return Value{};
         })};
   }
