@@ -323,6 +323,10 @@ public:
   Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
       : TypedArray(arrayBuffer, offset, length) {
   }
+
+  std::string ToString() const override {
+    return "Uint8Array";
+  }
 };
 
 class Uint16Array : public TypedArray {
@@ -330,12 +334,20 @@ public:
   Uint16Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
       : TypedArray(arrayBuffer, offset*2, length*2) {
   }
+
+  std::string ToString() const override {
+    return "Uint16Array";
+  }
 };
 
 class Float32Array : public TypedArray {
 public:
   Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
       : TypedArray(arrayBuffer, offset*4, length*4) {
+  }
+
+  std::string ToString() const override {
+    return "Float32Array";
   }
 };
 
@@ -609,6 +621,9 @@ std::string Value::Inspect() const {
   case Type::String:
     return ToString();
   case Type::Object:
+    if (IsArray()) {
+      return "(array)";
+    }
     if (IsObject()) {
       return ToObject().ToString();
     }
