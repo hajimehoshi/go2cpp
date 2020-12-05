@@ -360,6 +360,10 @@ public:
 
 class Float32Array : public TypedArray {
 public:
+  explicit Float32Array(size_t size)
+      : TypedArray(size*4) {
+  }
+
   Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
       : TypedArray(arrayBuffer, offset*4, length*4) {
   }
@@ -858,6 +862,9 @@ Value Value::MakeGlobal() {
 
   std::shared_ptr<Constructor> f32 = std::make_shared<Constructor>("Float32Array",
     [](Value self, std::vector<Value> args) -> Value {
+      if (args.size() == 0) {
+        return Value{std::make_shared<Float32Array>(0)};
+      }
       if (args.size() == 3) {
         if (!args[0].IsObject()) {
           panic("new Float32Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
