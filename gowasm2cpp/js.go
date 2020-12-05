@@ -301,6 +301,22 @@ public:
     return Value{};
   }
 
+  void Set(const std::string& key, Value value) override {
+    if (key == "byteLength") {
+      length_ = static_cast<size_t>(value.ToNumber());
+      return;
+    }
+    if (key == "byteOffset") {
+      offset_ = static_cast<size_t>(value.ToNumber());
+      return;
+    }
+    if (key == "buffer") {
+      array_buffer_ = value.ToArrayBuffer();
+      return;
+    }
+    panic("TypedArray::Set: invalid key: " + key);
+  }
+
   BytesSpan ToBytes() override {
     auto bs = array_buffer_->ToBytes();
     return BytesSpan{bs.begin() + offset_, length_};
