@@ -5,7 +5,7 @@
 package main
 
 import (
-	_ "github.com/hajimehoshi/ebiten/v2"
+	_ "github.com/hajimehoshi/go-inovation"
 )
 
 // This file is for go.mod to keep dependencies.
