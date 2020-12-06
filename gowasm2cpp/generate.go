@@ -896,12 +896,23 @@ void Go::Resume() {
 }
 
 Value Go::MakeFuncWrapper(int32_t id) {
+  // empty_args is a Value of an empty array for arguments.
+  // This assumes that the argment arrray is never modified in the callbacks.
+  // By using the same Value, this can avoid being finalized at syscall/js.finalizeRef.
+  static Value empty_args = Value{std::vector<Value>()};
+
   return Value{std::make_shared<Function>(
     [this, id](Value self, std::vector<Value> args) -> Value {
+      Value argsv;
+      if (args.size()) {
+        argsv = Value{args};
+      } else {
+        argsv = empty_args;
+      }
       auto evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
         {"id", Value{static_cast<double>(id)}},
         {"this", self},
-        {"args", Value{args}},
+        {"args", argsv},
       })};
       pending_event_ = evt;
       Resume();
