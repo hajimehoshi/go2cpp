@@ -628,6 +628,7 @@ private:
   int32_t SetTimeout(double interval);
   void ClearTimeout(int32_t id);
   void GetRandomBytes(BytesSpan bytes);
+  int32_t GetIdFromValue(Value value);
 
   Import import_;
   Writer debug_writer_;
@@ -838,27 +839,7 @@ void Go::StoreValue(int32_t addr, Value v) {
     return;
   }
 
-  int32_t id = 0;
-  auto it = ids_.find(v);
-  if (it != ids_.end()) {
-    id = it->second;
-  } else {
-    if (id_pool_.size()) {
-      id = id_pool_.top();
-      id_pool_.pop();
-    } else {
-      id = values_.size();
-    }
-    if (values_.size() <= id) {
-      values_.resize(id+1);
-    }
-    values_[id] = v;
-    if (go_ref_counts_.size() <= id) {
-      go_ref_counts_.resize(id+1);
-    }
-    go_ref_counts_[id] = 0;
-    ids_[v] = id;
-  }
+  int32_t id = GetIdFromValue(v);
   go_ref_counts_[id]++;
 
   int32_t type_flag = 0;
@@ -902,6 +883,8 @@ Value Go::MakeFuncWrapper(int32_t id) {
   // This assumes that the argment arrray is never modified in the callbacks.
   // By using the same Value, this can avoid being finalized at syscall/js.finalizeRef.
   static Value empty_args = Value{std::vector<Value>()};
+  static constexpr double inf = std::numeric_limits<double>::infinity();
+  go_ref_counts_[GetIdFromValue(empty_args)] = inf;
 
   return Value{std::make_shared<Function>(
     [this, id](Value self, std::vector<Value> args) -> Value {
@@ -928,6 +911,7 @@ Value Go::MakeFuncWrapper(int32_t id) {
         // Note that the cached event is never released.
         // This means that every js.FuncOf calls increases the number of Value objects.
         cached_events_[static_cast<double>(id)] = evt;
+        go_ref_counts_[GetIdFromValue(evt)] = inf;
       }
       pending_event_ = evt;
       Resume();
@@ -987,6 +971,31 @@ void Go::GetRandomBytes(BytesSpan bytes) {
 
 void Go::EnqueueTask(std::function<void()> task) {
   task_queue_.Enqueue(task);
+}
+
+int32_t Go::GetIdFromValue(Value value) {
+  auto it = ids_.find(value);
+  if (it != ids_.end()) {
+    return it->second;
+  }
+
+  int32_t id = 0;
+  if (id_pool_.size()) {
+    id = id_pool_.top();
+    id_pool_.pop();
+  } else {
+    id = values_.size();
+  }
+  if (values_.size() <= id) {
+    values_.resize(id+1);
+  }
+  values_[id] = value;
+  if (go_ref_counts_.size() <= id) {
+    go_ref_counts_.resize(id+1);
+  }
+  go_ref_counts_[id] = 0;
+  ids_[value] = id;
+  return id;
 }
 
 }
