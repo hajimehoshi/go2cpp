@@ -635,7 +635,7 @@ private:
   TaskQueue task_queue_;
 
   Value pending_event_;
-  std::map<int32_t, std::unique_ptr<Timer>> scheduled_timeouts_;
+  std::unordered_map<int32_t, std::unique_ptr<Timer>> scheduled_timeouts_;
   int32_t next_callback_timeout_id_ = 1;
 
   std::unique_ptr<Inst> inst_;
