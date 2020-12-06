@@ -635,6 +635,7 @@ private:
   TaskQueue task_queue_;
 
   Value pending_event_;
+  std::unordered_map<int32_t, Value> cached_events_;
   std::unordered_map<int32_t, std::unique_ptr<Timer>> scheduled_timeouts_;
   int32_t next_callback_timeout_id_ = 1;
 
@@ -910,11 +911,24 @@ Value Go::MakeFuncWrapper(int32_t id) {
       } else {
         argsv = empty_args;
       }
-      auto evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-        {"id", Value{static_cast<double>(id)}},
-        {"this", self},
-        {"args", argsv},
-      })};
+
+      auto it = cached_events_.find(id);
+      Value evt;
+      if (it != cached_events_.end()) {
+        evt = it->second;
+        evt.ToObject().Set("this", self);
+        evt.ToObject().Set("args", argsv);
+      } else {
+        evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+          {"id", Value{static_cast<double>(id)}},
+          {"this", self},
+          {"args", argsv},
+        })};
+
+        // Note that the cached event is never released.
+        // This means that every js.FuncOf calls increases the number of Value objects.
+        cached_events_[static_cast<double>(id)] = evt;
+      }
       pending_event_ = evt;
       Resume();
       return Value::ReflectGet(evt, "result");
