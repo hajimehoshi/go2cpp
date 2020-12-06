@@ -680,7 +680,8 @@ void error(const std::string& msg) {
 
 Go::Go()
     : import_{this},
-      debug_writer_{std::cerr} {
+      debug_writer_{std::cerr},
+      pending_event_{Value::Null()} {
 }
 
 int Go::Run() {
