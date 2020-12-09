@@ -34,6 +34,9 @@ int main() {
       [](const char *name) -> void * { return dlsym(RTLD_DEFAULT, name); });
   go2cpp->Set("gl", Value{gl});
 
+  go2cpp->Set("screenWidth", Value{640.0});
+  go2cpp->Set("screenHeight", Value{480.0});
+
   go2cpp_autogen::Go go;
   global.Set("requestAnimationFrame",
              Value{std::make_shared<go2cpp_autogen::Function>(
