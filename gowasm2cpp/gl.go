@@ -250,7 +250,10 @@ Value GL::Get(const std::string &key) {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
-          GLuint buffer = static_cast<GLuint>(args[1].ToNumber());
+          GLuint buffer = 0;
+          if (args[1].IsNumber()) {
+            buffer = static_cast<GLuint>(args[1].ToNumber());
+          }
           using f = void(*)(GLenum, GLuint);
           reinterpret_cast<f>(glBindBuffer_)(target, buffer);
           return Value{};
@@ -304,8 +307,16 @@ Value GL::Get(const std::string &key) {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLintptr offset = static_cast<GLintptr>(args[1].ToNumber());
           BytesSpan data = args[2].ToBytes();
+          ptrdiff_t srcOffset = 0;
+          if (args.size() > 3 && args[3].IsNumber()) {
+            srcOffset = static_cast<size_t>(args[3].ToNumber());
+          }
+          GLsizeiptr size = data.size();
+          if (args.size() > 4 && args[4].IsNumber()) {
+            size = static_cast<GLsizeiptr>(args[4].ToNumber());
+          }
           using f = void(*)(GLenum, GLintptr, GLsizeiptr, const void*);
-          reinterpret_cast<f>(glBufferSubData_)(target, offset, data.size(), data.begin());
+          reinterpret_cast<f>(glBufferSubData_)(target, offset, size, data.begin() + srcOffset);
           return Value{};
         })};
   }
@@ -748,7 +759,10 @@ Value GL::Get(const std::string &key) {
           GLenum format = static_cast<GLenum>(args[6].ToNumber());
           GLenum type = static_cast<GLenum>(args[7].ToNumber());
           void *data = nullptr;
-          if (!args[8].IsNull()) {
+          if (args[8].IsNumber()) {
+            data = reinterpret_cast<void*>(static_cast<uintptr_t>(args[8].ToNumber()));
+          }
+          if (args[8].IsBytes()) {
             data = args[8].ToBytes().begin();
           }
           using f = void(*)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void*);
