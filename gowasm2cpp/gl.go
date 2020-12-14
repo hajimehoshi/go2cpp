@@ -786,10 +786,17 @@ Value GL::Get(const std::string &key) {
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
-          GLsizei count = bytes.size() / sizeof(GLfloat);
+          int offset = 0;
+          if (args.size() > 2) {
+            offset = static_cast<int>(args[2].ToNumber());
+          }
+          GLsizei count = bytes.size() / sizeof(GLfloat) - offset;
+          if (args.size() > 3) {
+            count = static_cast<GLsizei>(args[3].ToNumber());
+          }
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLfloat*);
-          reinterpret_cast<f>(glUniform1fv_)(location, count, value);
+          reinterpret_cast<f>(glUniform1fv_)(location, count, value + offset);
           return Value{};
         })};
   }
@@ -819,10 +826,17 @@ Value GL::Get(const std::string &key) {
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
-          GLsizei count = bytes.size() / sizeof(GLfloat) / 2;
+          int offset = 0;
+          if (args.size() > 2) {
+            offset = static_cast<int>(args[2].ToNumber());
+          }
+          GLsizei count = (bytes.size() / sizeof(GLfloat) - offset) / 2;
+          if (args.size() > 3) {
+            count = static_cast<GLsizei>(args[3].ToNumber()) / 2;
+          }
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLfloat*);
-          reinterpret_cast<f>(glUniform2fv_)(location, count, value);
+          reinterpret_cast<f>(glUniform2fv_)(location, count, value + offset);
           return Value{};
         })};
   }
@@ -843,10 +857,17 @@ Value GL::Get(const std::string &key) {
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
-          GLsizei count = bytes.size() / sizeof(GLfloat) / 3;
+          int offset = 0;
+          if (args.size() > 2) {
+            offset = static_cast<int>(args[2].ToNumber());
+          }
+          GLsizei count = (bytes.size() / sizeof(GLfloat) - offset) / 3;
+          if (args.size() > 3) {
+            count = static_cast<GLsizei>(args[3].ToNumber()) / 3;
+          }
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLfloat*);
-          reinterpret_cast<f>(glUniform3fv_)(location, count, value);
+          reinterpret_cast<f>(glUniform3fv_)(location, count, value + offset);
           return Value{};
         })};
   }
@@ -868,10 +889,17 @@ Value GL::Get(const std::string &key) {
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           BytesSpan bytes = args[1].ToBytes();
-          GLsizei count = bytes.size() / sizeof(GLfloat) / 4;
+          int offset = 0;
+          if (args.size() > 2) {
+            offset = static_cast<int>(args[2].ToNumber());
+          }
+          GLsizei count = (bytes.size() / sizeof(GLfloat) - offset) / 4;
+          if (args.size() > 3) {
+            count = static_cast<GLsizei>(args[3].ToNumber()) / 4;
+          }
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLfloat*);
-          reinterpret_cast<f>(glUniform4fv_)(location, count, value);
+          reinterpret_cast<f>(glUniform4fv_)(location, count, value + offset);
           return Value{};
         })};
   }
@@ -881,10 +909,17 @@ Value GL::Get(const std::string &key) {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
           BytesSpan bytes = args[2].ToBytes();
-          GLsizei count = bytes.size() / sizeof(GLfloat) / 4;
+          int offset = 0;
+          if (args.size() > 3) {
+            offset = static_cast<int>(args[3].ToNumber());
+          }
+          GLsizei count = (bytes.size() / sizeof(GLfloat) - offset) / 4;
+          if (args.size() > 4) {
+            count = static_cast<GLsizei>(args[4].ToNumber()) / 4;
+          }
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLboolean, GLfloat*);
-          reinterpret_cast<f>(glUniformMatrix2fv_)(location, count, transpose, value);
+          reinterpret_cast<f>(glUniformMatrix2fv_)(location, count, transpose, value + offset);
           return Value{};
         })};
   }
@@ -894,10 +929,17 @@ Value GL::Get(const std::string &key) {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
           BytesSpan bytes = args[2].ToBytes();
-          GLsizei count = bytes.size() / sizeof(GLfloat) / 9;
+          int offset = 0;
+          if (args.size() > 3) {
+            offset = static_cast<int>(args[3].ToNumber());
+          }
+          GLsizei count = (bytes.size() / sizeof(GLfloat) - offset) / 9;
+          if (args.size() > 4) {
+            count = static_cast<GLsizei>(args[4].ToNumber()) / 9;
+          }
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLboolean, GLfloat*);
-          reinterpret_cast<f>(glUniformMatrix3fv_)(location, count, transpose, value);
+          reinterpret_cast<f>(glUniformMatrix3fv_)(location, count, transpose, value + offset);
           return Value{};
         })};
   }
@@ -907,10 +949,17 @@ Value GL::Get(const std::string &key) {
           GLint location = static_cast<GLint>(args[0].ToNumber());
           GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
           BytesSpan bytes = args[2].ToBytes();
-          GLsizei count = bytes.size() / sizeof(GLfloat) / 16;
+          int offset = 0;
+          if (args.size() > 3) {
+            offset = static_cast<int>(args[3].ToNumber());
+          }
+          GLsizei count = (bytes.size() / sizeof(GLfloat) - offset) / 16;
+          if (args.size() > 4) {
+            count = static_cast<GLsizei>(args[4].ToNumber()) / 16;
+          }
           GLfloat *value = reinterpret_cast<GLfloat *>(bytes.begin());
           using f = void(*)(GLint, GLsizei, GLboolean, GLfloat*);
-          reinterpret_cast<f>(glUniformMatrix4fv_)(location, count, transpose, value);
+          reinterpret_cast<f>(glUniformMatrix4fv_)(location, count, transpose, value + offset);
           return Value{};
         })};
   }
