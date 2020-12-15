@@ -347,17 +347,6 @@ public:
   }
 };
 
-class Uint16Array : public TypedArray {
-public:
-  Uint16Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
-      : TypedArray(arrayBuffer, offset*2, length*2) {
-  }
-
-  std::string ToString() const override {
-    return "Uint16Array";
-  }
-};
-
 class Float32Array : public TypedArray {
 public:
   explicit Float32Array(size_t size)
@@ -811,12 +800,17 @@ Value Value::MakeGlobal() {
         return Value{std::make_shared<Uint8Array>(0)};
       }
       if (args.size() == 1) {
-        Value vlen = args[0];
-        if (!vlen.IsNumber()) {
-          panic("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+        if (args[0].IsNumber()) {
+          size_t len = static_cast<size_t>(args[0].ToNumber());
+          return Value{std::make_shared<Uint8Array>(len)};
         }
-        size_t len = static_cast<size_t>(vlen.ToNumber());
-        return Value{std::make_shared<Uint8Array>(len)};
+        if (args[0].IsObject()) {
+          std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
+          auto u8 = std::make_shared<Uint8Array>(ab, 0, ab->ByteLength());
+          return Value{u8};
+        }
+        panic("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+        return Value{};
       }
       if (args.size() == 3) {
         if (!args[0].IsObject()) {
@@ -835,28 +829,6 @@ Value Value::MakeGlobal() {
         return Value{u8};
       }
       panic("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
-      return Value{};
-    });
-
-  std::shared_ptr<Constructor> u16 = std::make_shared<Constructor>("Uint16Array",
-    [](Value self, std::vector<Value> args) -> Value {
-      if (args.size() == 3) {
-        if (!args[0].IsObject()) {
-          panic("new Uint16Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
-        }
-        if (!args[1].IsNumber()) {
-          panic("new Uint16Array's second argument must be a number but " + args[1].Inspect());
-        }
-        if (!args[2].IsNumber()) {
-          panic("new Uint16Array's third argument must be a number but " + args[2].Inspect());
-        }
-        std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
-        size_t offset = static_cast<size_t>(args[1].ToNumber());
-        size_t length = static_cast<size_t>(args[2].ToNumber());
-        auto u16 = std::make_shared<Uint16Array>(ab, offset, length);
-        return Value{u16};
-      }
-      panic("new Uint16Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
     });
 
@@ -958,7 +930,6 @@ Value Value::MakeGlobal() {
     {"Object", Value{obj}},
     {"ArrayBuffer", Value{arrayBuffer}},
     {"Uint8Array", Value{u8}},
-    {"Uint16Array", Value{u16}},
     {"Float32Array", Value{f32}},
     {"console", Value{console}},
     {"crypto", Value{crypto}},

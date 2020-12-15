@@ -764,6 +764,10 @@ Value GL::Get(const std::string &key) {
           }
           if (args[8].IsBytes()) {
             data = args[8].ToBytes().begin();
+            if (args.size() > 9) {
+              int offset = static_cast<int>(args[9].ToNumber());
+              data = args[8].ToBytes().begin() + offset;
+            }
           }
           using f = void(*)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void*);
           reinterpret_cast<f>(glTexSubImage2D_)(

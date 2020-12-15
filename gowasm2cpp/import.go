@@ -136,7 +136,7 @@ var importFuncBodies = map[string]string{
     return;
   }
   BytesSpan srcbs = src.ToBytes();
-  std::copy(srcbs.begin(), srcbs.end(), dst.begin());
+  std::copy_n(srcbs.begin(), std::min(srcbs.size(), dst.size()), dst.begin());
   go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dst.size()));
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
@@ -148,7 +148,7 @@ var importFuncBodies = map[string]string{
     return;
   }
   BytesSpan dstbs = dst.ToBytes();
-  std::copy(src.begin(), src.end(), dstbs.begin());
+  std::copy_n(src.begin(), std::min(src.size(), dstbs.size()), dstbs.begin());
   go_->mem_->StoreInt64(local0 + 40, static_cast<int64_t>(dstbs.size()));
   go_->mem_->StoreInt8(local0 + 48, 1);`,
 
