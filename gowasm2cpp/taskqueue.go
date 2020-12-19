@@ -83,8 +83,8 @@ public:
 
 private:
   enum class Result {
-    Timeout,
-    NoTimeout,
+    kTimeout,
+    kNoTimeout,
   };
 
   Result WaitFor(double milliseconds);
@@ -129,7 +129,7 @@ TaskQueue::Task TaskQueue::Dequeue() {
 Timer::Timer(std::function<void()> func, double interval)
     : thread_{[this, interval](std::function<void()> func) {
         Result result = WaitFor(interval);
-        if (result == Timer::Result::NoTimeout) {
+        if (result == Timer::Result::kNoTimeout) {
           return;
         }
         func();
@@ -154,7 +154,7 @@ Timer::Result Timer::WaitFor(double milliseconds) {
   std::unique_lock<std::mutex> lock{mutex_};
   auto duration = std::chrono::duration<double, std::milli>(milliseconds);
   bool result = cond_.wait_for(lock, duration, [this]{ return stopped_; });
-  return result ? Result::NoTimeout : Result::Timeout;
+  return result ? Result::kNoTimeout : Result::kTimeout;
 }
 
 }
