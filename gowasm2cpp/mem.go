@@ -153,7 +153,7 @@ int32_t Mem::Grow(int32_t delta) {
     new_capacity = std::min(new_capacity, kMaxMemorySizeOnWasm);
     bytes_.reserve(new_capacity);
   }
-  bytes_.resize((prev_size + delta) * kPageSize);
+  bytes_.resize(new_size);
   return prev_size;
 }
 
