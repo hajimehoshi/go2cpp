@@ -8,12 +8,12 @@ github.com/go-interpreter/wagon v0.6.1-0.20200226200811-4ca95707c808/go.mod h1:l
 github.com/gofrs/flock v0.8.0 h1:MSdYClljsF3PbENUUEx85nkWfJSGfzYI9yEBZOJz6CY=
 github.com/gofrs/flock v0.8.0/go.mod h1:F1TvTiK9OcQqauNUHlbJvyl9Qa1QvF/gOUDKA14jxHU=
 github.com/hajimehoshi/bitmapfont/v2 v2.1.2/go.mod h1:2BnYrkTQGThpr/CY6LorYtt/zEPNzvE/ND69CRTaHMs=
-github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.4.0.20201215165005-7e32075abd9d h1:X7I7bYRNd3Nngk9tR08U3Z+t/0vAng/AI8HhT7sDZn0=
-github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.4.0.20201215165005-7e32075abd9d/go.mod h1:nsp+tRi/YUAV/hLrfCxXOwTsWj18c2c2TN6y8llMgGs=
+github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.4.0.20201219154513-2106e0fa6a6d h1:mMxgnCUvcrm62eFCEJfvF37K57ePV0e7lLSw8GWaBtk=
+github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.4.0.20201219154513-2106e0fa6a6d/go.mod h1:v1Opgb07UWEYhL1fuCtg82qdHD/Ov69wxim6FgNYW9o=
 github.com/hajimehoshi/file2byteslice v0.0.0-20200812174855-0e5e8a80490e/go.mod h1:CqqAHp7Dk/AqQiwuhV1yT2334qbA/tFWQW0MD2dGqUE=
 github.com/hajimehoshi/go-mp3 v0.3.1/go.mod h1:qMJj/CSDxx6CGHiZeCgbiq2DSUkbK0UbtXShQcnfyMM=
 github.com/hajimehoshi/oto v0.6.1/go.mod h1:0QXGEkbuJRohbJaxr7ZQSxnju7hEhseiPx2hrh6raOI=
-github.com/hajimehoshi/oto v0.6.8/go.mod h1:0QXGEkbuJRohbJaxr7ZQSxnju7hEhseiPx2hrh6raOI=
+github.com/hajimehoshi/oto v0.6.9-0.20201216143741-d12f5eb6cfd4/go.mod h1:wovJ8WWMfFKvP587mhHgot/MBr4DnNy9m6EepeVGnos=
 github.com/jakecoffman/cp v1.0.0/go.mod h1:JjY/Fp6d8E1CHnu74gWNnU0+b9VzEdUVPoJxg2PsTQg=
 github.com/jfreymuth/oggvorbis v1.0.1/go.mod h1:NqS+K+UXKje0FUYUPosyQ+XTVvjmVjps1aEZH1sumIk=
 github.com/jfreymuth/vorbis v1.0.0/go.mod h1:8zy3lUAm9K/rJJk223RKy6vjCZTWC61NA2QD06bfOE0=
