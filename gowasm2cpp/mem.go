@@ -131,6 +131,7 @@ namespace {
 
 Mem::Mem()
     : bytes_({{.InitPageNum}} * kPageSize) {
+  bytes_.reserve(1ul * 1024 * 1024 * 1024);
 {{range $index, $value := .Data}}  std::memcpy(&(bytes_[{{$value.Offset}}]), data_segment_data{{$index}}, {{len $value.Data}});
 {{end}}
 }
@@ -140,7 +141,7 @@ int32_t Mem::GetSize() const {
 }
 
 int32_t Mem::Grow(int32_t delta) {
-  constexpr size_t kMaxMemorySizeOnWasm = 4lu * 1024lu * 1024lu * 1024lu;
+  constexpr size_t kMaxMemorySizeOnWasm = 4ul * 1024ul * 1024ul * 1024ul;
 
   int prev_size = GetSize();
   size_t new_size = (prev_size + delta) * kPageSize;
