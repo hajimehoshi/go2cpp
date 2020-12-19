@@ -105,6 +105,7 @@ private:
   Mem& operator=(const Mem&) = delete;
 
   std::vector<uint8_t> bytes_;
+  size_t size_;
 };
 
 }
@@ -130,18 +131,29 @@ namespace {
 }
 
 Mem::Mem()
-    : bytes_({{.InitPageNum}} * kPageSize) {
+    : bytes_({{.InitPageNum}} * kPageSize),
+      size_({{.InitPageNum}} * kPageSize) {
 {{range $index, $value := .Data}}  std::memcpy(&(bytes_[{{$value.Offset}}]), data_segment_data{{$index}}, {{len $value.Data}});
 {{end}}
 }
 
 int32_t Mem::GetSize() const {
-  return bytes_.size() / kPageSize;
+  return size_ / kPageSize;
 }
 
 int32_t Mem::Grow(int32_t delta) {
+  constexpr size_t kMaxMemorySizeOnWasm = 4lu * 1024lu * 1024lu * 1024lu;
+
   int prev_size = GetSize();
-  bytes_.resize((prev_size + delta) * kPageSize);
+  size_ += delta * kPageSize;
+  if (bytes_.size() < size_) {
+    size_t new_bytes_size = bytes_.size();
+    while (new_bytes_size < size_) {
+      new_bytes_size *= 2;
+    }
+    new_bytes_size = std::min(new_bytes_size, kMaxMemorySizeOnWasm);
+    bytes_.resize(new_bytes_size);
+  }
   return prev_size;
 }
 

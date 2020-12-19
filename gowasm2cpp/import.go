@@ -54,6 +54,7 @@ var importFuncBodies = map[string]string{
   go_->go_ref_counts_[id]--;
   if (go_->go_ref_counts_[id] == 0) {
     Value v = go_->values_[id];
+    std::string i = v.Inspect();
     go_->values_[id] = Value{};
     go_->ids_.erase(v);
     go_->id_pool_.push(id);
