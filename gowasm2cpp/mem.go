@@ -129,9 +129,10 @@ namespace {
 {{end}}
 }
 
-Mem::Mem()
-    : bytes_({{.InitPageNum}} * kPageSize) {
+Mem::Mem() {
+  // Reserving 4GB memory might fail on some consoles. 1GB should be safe in most environments.
   bytes_.reserve(1ul * 1024 * 1024 * 1024);
+  bytes_.resize({{.InitPageNum}} * kPageSize);
 {{range $index, $value := .Data}}  std::memcpy(&(bytes_[{{$value.Offset}}]), data_segment_data{{$index}}, {{len $value.Data}});
 {{end}}
 }
