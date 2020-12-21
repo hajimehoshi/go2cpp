@@ -66,7 +66,7 @@ int GLFWDriver::GetTouchCount() {
   return 1;
 }
 
-void GLFWDriver::GetTouchPosition(int idx, int* id, int* x, int* y) {
+void GLFWDriver::GetTouch(int idx, int* id, int* x, int* y) {
   if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) {
     // Not reached!
     assert(false);

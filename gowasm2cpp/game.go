@@ -71,7 +71,7 @@ public:
     virtual double GetDevicePixelRatio() = 0;
     virtual void* GetOpenGLFunction(const char* name) = 0;
     virtual int GetTouchCount() = 0;
-    virtual void GetTouchPosition(int index, int* id, int* x, int* y) = 0;
+    virtual void GetTouch(int index, int* id, int* x, int* y) = 0;
   };
 
   Game(std::unique_ptr<Driver> driver);
@@ -127,21 +127,21 @@ int Game::Run() {
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
       int id;
-      driver_->GetTouchPosition(idx, &id, nullptr, nullptr);
+      driver_->GetTouch(idx, &id, nullptr, nullptr);
       return Value{static_cast<double>(id)};
     })});
   go2cpp->Set("getTouchPositionX", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
       int x;
-      driver_->GetTouchPosition(idx, nullptr, &x, nullptr);
+      driver_->GetTouch(idx, nullptr, &x, nullptr);
       return Value{static_cast<double>(x)};
     })});
   go2cpp->Set("getTouchPositionY", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
       int y;
-      driver_->GetTouchPosition(idx, nullptr, nullptr, &y);
+      driver_->GetTouch(idx, nullptr, nullptr, &y);
       return Value{static_cast<double>(y)};
     })});
 
