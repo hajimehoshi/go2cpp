@@ -59,17 +59,24 @@ void* GLFWDriver::GetOpenGLFunction(const char* name) {
   return dlsym(RTLD_DEFAULT, name);
 }
 
-int GLFWDriver::GetMaxTouchID() {
+int GLFWDriver::GetTouchCount() {
+  if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) {
+    return 0;
+  }
   return 1;
 }
 
-void GLFWDriver::GetTouchPosition(int id, int* x, int* y, bool* ok) {
+void GLFWDriver::GetTouchPosition(int idx, int* id, int* x, int* y) {
   if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) {
-    *ok = false;
+    // Not reached!
+    assert(false);
     return;
   }
 
-  *ok = true;
+  if (id) {
+    *id = 0;
+  }
+
   double xpos, ypos;
   glfwGetCursorPos(window_, &xpos, &ypos);
   if (x) {

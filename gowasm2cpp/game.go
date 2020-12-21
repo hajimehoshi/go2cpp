@@ -70,8 +70,8 @@ public:
     virtual int GetScreenHeight() = 0;
     virtual double GetDevicePixelRatio() = 0;
     virtual void* GetOpenGLFunction(const char* name) = 0;
-    virtual int GetMaxTouchID() = 0;
-    virtual void GetTouchPosition(int id, int* x, int* y, bool* ok) = 0;
+    virtual int GetTouchCount() = 0;
+    virtual void GetTouchPosition(int index, int* id, int* x, int* y) = 0;
   };
 
   Game(std::unique_ptr<Driver> driver);
@@ -122,27 +122,26 @@ int Game::Run() {
   go2cpp->Set("screenHeight",
       Value{static_cast<double>(driver_->GetScreenHeight())});
   go2cpp->Set("devicePixelRatio", Value{driver_->GetDevicePixelRatio()});
-  go2cpp->Set("maxTouchId", Value{0.0});
+  go2cpp->Set("touchCount", Value{0.0});
+  go2cpp->Set("getTouchPositionId", Value{std::make_shared<Function>(
+    [this](Value self, std::vector<Value> args) -> Value {
+      int idx = static_cast<int>(args[0].ToNumber());
+      int id;
+      driver_->GetTouchPosition(idx, &id, nullptr, nullptr);
+      return Value{static_cast<double>(id)};
+    })});
   go2cpp->Set("getTouchPositionX", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
-      int id = static_cast<int>(args[0].ToNumber());
+      int idx = static_cast<int>(args[0].ToNumber());
       int x;
-      bool ok;
-      driver_->GetTouchPosition(id, &x, nullptr, &ok);
-      if (!ok) {
-        return Value::Null();
-      }
+      driver_->GetTouchPosition(idx, nullptr, &x, nullptr);
       return Value{static_cast<double>(x)};
     })});
   go2cpp->Set("getTouchPositionY", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
-      int id = static_cast<int>(args[0].ToNumber());
+      int idx = static_cast<int>(args[0].ToNumber());
       int y;
-      bool ok;
-      driver_->GetTouchPosition(id, nullptr, &y, &ok);
-      if (!ok) {
-        return Value::Null();
-      }
+      driver_->GetTouchPosition(idx, nullptr, nullptr, &y);
       return Value{static_cast<double>(y)};
     })});
 
@@ -164,7 +163,7 @@ int Game::Run() {
 void Game::Update(Value f) {
   auto& global = Value::Global().ToObject();
   auto& go2cpp = global.Get("go2cpp").ToObject();
-  go2cpp.Set("maxTouchId", Value{static_cast<double>(driver_->GetMaxTouchID())});
+  go2cpp.Set("touchCount", Value{static_cast<double>(driver_->GetTouchCount())});
 
   f.ToObject().Invoke(Value{}, {});
 }
