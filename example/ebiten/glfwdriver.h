@@ -15,6 +15,8 @@ public:
   int GetScreenHeight() override;
   double GetDevicePixelRatio() override;
   void* GetOpenGLFunction(const char* name) override;
+  int GetMaxTouchID() override;
+  void GetTouchPosition(int id, int* x, int* y, bool* ok) override;
 
 private:
   GLFWwindow* window_;

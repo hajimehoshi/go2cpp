@@ -58,3 +58,24 @@ double GLFWDriver::GetDevicePixelRatio() {
 void* GLFWDriver::GetOpenGLFunction(const char* name) {
   return dlsym(RTLD_DEFAULT, name);
 }
+
+int GLFWDriver::GetMaxTouchID() {
+  return 1;
+}
+
+void GLFWDriver::GetTouchPosition(int id, int* x, int* y, bool* ok) {
+  if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) {
+    *ok = false;
+    return;
+  }
+
+  *ok = true;
+  double xpos, ypos;
+  glfwGetCursorPos(window_, &xpos, &ypos);
+  if (x) {
+    *x = static_cast<int>(xpos);
+  }
+  if (y) {
+    *y = static_cast<int>(ypos);
+  }
+}
