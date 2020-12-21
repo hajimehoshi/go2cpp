@@ -386,14 +386,39 @@ private:
   std::string name_;
 };
 
-class FS {
+class FS : public Object {
 public:
-  FS()
-      : stdout_{std::cout},
-        stderr_{std::cerr} {
+  FS() {
+    constants_ = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+      {"O_WRONLY", Value{-1.0}},
+      {"O_RDWR", Value{-1.0}},
+      {"O_CREAT", Value{-1.0}},
+      {"O_TRUNC", Value{-1.0}},
+      {"O_APPEND", Value{-1.0}},
+      {"O_EXCL", Value{-1.0}},
+    })};
   }
 
-  Value Write(Value self, std::vector<Value> args) {
+  Value Get(const std::string& key) override {
+    if (key == "constants") {
+      return constants_;
+    }
+    if (key == "write") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          return Write(args);
+        })};
+    }
+    panic(key + " on fs is not implemented");
+    return Value{};
+  }
+
+  std::string ToString() const override {
+    return "fs";
+  }
+
+private:
+  Value Write(std::vector<Value> args) {
     int fd = (int)(args[0].ToNumber());
     BytesSpan buf = args[1].ToBytes();
     int offset = (int)(args[2].ToNumber());
@@ -424,9 +449,10 @@ public:
     return Value{};
   }
 
-private:
-  Writer stdout_;
-  Writer stderr_;
+  Writer stdout_{std::cout};
+  Writer stderr_{std::cerr};
+
+  Value constants_;
 };
 
 }  // namespace
@@ -904,21 +930,7 @@ Value Value::MakeGlobal() {
       return Value{};
     });
 
-  static FS& fsimpl = *new FS();
-  std::shared_ptr<DictionaryValues> fs = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-    {"constants", Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-        {"O_WRONLY", Value{-1.0}},
-        {"O_RDWR", Value{-1.0}},
-        {"O_CREAT", Value{-1.0}},
-        {"O_TRUNC", Value{-1.0}},
-        {"O_APPEND", Value{-1.0}},
-        {"O_EXCL", Value{-1.0}},
-      })}},
-    {"write", Value{std::make_shared<Function>(
-      [](Value self, std::vector<Value> args) -> Value {
-        return fsimpl.Write(self, args);
-      })}},
-  });
+  static std::shared_ptr<FS> fs = std::make_shared<FS>();
 
   std::shared_ptr<DictionaryValues> process = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"pid", Value{-1.0}},
