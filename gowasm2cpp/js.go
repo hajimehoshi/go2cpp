@@ -408,8 +408,21 @@ public:
     }
     if (key == "write") {
       return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          return Write(args);
+        [](Value self, std::vector<Value> args) -> Value {
+          int fd = static_cast<int>(args[0].ToNumber());
+          BytesSpan buf = args[1].ToBytes();
+          size_t offset = static_cast<size_t>(args[2].ToNumber());
+          size_t length = static_cast<size_t>(args[3].ToNumber());
+          Value position = args[4];
+          Value callback = args[5];
+          size_t n;
+          if (position.IsNumber()) {
+            n = pwrite(fd, buf.begin() + offset, length, static_cast<off_t>(position.ToNumber()));
+          } else {
+            n = write(fd, buf.begin() + offset, length);
+          }
+          Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(n)} });
+          return Value{};
         })};
     }
     if (key == "close") {
@@ -478,40 +491,6 @@ private:
     return static_cast<int64_t>(t->tv_sec) * 1000ll +
         static_cast<int64_t>(t->tv_nsec) / 1000000ll;
   }
-
-  Value Write(std::vector<Value> args) {
-    int fd = static_cast<int>(args[0].ToNumber());
-    BytesSpan buf = args[1].ToBytes();
-    size_t offset = static_cast<size_t>(args[2].ToNumber());
-    size_t length = static_cast<size_t>(args[3].ToNumber());
-    Value position = args[4];
-    Value callback = args[5];
-    if (offset != 0 || length != buf.size()) {
-      Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
-      return Value{};
-    }
-    if (!position.IsNull()) {
-      Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
-      return Value{};
-    }
-    switch (fd) {
-    case 1:
-      stdout_.Write(buf);
-      break;
-    case 2:
-      stderr_.Write(buf);
-      break;
-    default:
-      Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value{std::make_shared<Enosys>("write")} });
-      break;
-    }
-    // The first argument must be null or an error. Undefined doesn't work.
-    Value::ReflectApply(callback, Value{}, std::vector<Value>{ Value::Null(), Value{static_cast<double>(buf.size())} });
-    return Value{};
-  }
-
-  Writer stdout_{std::cout};
-  Writer stderr_{std::cerr};
 
   Value constants_;
 };
