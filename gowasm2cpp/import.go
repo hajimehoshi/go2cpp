@@ -6,6 +6,8 @@ var importFuncBodies = map[string]string{
 	// func wasmExit(code int32)
 	"runtime.wasmExit": `  int32_t code = go_->mem_->LoadInt32(local0 + 8);
   go_->exited_ = true;
+  // wasm_exec.js resets the members here, but do not reset members here.
+  // Resetting them causes use-after-free. This can be detected by the address sanitizer.
   go_->Exit(code);`,
 
 	// func wasmWrite(fd uintptr, p unsafe.Pointer, n int32)
