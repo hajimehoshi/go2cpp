@@ -1388,6 +1388,35 @@ private:
   Value constants_;
 };
 
+class Process : public Object {
+public:
+  Value Get(const std::string& key) override {
+    if (key == "pid") {
+      return Value{-1.0};
+    }
+    if (key == "ppid") {
+      return Value{-1.0};
+    }
+    if (key == "cwd") {
+      return Value{std::make_shared<Function>(
+        [](Value self, std::vector<Value> args) -> Value {
+          char path[PATH_MAX];
+          if (!getcwd(path, PATH_MAX)) {
+            panic(std::string("getcwd failed: ") + std::strerror(errno));
+            return Value{};
+          }
+          return Value{path};
+        })};
+    }
+    panic(key + " on process is not implemented");
+    return Value{};
+  }
+
+  std::string ToString() const override {
+    return "process";
+  }
+};
+
 }  // namespace
 
 Writer::Writer(std::ostream& out)
@@ -1864,11 +1893,7 @@ Value Value::MakeGlobal() {
     });
 
   static std::shared_ptr<FS> fs = std::make_shared<FS>();
-
-  std::shared_ptr<DictionaryValues> process = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-    {"pid", Value{-1.0}},
-    {"ppid", Value{-1.0}},
-  });
+  static std::shared_ptr<Process> process = std::make_shared<Process>();
 
   std::shared_ptr<DictionaryValues> global = std::make_shared<DictionaryValues>(std::map<std::string, Value>{
     {"Array", Value{arr}},
