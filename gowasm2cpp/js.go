@@ -480,10 +480,10 @@ private:
   }
 
   Value Write(std::vector<Value> args) {
-    int fd = (int)(args[0].ToNumber());
+    int fd = static_cast<int>(args[0].ToNumber());
     BytesSpan buf = args[1].ToBytes();
-    int offset = (int)(args[2].ToNumber());
-    int length = (int)(args[3].ToNumber());
+    size_t offset = static_cast<size_t>(args[2].ToNumber());
+    size_t length = static_cast<size_t>(args[3].ToNumber());
     Value position = args[4];
     Value callback = args[5];
     if (offset != 0 || length != buf.size()) {
