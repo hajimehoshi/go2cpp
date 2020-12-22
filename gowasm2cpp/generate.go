@@ -588,6 +588,17 @@ namespace {{.Namespace}} {
 
 class Mem;
 
+class Writer {
+public:
+  explicit Writer(std::ostream& out);
+  void Write(BytesSpan bytes);
+
+private:
+  std::ostream& out_;
+  // TODO: std::queue should be enough?
+  std::deque<uint8_t> buf_;
+};
+
 class Go {
 public:
   Go();
@@ -681,6 +692,24 @@ void error(const std::string& msg) {
   std::exit(1);
 }
 
+}
+
+Writer::Writer(std::ostream& out)
+    : out_{out} {
+}
+
+void Writer::Write(BytesSpan bytes) {
+  buf_.insert(buf_.end(), bytes.begin(), bytes.end());
+  for (;;) {
+    auto it = std::find(buf_.begin(), buf_.end(), '\n');
+    if (it == buf_.end()) {
+      break;
+    }
+    std::string str(buf_.begin(), it);
+    out_ << str << std::endl;
+    ++it;
+    buf_.erase(buf_.begin(), it);
+  }
 }
 
 Go::Go()
