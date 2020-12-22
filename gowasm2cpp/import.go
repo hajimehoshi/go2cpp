@@ -22,7 +22,7 @@ var importFuncBodies = map[string]string{
   int32_t n = go_->mem_->LoadInt32(local0 + 24);
 
   // Note that runtime.wasmWrite is used only for print/println so far.
-  // Write the buffer to the standard error regardless of fd.
+  // Write the buffer to the standard output regardless of fd.
   go_->DebugWrite(go_->mem_->LoadSliceDirectly(p, n));`,
 
 	// func resetMemoryDataView()
