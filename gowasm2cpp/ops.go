@@ -462,7 +462,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			// Copy the global variable here because global variables can be modified later.
 			g := f.Globals[instr.Immediates[0].(uint32)]
 			t := wasmTypeToReturnType(g.Type)
-			appendBody("%s %s = global%d;", t.Cpp(), blockStack.PushLhs(t.stackVarType()), instr.Immediates[0])
+			expr := fmt.Sprintf("global%d", instr.Immediates[0])
+			blockStack.PushStackVar(expr, t.stackVarType())
 		case operators.SetGlobal:
 			expr, _ := blockStack.PopStackVar()
 			appendBody("global%d = (%s);", instr.Immediates[0], expr)
@@ -470,59 +471,73 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32Load:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int32_t %s = mem_->LoadInt32((%s) + %d);", blockStack.PushLhs(stackvar.I32), addr, offset)
+			expr := fmt.Sprintf("mem_->LoadInt32((%s) + %d)", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I32)
 		case operators.I64Load:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int64_t %s = mem_->LoadInt64((%s) + %d);", blockStack.PushLhs(stackvar.I64), addr, offset)
+			expr := fmt.Sprintf("mem_->LoadInt64((%s) + %d)", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I64)
 		case operators.F32Load:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("float %s = mem_->LoadFloat32((%s) + %d);", blockStack.PushLhs(stackvar.F32), addr, offset)
+			expr := fmt.Sprintf("mem_->LoadFloat32((%s) + %d)", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.F32)
 		case operators.F64Load:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("double %s = mem_->LoadFloat64((%s) + %d);", blockStack.PushLhs(stackvar.F64), addr, offset)
+			expr := fmt.Sprintf("mem_->LoadFloat64((%s) + %d)", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.F64)
 		case operators.I32Load8s:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int32_t %s = static_cast<int32_t>(mem_->LoadInt8((%s) + %d));", blockStack.PushLhs(stackvar.I32), addr, offset)
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadInt8((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I32)
 		case operators.I32Load8u:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int32_t %s = static_cast<int32_t>(mem_->LoadUint8((%s) + %d));", blockStack.PushLhs(stackvar.I32), addr, offset)
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadUint8((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I32)
 		case operators.I32Load16s:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int32_t %s = static_cast<int32_t>(mem_->LoadInt16((%s) + %d));", blockStack.PushLhs(stackvar.I32), addr, offset)
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadInt16((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I32)
 		case operators.I32Load16u:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int32_t %s = static_cast<int32_t>(mem_->LoadUint16((%s) + %d));", blockStack.PushLhs(stackvar.I32), addr, offset)
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadUint16((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I32)
 		case operators.I64Load8s:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int64_t %s = static_cast<int64_t>(mem_->LoadInt8((%s) + %d));", blockStack.PushLhs(stackvar.I64), addr, offset)
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt8((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I64)
 		case operators.I64Load8u:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int64_t %s = static_cast<int64_t>(mem_->LoadUint8((%s) + %d));", blockStack.PushLhs(stackvar.I64), addr, offset)
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint8((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I64)
 		case operators.I64Load16s:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int64_t %s = static_cast<int64_t>(mem_->LoadInt16((%s) + %d));", blockStack.PushLhs(stackvar.I64), addr, offset)
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt16((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I64)
 		case operators.I64Load16u:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int64_t %s = static_cast<int64_t>(mem_->LoadUint16((%s) + %d));", blockStack.PushLhs(stackvar.I64), addr, offset)
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint16((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I64)
 		case operators.I64Load32s:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int64_t %s = static_cast<int64_t>(mem_->LoadInt32((%s) + %d));", blockStack.PushLhs(stackvar.I64), addr, offset)
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt32((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I64)
 		case operators.I64Load32u:
 			offset := instr.Immediates[1].(uint32)
 			addr, _ := blockStack.PopStackVar()
-			appendBody("int64_t %s = static_cast<int64_t>(mem_->LoadUint32((%s) + %d));", blockStack.PushLhs(stackvar.I64), addr, offset)
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint32((%s) + %d))", addr, offset)
+			blockStack.PushStackVar(expr, stackvar.I64)
 
 		case operators.I32Store:
 			offset := instr.Immediates[1].(uint32)
