@@ -78,22 +78,66 @@ public:
   int32_t GetSize() const;
   int32_t Grow(int32_t delta);
 
-  int8_t LoadInt8(int32_t addr) const;
-  uint8_t LoadUint8(int32_t addr) const;
-  int16_t LoadInt16(int32_t addr) const;
-  uint16_t LoadUint16(int32_t addr) const;
-  int32_t LoadInt32(int32_t addr) const;
-  uint32_t LoadUint32(int32_t addr) const;
-  int64_t LoadInt64(int32_t addr) const;
-  float LoadFloat32(int32_t addr) const;
-  double LoadFloat64(int32_t addr) const;
+  inline __attribute__((always_inline)) int8_t LoadInt8(int32_t addr) const {
+    return static_cast<int8_t>(*(bytes_begin_ + addr));
+  }
 
-  void StoreInt8(int32_t addr, int8_t val);
-  void StoreInt16(int32_t addr, int16_t val);
-  void StoreInt32(int32_t addr, int32_t val);
-  void StoreInt64(int32_t addr, int64_t val);
-  void StoreFloat32(int32_t addr, float val);
-  void StoreFloat64(int32_t addr, double val);
+  inline __attribute__((always_inline)) uint8_t LoadUint8(int32_t addr) const {
+    return *(bytes_begin_ + addr);
+  }
+
+  inline __attribute__((always_inline)) int16_t LoadInt16(int32_t addr) const {
+    return *(reinterpret_cast<const int16_t*>(bytes_begin_ + addr));
+  }
+
+  inline __attribute__((always_inline)) uint16_t LoadUint16(int32_t addr) const {
+    return *(reinterpret_cast<const uint16_t*>(bytes_begin_ + addr));
+  }
+
+  inline __attribute__((always_inline)) int32_t LoadInt32(int32_t addr) const {
+    return *(reinterpret_cast<const int32_t*>(bytes_begin_ + addr));
+  }
+
+  inline __attribute__((always_inline)) uint32_t LoadUint32(int32_t addr) const {
+    return *(reinterpret_cast<const uint32_t*>(bytes_begin_ + addr));
+  }
+
+  inline __attribute__((always_inline)) int64_t LoadInt64(int32_t addr) const {
+    return *(reinterpret_cast<const int64_t*>(bytes_begin_ + addr));
+  }
+
+  inline __attribute__((always_inline)) float LoadFloat32(int32_t addr) const {
+    return *(reinterpret_cast<const float*>(bytes_begin_ + addr));
+  }
+
+  inline __attribute__((always_inline)) double LoadFloat64(int32_t addr) const {
+    return *(reinterpret_cast<const double*>(bytes_begin_ + addr));
+  }
+
+  void StoreInt8(int32_t addr, int8_t val) {
+    *(bytes_begin_ + addr) = static_cast<uint8_t>(val);
+  }
+
+  inline __attribute__((always_inline)) void StoreInt16(int32_t addr, int16_t val) {
+    *(reinterpret_cast<int16_t*>(bytes_begin_ + addr)) = val;
+  }
+
+  inline __attribute__((always_inline)) void StoreInt32(int32_t addr, int32_t val) {
+    *(reinterpret_cast<int32_t*>(bytes_begin_ + addr)) = val;
+  }
+
+  inline __attribute__((always_inline)) void StoreInt64(int32_t addr, int64_t val) {
+    *(reinterpret_cast<int64_t*>(bytes_begin_ + addr)) = val;
+  }
+
+  inline __attribute__((always_inline)) void StoreFloat32(int32_t addr, float val) {
+    *(reinterpret_cast<float*>(bytes_begin_ + addr)) = val;
+  }
+
+  inline __attribute__((always_inline)) void StoreFloat64(int32_t addr, double val) {
+    *(reinterpret_cast<double*>(bytes_begin_ + addr)) = val;
+  }
+
   void StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes);
 
   BytesSpan LoadSlice(int32_t addr);
@@ -159,66 +203,6 @@ int32_t Mem::Grow(int32_t delta) {
   }
   bytes_.resize(new_size);
   return prev_size;
-}
-
-int8_t Mem::LoadInt8(int32_t addr) const {
-  return static_cast<int8_t>(*(bytes_begin_ + addr));
-}
-
-uint8_t Mem::LoadUint8(int32_t addr) const {
-  return *(bytes_begin_ + addr);
-}
-
-int16_t Mem::LoadInt16(int32_t addr) const {
-  return *(reinterpret_cast<const int16_t*>(bytes_begin_ + addr));
-}
-
-uint16_t Mem::LoadUint16(int32_t addr) const {
-  return *(reinterpret_cast<const uint16_t*>(bytes_begin_ + addr));
-}
-
-int32_t Mem::LoadInt32(int32_t addr) const {
-  return *(reinterpret_cast<const int32_t*>(bytes_begin_ + addr));
-}
-
-uint32_t Mem::LoadUint32(int32_t addr) const {
-  return *(reinterpret_cast<const uint32_t*>(bytes_begin_ + addr));
-}
-
-int64_t Mem::LoadInt64(int32_t addr) const {
-  return *(reinterpret_cast<const int64_t*>(bytes_begin_ + addr));
-}
-
-float Mem::LoadFloat32(int32_t addr) const {
-  return *(reinterpret_cast<const float*>(bytes_begin_ + addr));
-}
-
-double Mem::LoadFloat64(int32_t addr) const {
-  return *(reinterpret_cast<const double*>(bytes_begin_ + addr));
-}
-
-void Mem::StoreInt8(int32_t addr, int8_t val) {
-  *(bytes_begin_ + addr) = static_cast<uint8_t>(val);
-}
-
-void Mem::StoreInt16(int32_t addr, int16_t val) {
-  *(reinterpret_cast<int16_t*>(bytes_begin_ + addr)) = val;
-}
-
-void Mem::StoreInt32(int32_t addr, int32_t val) {
-  *(reinterpret_cast<int32_t*>(bytes_begin_ + addr)) = val;
-}
-
-void Mem::StoreInt64(int32_t addr, int64_t val) {
-  *(reinterpret_cast<int64_t*>(bytes_begin_ + addr)) = val;
-}
-
-void Mem::StoreFloat32(int32_t addr, float val) {
-  *(reinterpret_cast<float*>(bytes_begin_ + addr)) = val;
-}
-
-void Mem::StoreFloat64(int32_t addr, double val) {
-  *(reinterpret_cast<double*>(bytes_begin_ + addr)) = val;
 }
 
 void Mem::StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes) {
