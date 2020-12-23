@@ -61,36 +61,36 @@ func (r returnType) stackVarType() stackvar.Type {
 	}
 }
 
-type stack struct {
+type indexStack struct {
 	newIdx int
 	stack  []int
 }
 
-func (s *stack) Push() int {
+func (s *indexStack) Push() int {
 	idx := s.newIdx
 	s.stack = append(s.stack, idx)
 	s.newIdx++
 	return idx
 }
 
-func (s *stack) Pop() int {
+func (s *indexStack) Pop() int {
 	idx := s.stack[len(s.stack)-1]
 	s.stack = s.stack[:len(s.stack)-1]
 	return idx
 }
 
-func (s *stack) Peep() int {
+func (s *indexStack) Peep() int {
 	return s.stack[len(s.stack)-1]
 }
 
-func (s *stack) PeepLevel(level int) (int, bool) {
+func (s *indexStack) PeepLevel(level int) (int, bool) {
 	if len(s.stack) > level {
 		return s.stack[len(s.stack)-1-level], true
 	}
 	return 0, false
 }
 
-func (s *stack) Len() int {
+func (s *indexStack) Len() int {
 	return len(s.stack)
 }
 
@@ -106,7 +106,7 @@ type blockStack struct {
 	types     []blockType
 	rets      []string
 	stackvars []*stackvar.StackVars
-	s         stack
+	s         indexStack
 	tmpindent int
 }
 
