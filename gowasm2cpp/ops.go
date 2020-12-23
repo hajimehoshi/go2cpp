@@ -109,9 +109,9 @@ type block struct {
 }
 
 type blockStack struct {
-	blocks    []*block
-	s         indexStack
-	tmpindent int
+	blocks     []*block
+	indexstack indexStack
+	tmpindent  int
 }
 
 func (b *blockStack) UnindentTemporarily() {
@@ -122,15 +122,19 @@ func (b *blockStack) IndentTemporarily() {
 	b.tmpindent++
 }
 
-func (b *blockStack) varName(idx int) string {
-	// g=0 is used for temporary variables.
-	g := 1
-	if b.s.Len() > 0 {
-		g = b.s.Peep() + 2
+func (b *blockStack) blockIndex() int {
+	if b.indexstack.Len() > 0 {
+		return b.indexstack.Peep() + 2
 	}
+
+	// 0 is used for temporary variables.
+	return 1
+}
+
+func (b *blockStack) varName(idx int) string {
 	// The stack varialbe name might be replaced at aggregateStackVars later.
 	// Then, the name must be easy to parse.
-	return fmt.Sprintf("stack%d_%d", g, idx)
+	return fmt.Sprintf("stack%d_%d", b.blockIndex(), idx)
 }
 
 func (b *blockStack) PushBlock(btype blockType, ret string) int {
@@ -141,22 +145,22 @@ func (b *blockStack) PushBlock(btype blockType, ret string) int {
 			VarName: b.varName,
 		},
 	})
-	return b.s.Push()
+	return b.indexstack.Push()
 }
 
-func (b *blockStack) PopBlock() (int, blockType, string) {
+func (b *blockStack) PopBlock() (id int, typ blockType, ret string) {
 	bl := b.blocks[len(b.blocks)-1]
 	b.blocks = b.blocks[:len(b.blocks)-1]
-	return b.s.Pop(), bl.typ, bl.ret
+	return b.indexstack.Pop(), bl.typ, bl.ret
 }
 
-func (b *blockStack) PeepBlock() (int, blockType, string) {
+func (b *blockStack) PeepBlock() (id int, typ blockType, ret string) {
 	bl := b.blocks[len(b.blocks)-1]
-	return b.s.Peep(), bl.typ, bl.ret
+	return b.indexstack.Peep(), bl.typ, bl.ret
 }
 
-func (b *blockStack) PeepLevel(level int) (int, blockType, bool) {
-	l, ok := b.s.PeepLevel(level)
+func (b *blockStack) PeepBlockLevel(level int) (id int, typ blockType, ret bool) {
+	l, ok := b.indexstack.PeepLevel(level)
 	var t blockType
 	if ok {
 		t = b.blocks[len(b.blocks)-1-level].typ
@@ -165,7 +169,7 @@ func (b *blockStack) PeepLevel(level int) (int, blockType, bool) {
 }
 
 func (b *blockStack) Len() int {
-	return b.s.Len()
+	return b.indexstack.Len()
 }
 
 func (b *blockStack) IndentLevel() int {
@@ -209,7 +213,7 @@ func (b *blockStack) PeepStackVar() ([]string, string) {
 	return b.blocks[len(b.blocks)-1].stackvars.Peep()
 }
 
-func (b *blockStack) Empty() bool {
+func (b *blockStack) IsStackVarEmpty() bool {
 	if len(b.blocks) == 0 {
 		return true
 	}
@@ -251,7 +255,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	}
 
 	gotoOrReturn := func(level int) string {
-		if l, _, ok := blockStack.PeepLevel(level); ok {
+		if l, _, ok := blockStack.PeepBlockLevel(level); ok {
 			return fmt.Sprintf("goto label%d;", l)
 		}
 		switch len(sig.ReturnTypes) {
@@ -1058,7 +1062,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	case 0:
 		// Do nothing.
 	case 1:
-		if !blockStack.Empty() && dis.Code[len(dis.Code)-1].Op.Code != operators.Unreachable {
+		if !blockStack.IsStackVarEmpty() && dis.Code[len(dis.Code)-1].Op.Code != operators.Unreachable {
 			if len(body) == 0 || !strings.HasPrefix(strings.TrimSpace(body[len(body)-1]), "return ") {
 				expr, _ := blockStack.PopStackVar()
 				appendBody(`return %s;`, expr)
