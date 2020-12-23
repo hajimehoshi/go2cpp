@@ -102,10 +102,14 @@ const (
 	blockTypeIf
 )
 
+type block struct {
+	typ       blockType
+	ret       string
+	stackvars *stackvar.StackVars
+}
+
 type blockStack struct {
-	types     []blockType
-	rets      []string
-	stackvars []*stackvar.StackVars
+	blocks    []*block
 	s         indexStack
 	tmpindent int
 }
@@ -130,33 +134,32 @@ func (b *blockStack) varName(idx int) string {
 }
 
 func (b *blockStack) PushBlock(btype blockType, ret string) int {
-	b.types = append(b.types, btype)
-	b.rets = append(b.rets, ret)
-	b.stackvars = append(b.stackvars, &stackvar.StackVars{
-		VarName: b.varName,
+	b.blocks = append(b.blocks, &block{
+		typ: btype,
+		ret: ret,
+		stackvars: &stackvar.StackVars{
+			VarName: b.varName,
+		},
 	})
 	return b.s.Push()
 }
 
 func (b *blockStack) PopBlock() (int, blockType, string) {
-	btype := b.types[len(b.types)-1]
-	ret := b.rets[len(b.rets)-1]
-
-	b.types = b.types[:len(b.types)-1]
-	b.rets = b.rets[:len(b.rets)-1]
-	b.stackvars = b.stackvars[:len(b.stackvars)-1]
-	return b.s.Pop(), btype, ret
+	bl := b.blocks[len(b.blocks)-1]
+	b.blocks = b.blocks[:len(b.blocks)-1]
+	return b.s.Pop(), bl.typ, bl.ret
 }
 
 func (b *blockStack) PeepBlock() (int, blockType, string) {
-	return b.s.Peep(), b.types[len(b.types)-1], b.rets[len(b.rets)-1]
+	bl := b.blocks[len(b.blocks)-1]
+	return b.s.Peep(), bl.typ, bl.ret
 }
 
 func (b *blockStack) PeepLevel(level int) (int, blockType, bool) {
 	l, ok := b.s.PeepLevel(level)
 	var t blockType
 	if ok {
-		t = b.types[len(b.types)-1-level]
+		t = b.blocks[len(b.blocks)-1-level].typ
 	}
 	return l, t, ok
 }
@@ -167,8 +170,8 @@ func (b *blockStack) Len() int {
 
 func (b *blockStack) IndentLevel() int {
 	l := 0
-	for _, t := range b.types {
-		if t == blockTypeIf {
+	for _, bl := range b.blocks {
+		if bl.typ == blockTypeIf {
 			l++
 		}
 	}
@@ -177,40 +180,40 @@ func (b *blockStack) IndentLevel() int {
 }
 
 func (b *blockStack) PushLhs(t stackvar.Type) string {
-	if b.stackvars == nil {
-		b.stackvars = []*stackvar.StackVars{
-			{
+	if len(b.blocks) == 0 {
+		b.blocks = append(b.blocks, &block{
+			stackvars: &stackvar.StackVars{
 				VarName: b.varName,
 			},
-		}
+		})
 	}
-	return b.stackvars[len(b.stackvars)-1].PushLhs(t)
+	return b.blocks[len(b.blocks)-1].stackvars.PushLhs(t)
 }
 
 func (b *blockStack) PushStackVar(expr string, t stackvar.Type) {
-	if b.stackvars == nil {
-		b.stackvars = []*stackvar.StackVars{
-			{
+	if len(b.blocks) == 0 {
+		b.blocks = append(b.blocks, &block{
+			stackvars: &stackvar.StackVars{
 				VarName: b.varName,
 			},
-		}
+		})
 	}
-	b.stackvars[len(b.stackvars)-1].Push(expr, t)
+	b.blocks[len(b.blocks)-1].stackvars.Push(expr, t)
 }
 
 func (b *blockStack) PopStackVar() (string, stackvar.Type) {
-	return b.stackvars[len(b.stackvars)-1].Pop()
+	return b.blocks[len(b.blocks)-1].stackvars.Pop()
 }
 
 func (b *blockStack) PeepStackVar() ([]string, string) {
-	return b.stackvars[len(b.stackvars)-1].Peep()
+	return b.blocks[len(b.blocks)-1].stackvars.Peep()
 }
 
 func (b *blockStack) Empty() bool {
-	if len(b.stackvars) == 0 {
+	if len(b.blocks) == 0 {
 		return true
 	}
-	return b.stackvars[len(b.stackvars)-1].Empty()
+	return b.blocks[len(b.blocks)-1].stackvars.Empty()
 }
 
 func (f *wasmFunc) bodyToCpp() ([]string, error) {
