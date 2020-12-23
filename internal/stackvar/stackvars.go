@@ -72,6 +72,10 @@ func (s *StackVars) Peep() ([]string, string) {
 	return []string{fmt.Sprintf("%s %s = (%s);", t.Cpp(), n, l)}, n
 }
 
+func (s *StackVars) Len() int {
+	return len(s.exprs)
+}
+
 func (s *StackVars) Empty() bool {
 	return len(s.exprs) == 0
 }

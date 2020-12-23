@@ -213,6 +213,43 @@ func (b *blockStack) PeepExpr() ([]string, string) {
 	return b.blocks[len(b.blocks)-1].stackvars.Peep()
 }
 
+func (b *blockStack) FlushExprsIfNeeded() []string {
+	if len(b.blocks) == 0 {
+		return nil
+	}
+
+	sv := b.blocks[len(b.blocks)-1].stackvars
+	if sv.Len() <= 1 {
+		return nil
+	}
+
+	type exprTyp struct {
+		expr string
+		typ  stackvar.Type
+	}
+	var exprTyps []exprTyp
+	for sv.Len() > 0 {
+		expr, typ := sv.Pop()
+		exprTyps = append(exprTyps, exprTyp{
+			expr: expr,
+			typ:  typ,
+		})
+	}
+
+	for i := 0; i < len(exprTyps)/2; i++ {
+		j := len(exprTyps) - i - 1
+		exprTyps[i], exprTyps[j] = exprTyps[j], exprTyps[i]
+	}
+
+	var stmts []string
+	for _, exprTyp := range exprTyps {
+		stmt := fmt.Sprintf("%s %s = (%s);", exprTyp.typ.Cpp(), sv.PushLhs(exprTyp.typ), exprTyp.expr)
+		stmts = append(stmts, stmt)
+	}
+
+	return stmts
+}
+
 func (b *blockStack) IsStackVarEmpty() bool {
 	if len(b.blocks) == 0 {
 		return true
@@ -441,15 +478,21 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				}
 				t = wasmTypeToReturnType(wt)
 			}
-			// Copy the local variable here because local variables can be modified later.
-			appendBody("%s %s = local%d;", t.Cpp(), blockStack.PushLhs(t.stackVarType()), instr.Immediates[0])
+			expr := fmt.Sprintf("local%d", instr.Immediates[0])
+			blockStack.PushExpr(expr, t.stackVarType())
 		case operators.SetLocal:
 			lhs := fmt.Sprintf("local%d", instr.Immediates[0])
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			v, _ := blockStack.PopExpr()
 			if lhs != v {
 				appendBody("%s = (%s);", lhs, v)
 			}
 		case operators.TeeLocal:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			ls, v := blockStack.PeepExpr()
 			for _, l := range ls {
 				appendBody(l)
@@ -459,12 +502,14 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody("%s = (%s);", lhs, v)
 			}
 		case operators.GetGlobal:
-			// TODO: PushExpr has a potential risk that the global variable can be updated before it is used.
 			g := f.Globals[instr.Immediates[0].(uint32)]
 			t := wasmTypeToReturnType(g.Type)
 			expr := fmt.Sprintf("global%d", instr.Immediates[0])
 			blockStack.PushExpr(expr, t.stackVarType())
 		case operators.SetGlobal:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			expr, _ := blockStack.PopExpr()
 			appendBody("global%d = (%s);", instr.Immediates[0], expr)
 
@@ -476,7 +521,6 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				off = fmt.Sprintf(" + %d", offset)
 			}
 			expr := fmt.Sprintf("mem_->LoadInt32((%s)%s)", addr, off)
-			// TODO: PushExpr has a potential risk that the memory can be updated before it is used.
 			blockStack.PushExpr(expr, stackvar.I32)
 		case operators.I64Load:
 			offset := instr.Immediates[1].(uint32)
@@ -593,6 +637,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushExpr(expr, stackvar.I64)
 
 		case operators.I32Store:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
@@ -602,6 +649,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("mem_->StoreInt32((%s)%s, %s);", addr, off, idx)
 		case operators.I64Store:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
@@ -611,6 +661,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("mem_->StoreInt64((%s)%s, %s);", addr, off, idx)
 		case operators.F32Store:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
@@ -620,6 +673,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("mem_->StoreFloat32((%s)%s, %s);", addr, off, idx)
 		case operators.F64Store:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
@@ -629,6 +685,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("mem_->StoreFloat64((%s)%s, %s);", addr, off, idx)
 		case operators.I32Store8:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
@@ -638,6 +697,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("mem_->StoreInt8((%s)%s, static_cast<int8_t>(%s));", addr, off, idx)
 		case operators.I32Store16:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
@@ -647,6 +709,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("mem_->StoreInt16((%s)%s, static_cast<int16_t>(%s));", addr, off, idx)
 		case operators.I64Store8:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
@@ -665,6 +730,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("mem_->StoreInt16((%s)%s, static_cast<int16_t>(%s));", addr, off, idx)
 		case operators.I64Store32:
+			for _, expr := range blockStack.FlushExprsIfNeeded() {
+				appendBody(expr)
+			}
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
 			addr, _ := blockStack.PopExpr()
