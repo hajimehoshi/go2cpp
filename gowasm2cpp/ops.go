@@ -129,7 +129,7 @@ func (b *blockStack) varName(idx int) string {
 	return fmt.Sprintf("stack%d_%d", g, idx)
 }
 
-func (b *blockStack) Push(btype blockType, ret string) int {
+func (b *blockStack) PushBlock(btype blockType, ret string) int {
 	b.types = append(b.types, btype)
 	b.rets = append(b.rets, ret)
 	b.stackvars = append(b.stackvars, &stackvar.StackVars{
@@ -138,7 +138,7 @@ func (b *blockStack) Push(btype blockType, ret string) int {
 	return b.s.Push()
 }
 
-func (b *blockStack) Pop() (int, blockType, string) {
+func (b *blockStack) PopBlock() (int, blockType, string) {
 	btype := b.types[len(b.types)-1]
 	ret := b.rets[len(b.rets)-1]
 
@@ -148,7 +148,7 @@ func (b *blockStack) Pop() (int, blockType, string) {
 	return b.s.Pop(), btype, ret
 }
 
-func (b *blockStack) Peep() (int, blockType, string) {
+func (b *blockStack) PeepBlock() (int, blockType, string) {
 	return b.s.Peep(), b.types[len(b.types)-1], b.rets[len(b.rets)-1]
 }
 
@@ -280,7 +280,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody("%s %s;", t.Cpp(), ret)
 				nomerge[ret] = struct{}{}
 			}
-			blockStack.Push(blockTypeBlock, ret)
+			blockStack.PushBlock(blockTypeBlock, ret)
 		case operators.Loop:
 			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
@@ -289,7 +289,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody("%s %s;", t.Cpp(), ret)
 				nomerge[ret] = struct{}{}
 			}
-			l := blockStack.Push(blockTypeLoop, ret)
+			l := blockStack.PushBlock(blockTypeLoop, ret)
 			appendBody("label%d:;", l)
 		case operators.If:
 			cond, _ := blockStack.PopStackVar()
@@ -301,9 +301,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				nomerge[ret] = struct{}{}
 			}
 			appendBody("if (%s) {", cond)
-			blockStack.Push(blockTypeIf, ret)
+			blockStack.PushBlock(blockTypeIf, ret)
 		case operators.Else:
-			if _, _, ret := blockStack.Peep(); ret != "" {
+			if _, _, ret := blockStack.PeepBlock(); ret != "" {
 				idx, _ := blockStack.PopStackVar()
 				appendBody("%s = (%s);", ret, idx)
 			}
@@ -311,11 +311,11 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			appendBody("} else {")
 			blockStack.IndentTemporarily()
 		case operators.End:
-			if _, btype, ret := blockStack.Peep(); btype != blockTypeLoop && ret != "" {
+			if _, btype, ret := blockStack.PeepBlock(); btype != blockTypeLoop && ret != "" {
 				idx, _ := blockStack.PopStackVar()
 				appendBody("%s = %s;", ret, idx)
 			}
-			idx, btype, _ := blockStack.Pop()
+			idx, btype, _ := blockStack.PopBlock()
 			if btype == blockTypeIf {
 				appendBody("}")
 			}
@@ -323,13 +323,13 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody("label%d:;", idx)
 			}
 		case operators.Br:
-			if _, _, ret := blockStack.Peep(); ret != "" {
+			if _, _, ret := blockStack.PeepBlock(); ret != "" {
 				return nil, fmt.Errorf("br with a returning value is not implemented yet")
 			}
 			level := instr.Immediates[0].(uint32)
 			appendBody(gotoOrReturn(int(level)))
 		case operators.BrIf:
-			if _, _, ret := blockStack.Peep(); ret != "" {
+			if _, _, ret := blockStack.PeepBlock(); ret != "" {
 				return nil, fmt.Errorf("br_if with a returning value is not implemented yet")
 			}
 			level := instr.Immediates[0].(uint32)
@@ -340,7 +340,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.UnindentTemporarily()
 			appendBody("}")
 		case operators.BrTable:
-			if _, _, ret := blockStack.Peep(); ret != "" {
+			if _, _, ret := blockStack.PeepBlock(); ret != "" {
 				return nil, fmt.Errorf("br_table with a returning value is not implemented yet")
 			}
 			expr, _ := blockStack.PopStackVar()
