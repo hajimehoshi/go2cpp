@@ -459,7 +459,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody("%s = (%s);", lhs, v)
 			}
 		case operators.GetGlobal:
-			// Copy the global variable here because global variables can be modified later.
+			// TODO: PushExpr has a potential risk that the global variable can be updated before it is used.
 			g := f.Globals[instr.Immediates[0].(uint32)]
 			t := wasmTypeToReturnType(g.Type)
 			expr := fmt.Sprintf("global%d", instr.Immediates[0])
