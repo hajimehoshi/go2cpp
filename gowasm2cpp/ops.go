@@ -194,7 +194,7 @@ func (b *blockStack) PushLhs(t stackvar.Type) string {
 	return b.blocks[len(b.blocks)-1].stackvars.PushLhs(t)
 }
 
-func (b *blockStack) PushStackVar(expr string, t stackvar.Type) {
+func (b *blockStack) PushExpr(expr string, t stackvar.Type) {
 	if len(b.blocks) == 0 {
 		b.blocks = append(b.blocks, &block{
 			stackvars: &stackvar.StackVars{
@@ -205,11 +205,11 @@ func (b *blockStack) PushStackVar(expr string, t stackvar.Type) {
 	b.blocks[len(b.blocks)-1].stackvars.Push(expr, t)
 }
 
-func (b *blockStack) PopStackVar() (string, stackvar.Type) {
+func (b *blockStack) PopExpr() (string, stackvar.Type) {
 	return b.blocks[len(b.blocks)-1].stackvars.Pop()
 }
 
-func (b *blockStack) PeepStackVar() ([]string, string) {
+func (b *blockStack) PeepExpr() ([]string, string) {
 	return b.blocks[len(b.blocks)-1].stackvars.Peep()
 }
 
@@ -262,7 +262,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case 0:
 			return "return;"
 		default:
-			ls, v := blockStack.PeepStackVar()
+			ls, v := blockStack.PeepExpr()
 			for _, l := range ls {
 				appendBody(l)
 			}
@@ -299,7 +299,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			l := blockStack.PushBlock(blockTypeLoop, ret)
 			appendBody("label%d:;", l)
 		case operators.If:
-			cond, _ := blockStack.PopStackVar()
+			cond, _ := blockStack.PopExpr()
 			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
 				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
@@ -311,7 +311,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushBlock(blockTypeIf, ret)
 		case operators.Else:
 			if _, _, ret := blockStack.PeepBlock(); ret != "" {
-				idx, _ := blockStack.PopStackVar()
+				idx, _ := blockStack.PopExpr()
 				appendBody("%s = (%s);", ret, idx)
 			}
 			blockStack.UnindentTemporarily()
@@ -319,7 +319,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.IndentTemporarily()
 		case operators.End:
 			if _, btype, ret := blockStack.PeepBlock(); btype != blockTypeLoop && ret != "" {
-				idx, _ := blockStack.PopStackVar()
+				idx, _ := blockStack.PopExpr()
 				appendBody("%s = %s;", ret, idx)
 			}
 			idx, btype, _ := blockStack.PopBlock()
@@ -340,7 +340,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				return nil, fmt.Errorf("br_if with a returning value is not implemented yet")
 			}
 			level := instr.Immediates[0].(uint32)
-			expr, _ := blockStack.PopStackVar()
+			expr, _ := blockStack.PopExpr()
 			appendBody("if (%s) {", expr)
 			blockStack.IndentTemporarily()
 			appendBody(gotoOrReturn(int(level)))
@@ -350,7 +350,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			if _, _, ret := blockStack.PeepBlock(); ret != "" {
 				return nil, fmt.Errorf("br_table with a returning value is not implemented yet")
 			}
-			expr, _ := blockStack.PopStackVar()
+			expr, _ := blockStack.PopExpr()
 			appendBody("switch (%s) {", expr)
 			len := int(instr.Immediates[0].(uint32))
 			for i := 0; i < len; i++ {
@@ -365,7 +365,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			case 0:
 				appendBody("return;")
 			default:
-				expr, _ := blockStack.PopStackVar()
+				expr, _ := blockStack.PopExpr()
 				appendBody("return %s;", expr)
 			}
 
@@ -374,7 +374,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 
 			args := make([]string, len(f.Wasm.Sig.ParamTypes))
 			for i := range f.Wasm.Sig.ParamTypes {
-				expr, _ := blockStack.PopStackVar()
+				expr, _ := blockStack.PopExpr()
 				args[len(f.Wasm.Sig.ParamTypes)-i-1] = fmt.Sprintf("(%s)", expr)
 			}
 
@@ -393,13 +393,13 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			appendBody("%s%s%s(%s);", ret, imp, identifierFromString(f.Wasm.Name), strings.Join(args, ", "))
 		case operators.CallIndirect:
-			idx, _ := blockStack.PopStackVar()
+			idx, _ := blockStack.PopExpr()
 			typeid := instr.Immediates[0].(uint32)
 			t := types[typeid]
 
 			args := make([]string, len(t.Sig.ParamTypes))
 			for i := range t.Sig.ParamTypes {
-				expr, _ := blockStack.PopStackVar()
+				expr, _ := blockStack.PopExpr()
 				args[len(t.Sig.ParamTypes)-i-1] = fmt.Sprintf("(%s)", expr)
 			}
 
@@ -417,12 +417,12 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			tmpidx++
 
 		case operators.Drop:
-			blockStack.PopStackVar()
+			blockStack.PopExpr()
 		case operators.Select:
-			cond, _ := blockStack.PopStackVar()
-			arg1, _ := blockStack.PopStackVar()
-			arg0, t := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) ? (%s) : (%s)", cond, arg0, arg1), t)
+			cond, _ := blockStack.PopExpr()
+			arg1, _ := blockStack.PopExpr()
+			arg0, t := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) ? (%s) : (%s)", cond, arg0, arg1), t)
 
 		case operators.GetLocal:
 			var t returnType
@@ -445,12 +445,12 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			appendBody("%s %s = local%d;", t.Cpp(), blockStack.PushLhs(t.stackVarType()), instr.Immediates[0])
 		case operators.SetLocal:
 			lhs := fmt.Sprintf("local%d", instr.Immediates[0])
-			v, _ := blockStack.PopStackVar()
+			v, _ := blockStack.PopExpr()
 			if lhs != v {
 				appendBody("%s = (%s);", lhs, v)
 			}
 		case operators.TeeLocal:
-			ls, v := blockStack.PeepStackVar()
+			ls, v := blockStack.PeepExpr()
 			for _, l := range ls {
 				appendBody(l)
 			}
@@ -463,148 +463,237 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			g := f.Globals[instr.Immediates[0].(uint32)]
 			t := wasmTypeToReturnType(g.Type)
 			expr := fmt.Sprintf("global%d", instr.Immediates[0])
-			blockStack.PushStackVar(expr, t.stackVarType())
+			blockStack.PushExpr(expr, t.stackVarType())
 		case operators.SetGlobal:
-			expr, _ := blockStack.PopStackVar()
+			expr, _ := blockStack.PopExpr()
 			appendBody("global%d = (%s);", instr.Immediates[0], expr)
 
 		case operators.I32Load:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("mem_->LoadInt32((%s) + %d)", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I32)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("mem_->LoadInt32((%s)%s)", addr, off)
+			// TODO: PushExpr has a potential risk that the memory can be updated before it is used.
+			blockStack.PushExpr(expr, stackvar.I32)
 		case operators.I64Load:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("mem_->LoadInt64((%s) + %d)", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I64)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("mem_->LoadInt64((%s)%s)", addr, off)
+			blockStack.PushExpr(expr, stackvar.I64)
 		case operators.F32Load:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("mem_->LoadFloat32((%s) + %d)", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.F32)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("mem_->LoadFloat32((%s)%s)", addr, off)
+			blockStack.PushExpr(expr, stackvar.F32)
 		case operators.F64Load:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("mem_->LoadFloat64((%s) + %d)", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.F64)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("mem_->LoadFloat64((%s)%s)", addr, off)
+			blockStack.PushExpr(expr, stackvar.F64)
 		case operators.I32Load8s:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadInt8((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I32)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadInt8((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I32)
 		case operators.I32Load8u:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadUint8((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I32)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadUint8((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I32)
 		case operators.I32Load16s:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadInt16((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I32)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadInt16((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I32)
 		case operators.I32Load16u:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadUint16((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I32)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int32_t>(mem_->LoadUint16((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I32)
 		case operators.I64Load8s:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt8((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I64)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt8((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I64)
 		case operators.I64Load8u:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint8((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I64)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint8((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I64)
 		case operators.I64Load16s:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt16((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I64)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt16((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I64)
 		case operators.I64Load16u:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint16((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I64)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint16((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I64)
 		case operators.I64Load32s:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
-			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt32((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I64)
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadInt32((%s)%s))", addr, off)
+			blockStack.PushExpr(expr, stackvar.I64)
 		case operators.I64Load32u:
 			offset := instr.Immediates[1].(uint32)
-			addr, _ := blockStack.PopStackVar()
+			addr, _ := blockStack.PopExpr()
 			expr := fmt.Sprintf("static_cast<int64_t>(mem_->LoadUint32((%s) + %d))", addr, offset)
-			blockStack.PushStackVar(expr, stackvar.I64)
+			blockStack.PushExpr(expr, stackvar.I64)
 
 		case operators.I32Store:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreInt32((%s) + %d, %s);", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreInt32((%s)%s, %s);", addr, off, idx)
 		case operators.I64Store:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreInt64((%s) + %d, %s);", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreInt64((%s)%s, %s);", addr, off, idx)
 		case operators.F32Store:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreFloat32((%s) + %d, %s);", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreFloat32((%s)%s, %s);", addr, off, idx)
 		case operators.F64Store:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreFloat64((%s) + %d, %s);", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreFloat64((%s)%s, %s);", addr, off, idx)
 		case operators.I32Store8:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreInt8((%s) + %d, static_cast<int8_t>(%s));", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreInt8((%s)%s, static_cast<int8_t>(%s));", addr, off, idx)
 		case operators.I32Store16:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreInt16((%s) + %d, static_cast<int16_t>(%s));", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreInt16((%s)%s, static_cast<int16_t>(%s));", addr, off, idx)
 		case operators.I64Store8:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreInt8((%s) + %d, static_cast<int8_t>(%s));", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreInt8((%s)%s, static_cast<int8_t>(%s));", addr, off, idx)
 		case operators.I64Store16:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreInt16((%s) + %d, static_cast<int16_t>(%s));", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreInt16((%s)%s, static_cast<int16_t>(%s));", addr, off, idx)
 		case operators.I64Store32:
 			offset := instr.Immediates[1].(uint32)
-			idx, _ := blockStack.PopStackVar()
-			addr, _ := blockStack.PopStackVar()
-			appendBody("mem_->StoreInt32((%s) + %d, static_cast<int32_t>(%s));", addr, offset, idx)
+			idx, _ := blockStack.PopExpr()
+			addr, _ := blockStack.PopExpr()
+			var off string
+			if offset != 0 {
+				off = fmt.Sprintf(" + %d", offset)
+			}
+			appendBody("mem_->StoreInt32((%s)%s, static_cast<int32_t>(%s));", addr, off, idx)
 
 		case operators.CurrentMemory:
-			blockStack.PushStackVar("mem_->GetSize()", stackvar.I32)
+			blockStack.PushExpr("mem_->GetSize()", stackvar.I32)
 		case operators.GrowMemory:
-			delta, _ := blockStack.PopStackVar()
-			// As Grow has side effects, call PushLhs instead of PushStackVar.
+			delta, _ := blockStack.PopExpr()
+			// As Grow has side effects, call PushLhs instead of PushExpr.
 			v := blockStack.PushLhs(stackvar.I32)
 			appendBody("int32_t %s = mem_->Grow(%s);", v, delta)
 
 		case operators.I32Const:
-			blockStack.PushStackVar(fmt.Sprintf("%d", instr.Immediates[0]), stackvar.I32)
+			blockStack.PushExpr(fmt.Sprintf("%d", instr.Immediates[0]), stackvar.I32)
 		case operators.I64Const:
 			if i := instr.Immediates[0].(int64); i == -9223372036854775808 {
 				// C++ cannot represent this value as an integer literal.
-				blockStack.PushStackVar(fmt.Sprintf("%dLL - 1LL", i+1), stackvar.I64)
+				blockStack.PushExpr(fmt.Sprintf("%dLL - 1LL", i+1), stackvar.I64)
 			} else {
-				blockStack.PushStackVar(fmt.Sprintf("%dLL", i), stackvar.I64)
+				blockStack.PushExpr(fmt.Sprintf("%dLL", i), stackvar.I64)
 			}
 		case operators.F32Const:
 			if v := instr.Immediates[0].(float32); v == 0 {
-				blockStack.PushStackVar("0.0f", stackvar.F32)
+				blockStack.PushExpr("0.0f", stackvar.F32)
 			} else {
 				va := blockStack.PushLhs(stackvar.F32)
 				bits := math.Float32bits(v)
@@ -614,7 +703,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 		case operators.F64Const:
 			if v := instr.Immediates[0].(float64); v == 0 {
-				blockStack.PushStackVar("0.0", stackvar.I64)
+				blockStack.PushExpr("0.0", stackvar.I64)
 			} else {
 				va := blockStack.PushLhs(stackvar.F64)
 				bits := math.Float64bits(v)
@@ -624,440 +713,440 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 
 		case operators.I32Eqz:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) == 0", arg), stackvar.I32)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) == 0", arg), stackvar.I32)
 		case operators.I32Eq:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32Ne:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32LtS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32LtU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint32_t>(%s) < static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) < static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.I32GtS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32GtU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint32_t>(%s) > static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) > static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.I32LeS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32LeU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint32_t>(%s) <= static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) <= static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.I32GeS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32GeU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint32_t>(%s) >= static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) >= static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.I64Eqz:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) == 0", arg), stackvar.I32)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) == 0", arg), stackvar.I32)
 		case operators.I64Eq:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64Ne:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64LtS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64LtU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint64_t>(%s) < static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) < static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.I64GtS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64GtU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint64_t>(%s) > static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) > static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.I64LeS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64LeU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint64_t>(%s) <= static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) <= static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.I64GeS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64GeU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<uint64_t>(%s) >= static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) >= static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
 		case operators.F32Eq:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
 		case operators.F32Ne:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
 		case operators.F32Lt:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
 		case operators.F32Gt:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
 		case operators.F32Le:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
 		case operators.F32Ge:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
 		case operators.F64Eq:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) == (%s)", arg0, arg1), stackvar.I32)
 		case operators.F64Ne:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) != (%s)", arg0, arg1), stackvar.I32)
 		case operators.F64Lt:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
 		case operators.F64Gt:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
 		case operators.F64Le:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
 		case operators.F64Ge:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
 
 		case operators.I32Clz:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("Bits::LeadingZeros(static_cast<uint32_t>(%s))", arg), stackvar.I32)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("Bits::LeadingZeros(static_cast<uint32_t>(%s))", arg), stackvar.I32)
 		case operators.I32Ctz:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("Bits::TailingZeros(static_cast<uint32_t>(%s))", arg), stackvar.I32)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("Bits::TailingZeros(static_cast<uint32_t>(%s))", arg), stackvar.I32)
 		case operators.I32Popcnt:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("Bits::OnesCount(static_cast<uint32_t>(%s))", arg), stackvar.I32)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("Bits::OnesCount(static_cast<uint32_t>(%s))", arg), stackvar.I32)
 		case operators.I32Add:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32Sub:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32Mul:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32DivS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32DivU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) / static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) / static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
 		case operators.I32RemS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) %% (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) %% (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32RemU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) %% static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) %% static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
 		case operators.I32And:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) & (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) & (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32Or:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) | (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) | (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32Xor:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) ^ (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) ^ (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32Shl:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) << (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) << (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32ShrS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) >> (%s)", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) >> (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32ShrU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) >> (%s))", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) >> (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32Rotl:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(static_cast<uint32_t>(%s), static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(static_cast<uint32_t>(%s), static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I32)
 		case operators.I32Rotr:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(static_cast<uint32_t>(%s), -static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(static_cast<uint32_t>(%s), -static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I32)
 		case operators.I64Clz:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(Bits::LeadingZeros(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::LeadingZeros(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
 		case operators.I64Ctz:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(Bits::TailingZeros(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::TailingZeros(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
 		case operators.I64Popcnt:
-			arg, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(Bits::OnesCount(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
+			arg, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::OnesCount(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
 		case operators.I64Add:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64Sub:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64Mul:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64DivS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64DivU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) / static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) / static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
 		case operators.I64RemS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) %% (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) %% (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64RemU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) %% static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) %% static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
 		case operators.I64And:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) & (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) & (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64Or:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) | (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) | (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64Xor:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) ^ (%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) ^ (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64Shl:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) << static_cast<int32_t>(%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) << static_cast<int32_t>(%s)", arg0, arg1), stackvar.I64)
 		case operators.I64ShrS:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) >> static_cast<int32_t>(%s)", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) >> static_cast<int32_t>(%s)", arg0, arg1), stackvar.I64)
 		case operators.I64ShrU:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) >> static_cast<int32_t>(%s))", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) >> static_cast<int32_t>(%s))", arg0, arg1), stackvar.I64)
 		case operators.I64Rotl:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft(static_cast<uint64_t>(%s), static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft(static_cast<uint64_t>(%s), static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I64)
 		case operators.I64Rotr:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft(static_cast<uint64_t>(%s), -(static_cast<int32_t>(%s))))", arg0, arg1), stackvar.I64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft(static_cast<uint64_t>(%s), -(static_cast<int32_t>(%s))))", arg0, arg1), stackvar.I64)
 		case operators.F32Abs:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::abs(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::abs(%s)", expr), stackvar.F32)
 		case operators.F32Neg:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("-(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("-(%s)", expr), stackvar.F32)
 		case operators.F32Ceil:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::ceil(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::ceil(%s)", expr), stackvar.F32)
 		case operators.F32Floor:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::floor(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::floor(%s)", expr), stackvar.F32)
 		case operators.F32Trunc:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::trunc(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::trunc(%s)", expr), stackvar.F32)
 		case operators.F32Nearest:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("Math::Round(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("Math::Round(%s)", expr), stackvar.F32)
 		case operators.F32Sqrt:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::sqrt(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::sqrt(%s)", expr), stackvar.F32)
 		case operators.F32Add:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.F32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.F32)
 		case operators.F32Sub:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.F32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.F32)
 		case operators.F32Mul:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.F32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.F32)
 		case operators.F32Div:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.F32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.F32)
 		case operators.F32Min:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::min((%s), (%s))", arg0, arg1), stackvar.F32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::min((%s), (%s))", arg0, arg1), stackvar.F32)
 		case operators.F32Max:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::max((%s), (%s))", arg0, arg1), stackvar.F32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::max((%s), (%s))", arg0, arg1), stackvar.F32)
 		case operators.F32Copysign:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::copysign((%s), (%s))", arg0, arg1), stackvar.F32)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::copysign((%s), (%s))", arg0, arg1), stackvar.F32)
 		case operators.F64Abs:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::abs(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::abs(%s)", expr), stackvar.F64)
 		case operators.F64Neg:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("-(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("-(%s)", expr), stackvar.F64)
 		case operators.F64Ceil:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::ceil(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::ceil(%s)", expr), stackvar.F64)
 		case operators.F64Floor:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::floor(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::floor(%s)", expr), stackvar.F64)
 		case operators.F64Trunc:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::trunc(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::trunc(%s)", expr), stackvar.F64)
 		case operators.F64Nearest:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("Math::Round(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("Math::Round(%s)", expr), stackvar.F64)
 		case operators.F64Sqrt:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::sqrt(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::sqrt(%s)", expr), stackvar.F64)
 		case operators.F64Add:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.F64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.F64)
 		case operators.F64Sub:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.F64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.F64)
 		case operators.F64Mul:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.F64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.F64)
 		case operators.F64Div:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.F64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("(%s) / (%s)", arg0, arg1), stackvar.F64)
 		case operators.F64Min:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::min((%s), (%s))", arg0, arg1), stackvar.F64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::min((%s), (%s))", arg0, arg1), stackvar.F64)
 		case operators.F64Max:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::max((%s), (%s))", arg0, arg1), stackvar.F64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::max((%s), (%s))", arg0, arg1), stackvar.F64)
 		case operators.F64Copysign:
-			arg1, _ := blockStack.PopStackVar()
-			arg0, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("std::copysign((%s), (%s))", arg0, arg1), stackvar.F64)
+			arg1, _ := blockStack.PopExpr()
+			arg0, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("std::copysign((%s), (%s))", arg0, arg1), stackvar.F64)
 
 		case operators.I32WrapI64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(%s)", expr), stackvar.I32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(%s)", expr), stackvar.I32)
 		case operators.I32TruncSF32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(std::trunc(%s))", expr), stackvar.I32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(std::trunc(%s))", expr), stackvar.I32)
 		case operators.I32TruncUF32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(std::trunc(%s)))", expr), stackvar.I32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(std::trunc(%s)))", expr), stackvar.I32)
 		case operators.I32TruncSF64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(std::trunc(%s))", expr), stackvar.I32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(std::trunc(%s))", expr), stackvar.I32)
 		case operators.I32TruncUF64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(std::trunc(%s)))", expr), stackvar.I32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(std::trunc(%s)))", expr), stackvar.I32)
 		case operators.I64ExtendSI32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(%s)", expr), stackvar.I64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(%s)", expr), stackvar.I64)
 		case operators.I64ExtendUI32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(static_cast<uint32_t>(%s))", expr), stackvar.I64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint32_t>(%s))", expr), stackvar.I64)
 		case operators.I64TruncSF32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(std::trunc(%s))", expr), stackvar.I64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(std::trunc(%s))", expr), stackvar.I64)
 		case operators.I64TruncUF32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(std::trunc(%s)))", expr), stackvar.I64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(std::trunc(%s)))", expr), stackvar.I64)
 		case operators.I64TruncSF64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(std::trunc(%s))", expr), stackvar.I64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(std::trunc(%s))", expr), stackvar.I64)
 		case operators.I64TruncUF64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(std::trunc(%s)))", expr), stackvar.I64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(std::trunc(%s)))", expr), stackvar.I64)
 		case operators.F32ConvertSI32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
 		case operators.F32ConvertUI32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<float>(static_cast<uint32_t>(%s))", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(static_cast<uint32_t>(%s))", expr), stackvar.F32)
 		case operators.F32ConvertSI64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
 		case operators.F32ConvertUI64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<float>(static_cast<uint64_t>((%s)))", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(static_cast<uint64_t>((%s)))", expr), stackvar.F32)
 		case operators.F32DemoteF64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
 		case operators.F64ConvertSI32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
 		case operators.F64ConvertUI32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<double>(static_cast<uint32_t>(%s))", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(static_cast<uint32_t>(%s))", expr), stackvar.F64)
 		case operators.F64ConvertSI64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
 		case operators.F64ConvertUI64:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<double>(static_cast<uint64_t>(%s))", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(static_cast<uint64_t>(%s))", expr), stackvar.F64)
 		case operators.F64PromoteF32:
-			expr, _ := blockStack.PopStackVar()
-			blockStack.PushStackVar(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
+			expr, _ := blockStack.PopExpr()
+			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
 
 		case operators.I32ReinterpretF32:
 			return nil, fmt.Errorf("I32ReinterpretF32 is not implemented yet")
@@ -1079,7 +1168,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	case 1:
 		if !blockStack.IsStackVarEmpty() && dis.Code[len(dis.Code)-1].Op.Code != operators.Unreachable {
 			if len(body) == 0 || !strings.HasPrefix(strings.TrimSpace(body[len(body)-1]), "return ") {
-				expr, _ := blockStack.PopStackVar()
+				expr, _ := blockStack.PopExpr()
 				appendBody(`return %s;`, expr)
 			}
 		} else {
