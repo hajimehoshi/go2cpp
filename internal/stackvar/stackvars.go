@@ -4,6 +4,7 @@ package stackvar
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Type int
@@ -78,4 +79,14 @@ func (s *StackVars) Len() int {
 
 func (s *StackVars) Empty() bool {
 	return len(s.exprs) == 0
+}
+
+// IncludesInNonTop reports whether str is included in the exprs except for the top expr.
+func (s *StackVars) IncludesInNonTop(str string) bool {
+	for _, expr := range s.exprs[:len(s.exprs)-1] {
+		if strings.Contains(expr, str) {
+			return true
+		}
+	}
+	return false
 }
