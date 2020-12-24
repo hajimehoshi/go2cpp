@@ -349,7 +349,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody("%s %s;", t.Cpp(), ret)
 				nomerge[ret] = struct{}{}
 			}
-			appendBody("if (%s) {", cond)
+			appendBody("if (%s) {", optimizeCondition(cond))
 			blockStack.PushBlock(blockTypeIf, ret)
 		case operators.Else:
 			if _, _, ret := blockStack.PeepBlock(); ret != "" {
@@ -383,7 +383,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			level := instr.Immediates[0].(uint32)
 			expr, _ := blockStack.PopExpr()
-			appendBody("if (%s) {", expr)
+			appendBody("if (%s) {", optimizeCondition(expr))
 			blockStack.IndentTemporarily()
 			appendBody(gotoOrReturn(int(level)))
 			blockStack.UnindentTemporarily()
@@ -464,7 +464,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			cond, _ := blockStack.PopExpr()
 			arg1, _ := blockStack.PopExpr()
 			arg0, t := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) ? (%s) : (%s)", cond, arg0, arg1), t)
+			blockStack.PushExpr(fmt.Sprintf("(%s) ? (%s) : (%s)", optimizeCondition(cond), arg0, arg1), t)
 
 		case operators.GetLocal:
 			var t returnType
@@ -1383,4 +1383,79 @@ func removeUnusedLabels(body []string) []string {
 	}
 
 	return r
+}
+
+func hasOuterParen(str string) bool {
+	if str[0] != '(' || str[len(str)-1] != ')' {
+		return false
+	}
+
+	count := 1
+	for _, r := range str[1 : len(str)-1] {
+		switch r {
+		case '(':
+			count++
+		case ')':
+			count--
+		}
+		if count == 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func optimizeCondition(cond string) string {
+	for {
+		const (
+			equalToZero    = " == 0"
+			notEqualToZero = " != 0"
+			i32cast        = "static_cast<int32_t>"
+			i64cast        = "static_cast<int64_t>"
+			u32cast        = "static_cast<uint32_t>"
+			u64cast        = "static_cast<uint64_t>"
+		)
+
+		if hasOuterParen(cond) {
+			cond = cond[1 : len(cond)-1]
+			continue
+		}
+
+		if strings.HasSuffix(cond, equalToZero) {
+			cond = cond[:len(cond)-len(equalToZero)]
+			cond = optimizeCondition(cond)
+			if cond[0] == '!' {
+				cond = cond[1:]
+			} else {
+				cond = "!(" + cond + ")"
+			}
+			continue
+		}
+
+		if strings.HasSuffix(cond, notEqualToZero) {
+			cond = cond[:len(cond)-len(notEqualToZero)]
+			continue
+		}
+
+		if strings.HasPrefix(cond, i32cast) && hasOuterParen(cond[len(i32cast):]) {
+			cond = cond[len(i32cast)+1 : len(cond)-1]
+			continue
+		}
+		if strings.HasPrefix(cond, i64cast) && hasOuterParen(cond[len(i64cast):]) {
+			cond = cond[len(i64cast)+1 : len(cond)-1]
+			continue
+		}
+		if strings.HasPrefix(cond, u32cast) && hasOuterParen(cond[len(u32cast):]) {
+			cond = cond[len(u32cast)+1 : len(cond)-1]
+			continue
+		}
+		if strings.HasPrefix(cond, u64cast) && hasOuterParen(cond[len(u64cast):]) {
+			cond = cond[len(u64cast)+1 : len(cond)-1]
+			continue
+		}
+
+		break
+	}
+	return cond
 }
