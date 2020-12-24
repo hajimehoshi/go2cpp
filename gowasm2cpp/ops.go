@@ -1255,6 +1255,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	}
 
 	body = aggregateStackVars(body, nomerge)
+	body = optimizeGoto(body)
 	body = removeUnusedLabels(body)
 
 	return body, nil
@@ -1265,6 +1266,7 @@ var (
 	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) (stack([0-9]+)_[0-9]+_))`)
 	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
 	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
+	returnRe       = regexp.MustCompile(`^\s*(return.*);$`)
 )
 
 func aggregateStackVars(body []string, nomerge map[string]struct{}) []string {
@@ -1352,6 +1354,47 @@ func aggregateStackVars(body []string, nomerge map[string]struct{}) []string {
 	r = append(r, "")
 	r = append(r, body...)
 	return r
+}
+
+func optimizeGoto(body []string) []string {
+	labelWithReturn := map[string]string{}
+
+	for i, l := range body {
+		m := labelRe.FindStringSubmatch(l)
+		if m == nil {
+			continue
+		}
+		label := m[1]
+		if len(body) <= i+1 {
+			continue
+		}
+		m2 := returnRe.FindStringSubmatch(body[i+1])
+		if m2 == nil {
+			continue
+		}
+		labelWithReturn[label] = m2[1]
+	}
+
+	for i, l := range body {
+		m := gotoRe.FindStringSubmatch(l)
+		if m == nil {
+			continue
+		}
+		ret, ok := labelWithReturn[m[3]]
+		if !ok {
+			continue
+		}
+		var idt string
+		for _, r := range l {
+			if r != ' ' {
+				break
+			}
+			idt += string(r)
+		}
+		body[i] = idt + ret + ";"
+	}
+
+	return body
 }
 
 func removeUnusedLabels(body []string) []string {
