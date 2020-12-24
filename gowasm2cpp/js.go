@@ -1162,6 +1162,8 @@ public:
         })};
     }
     if (key == "lstat") {
+      // Unfortunately, lstat might not be defined in some platforms.
+#if 0
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           std::string path = args[0].ToString();
@@ -1174,6 +1176,7 @@ public:
           Value::ReflectApply(callback, Value{}, {errval, StatToValue(&statbuf)});
           return Value{};
         })};
+#endif
     }
     if (key == "mkdir") {
       return Value{std::make_shared<Function>(
@@ -1322,6 +1325,8 @@ public:
         })};
     }
     if (key == "utimes") {
+      // Unfortunately, utime(s) might not be defined in some platforms.
+#if 0
       return Value{std::make_shared<Function>(
         [](Value self, std::vector<Value> args) -> Value {
           std::string path = args[0].ToString();
@@ -1338,6 +1343,7 @@ public:
           Value::ReflectApply(callback, Value{}, {errval});
           return Value{};
         })};
+#endif
     }
 
     panic(key + " on fs is not implemented");
