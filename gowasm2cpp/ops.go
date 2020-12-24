@@ -397,7 +397,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			len := int(instr.Immediates[0].(uint32))
 			for i := 0; i < len; i++ {
 				level := int(instr.Immediates[1+i].(uint32))
-				appendBody("case %d: %s", i, gotoOrReturn(int(level)))
+				gt := gotoOrReturn(int(level))
+				appendBody("case %d: %s", i, gt)
 			}
 			level := int(instr.Immediates[len+1].(uint32))
 			appendBody("default: %s", gotoOrReturn(int(level)))
@@ -1264,9 +1265,6 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 var (
 	stackVarRe     = regexp.MustCompile(`stack[0-9]+_[0-9]+_`)
 	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) (stack([0-9]+)_[0-9]+_))`)
-	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
-	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
-	returnRe       = regexp.MustCompile(`^\s*(return.*);$`)
 )
 
 func aggregateStackVars(body []string, nomerge map[string]struct{}) []string {
@@ -1356,18 +1354,28 @@ func aggregateStackVars(body []string, nomerge map[string]struct{}) []string {
 	return r
 }
 
+var (
+	labelRe        = regexp.MustCompile(`^\s*(label\d+):;$`)
+	gotoRe         = regexp.MustCompile(`^\s*((case \d+|default):\s*)?goto (label\d+);$`)
+	caseGotoRe     = regexp.MustCompile(`^\s*(case (\d+)|default): goto (label\d+);$`)
+	returnRe       = regexp.MustCompile(`^\s*(return.*);$`)
+	brtableBeginRe = regexp.MustCompile(`^\s*switch \((local\d+_)\) {$`)
+)
+
 func optimizeGoto(body []string) []string {
 	labelWithReturn := map[string]string{}
 
 	for i, l := range body {
-		m := labelRe.FindStringSubmatch(l)
-		if m == nil {
+		m1 := labelRe.FindStringSubmatch(l)
+		if m1 == nil {
 			continue
 		}
-		label := m[1]
+
+		label := m1[1]
 		if len(body) <= i+1 {
 			continue
 		}
+
 		m2 := returnRe.FindStringSubmatch(body[i+1])
 		if m2 == nil {
 			continue
@@ -1392,6 +1400,79 @@ func optimizeGoto(body []string) []string {
 			idt += string(r)
 		}
 		body[i] = idt + ret + ";"
+	}
+
+	var brtableLocal string
+	var brtableStartLabel string
+	var brtableDefaultDst string
+	var brtableValueToDst map[int]string
+
+	for i := 0; i < len(body); i++ {
+		l := body[i]
+		m1 := brtableBeginRe.FindStringSubmatch(l)
+		if m1 == nil {
+			continue
+		}
+
+		m2 := labelRe.FindStringSubmatch(body[i-1])
+		if m2 == nil {
+			continue
+		}
+
+		brtableLocal = m1[1]
+		brtableStartLabel = m2[1]
+		brtableValueToDst = map[int]string{}
+
+		i++
+		for {
+			m := caseGotoRe.FindStringSubmatch(body[i])
+			if m == nil {
+				break
+			}
+			if m[1] == "default" {
+				brtableDefaultDst = m[3]
+				break
+			}
+			v, err := strconv.Atoi(m[2])
+			if err != nil {
+				panic(err)
+			}
+			brtableValueToDst[v] = m[3]
+			i++
+		}
+		break
+	}
+
+	if brtableStartLabel != "" {
+		assignRe := regexp.MustCompile(`\s*` + regexp.QuoteMeta(brtableLocal) + ` = (\d+);`)
+		gotoRe := regexp.MustCompile(`\s*goto ` + regexp.QuoteMeta(brtableStartLabel) + `;`)
+		for i, l := range body {
+			m := assignRe.FindStringSubmatch(l)
+			if m == nil {
+				continue
+			}
+			v, err := strconv.Atoi(m[1])
+			if err != nil {
+				panic(err)
+			}
+			if !gotoRe.MatchString(body[i+1]) {
+				continue
+			}
+
+			var idt string
+			for _, r := range body[i+1] {
+				if r != ' ' {
+					break
+				}
+				idt += string(r)
+			}
+
+			if dst, ok := brtableValueToDst[v]; ok {
+				body[i+1] = idt + "goto " + dst + ";"
+			} else {
+				body[i+1] = idt + "goto " + brtableDefaultDst + ";"
+			}
+		}
 	}
 
 	return body
