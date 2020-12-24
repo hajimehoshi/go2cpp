@@ -179,7 +179,7 @@ Mem::Mem() {
   bytes_.reserve(1ul * 1024 * 1024 * 1024);
   bytes_.resize({{.InitPageNum}} * kPageSize);
   bytes_begin_ = &*bytes_.begin();
-{{range $index, $value := .Data}}  std::memcpy(&(bytes_[{{$value.Offset}}]), data_segment_data{{$index}}, {{len $value.Data}});
+{{range $index, $value := .Data}}  std::memcpy(bytes_begin_ + {{$value.Offset}}, data_segment_data{{$index}}, {{len $value.Data}});
 {{end}}
 }
 
