@@ -248,7 +248,7 @@ func (b *blockStack) FlushExprsIfNeeded(keyword string) []string {
 
 	var stmts []string
 	for _, exprTyp := range exprTyps {
-		stmt := fmt.Sprintf("%s %s = (%s);", exprTyp.typ.Cpp(), sv.PushLhs(exprTyp.typ), exprTyp.expr)
+		stmt := fmt.Sprintf("%s %s = %s;", exprTyp.typ.Cpp(), sv.PushLhs(exprTyp.typ), exprTyp.expr)
 		stmts = append(stmts, stmt)
 	}
 
@@ -354,7 +354,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.Else:
 			if _, _, ret := blockStack.PeepBlock(); ret != "" {
 				idx, _ := blockStack.PopExpr()
-				appendBody("%s = (%s);", ret, idx)
+				appendBody("%s = %s;", ret, idx)
 			}
 			blockStack.UnindentTemporarily()
 			appendBody("} else {")
@@ -492,7 +492,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			}
 			v, _ := blockStack.PopExpr()
 			if lhs != v {
-				appendBody("%s = (%s);", lhs, v)
+				appendBody("%s = %s;", lhs, v)
 			}
 		case operators.TeeLocal:
 			lhs := fmt.Sprintf("local%d_", instr.Immediates[0])
@@ -504,7 +504,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody(l)
 			}
 			if lhs != v {
-				appendBody("%s = (%s);", lhs, v)
+				appendBody("%s = %s;", lhs, v)
 			}
 		case operators.GetGlobal:
 			g := f.Globals[instr.Immediates[0].(uint32)]
@@ -517,7 +517,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody(expr)
 			}
 			expr, _ := blockStack.PopExpr()
-			appendBody("%s = (%s);", lhs, expr)
+			appendBody("%s = %s;", lhs, expr)
 
 		case operators.I32Load:
 			offset := instr.Immediates[1].(uint32)
