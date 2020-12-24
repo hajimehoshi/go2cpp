@@ -101,7 +101,7 @@ func (f *wasmFunc) CppDecl(indent string, abstract bool, override bool) (string,
 
 	var args []string
 	for i, t := range f.Wasm.Sig.ParamTypes {
-		args = append(args, fmt.Sprintf("%s local%d", wasmTypeToReturnType(t).Cpp(), i))
+		args = append(args, fmt.Sprintf("%s local%d_", wasmTypeToReturnType(t).Cpp(), i))
 	}
 
 	var buf bytes.Buffer
@@ -146,7 +146,7 @@ func (f *wasmFunc) CppImpl(className string, indent string) (string, error) {
 
 	var args []string
 	for i, t := range f.Wasm.Sig.ParamTypes {
-		args = append(args, fmt.Sprintf("%s local%d", wasmTypeToReturnType(t).Cpp(), i))
+		args = append(args, fmt.Sprintf("%s local%d_", wasmTypeToReturnType(t).Cpp(), i))
 	}
 
 	var locals []string
@@ -157,7 +157,7 @@ func (f *wasmFunc) CppImpl(className string, indent string) (string, error) {
 		idx := len(f.Wasm.Sig.ParamTypes)
 		for _, e := range f.Wasm.Body.Locals {
 			for i := 0; i < int(e.Count); i++ {
-				locals = append(locals, fmt.Sprintf("%s local%d = 0;", wasmTypeToReturnType(e.Type).Cpp(), idx))
+				locals = append(locals, fmt.Sprintf("%s local%d_ = 0;", wasmTypeToReturnType(e.Type).Cpp(), idx))
 				idx++
 			}
 		}
@@ -207,7 +207,7 @@ func (f *wasmFunc) CppImpl(className string, indent string) (string, error) {
 }
 
 var (
-	localVariableRe = regexp.MustCompile(`local[0-9]+`)
+	localVariableRe = regexp.MustCompile(`local[0-9]+_`)
 )
 
 func removeUnusedLocalVariables(decls []string, body []string) []string {
@@ -315,7 +315,7 @@ type wasmGlobal struct {
 }
 
 func (g *wasmGlobal) Cpp() string {
-	return fmt.Sprintf("%s global%d = %d;", wasmTypeToReturnType(g.Type).Cpp(), g.Index, g.Init)
+	return fmt.Sprintf("%s global%d_ = %d;", wasmTypeToReturnType(g.Type).Cpp(), g.Index, g.Init)
 }
 
 type wasmType struct {

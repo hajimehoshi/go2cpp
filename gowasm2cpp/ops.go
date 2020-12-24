@@ -134,7 +134,7 @@ func (b *blockStack) blockIndex() int {
 func (b *blockStack) varName(idx int) string {
 	// The stack varialbe name might be replaced at aggregateStackVars later.
 	// Then, the name must be easy to parse.
-	return fmt.Sprintf("stack%d_%d", b.blockIndex(), idx)
+	return fmt.Sprintf("stack%d_%d_", b.blockIndex(), idx)
 }
 
 func (b *blockStack) PushBlock(btype blockType, ret string) int {
@@ -454,8 +454,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				ret = fmt.Sprintf("%s %s = ", t.Cpp(), blockStack.PushLhs(t.stackVarType()))
 			}
 
-			appendBody("Type%d stack0_%d = funcs_[table_[0][%s]].type%d_;", typeid, tmpidx, idx, typeid)
-			appendBody("%s(this->*stack0_%d)(%s);", ret, tmpidx, strings.Join(args, ", "))
+			appendBody("Type%d stack0_%d_ = funcs_[table_[0][%s]].type%d_;", typeid, tmpidx, idx, typeid)
+			appendBody("%s(this->*stack0_%d_)(%s);", ret, tmpidx, strings.Join(args, ", "))
 			tmpidx++
 
 		case operators.Drop:
@@ -483,10 +483,10 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				}
 				t = wasmTypeToReturnType(wt)
 			}
-			expr := fmt.Sprintf("local%d", instr.Immediates[0])
+			expr := fmt.Sprintf("local%d_", instr.Immediates[0])
 			blockStack.PushExpr(expr, t.stackVarType())
 		case operators.SetLocal:
-			lhs := fmt.Sprintf("local%d", instr.Immediates[0])
+			lhs := fmt.Sprintf("local%d_", instr.Immediates[0])
 			for _, expr := range blockStack.FlushExprsIfNeeded(lhs) {
 				appendBody(expr)
 			}
@@ -495,7 +495,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				appendBody("%s = (%s);", lhs, v)
 			}
 		case operators.TeeLocal:
-			lhs := fmt.Sprintf("local%d", instr.Immediates[0])
+			lhs := fmt.Sprintf("local%d_", instr.Immediates[0])
 			for _, expr := range blockStack.FlushExprsIfNeeded(lhs) {
 				appendBody(expr)
 			}
@@ -509,10 +509,10 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.GetGlobal:
 			g := f.Globals[instr.Immediates[0].(uint32)]
 			t := wasmTypeToReturnType(g.Type)
-			expr := fmt.Sprintf("global%d", instr.Immediates[0])
+			expr := fmt.Sprintf("global%d_", instr.Immediates[0])
 			blockStack.PushExpr(expr, t.stackVarType())
 		case operators.SetGlobal:
-			lhs := fmt.Sprintf("global%d", instr.Immediates[0])
+			lhs := fmt.Sprintf("global%d_", instr.Immediates[0])
 			for _, expr := range blockStack.FlushExprsIfNeeded(lhs) {
 				appendBody(expr)
 			}
@@ -771,8 +771,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			} else {
 				va := blockStack.PushLhs(stackvar.F32)
 				bits := math.Float32bits(v)
-				appendBody("uint32_t stack0_%d = %d; // %f", tmpidx, bits, v)
-				appendBody("float %s = *reinterpret_cast<float*>(&stack0_%d);", va, tmpidx)
+				appendBody("uint32_t stack0_%d_ = %d; // %f", tmpidx, bits, v)
+				appendBody("float %s = *reinterpret_cast<float*>(&stack0_%d_);", va, tmpidx)
 				tmpidx++
 			}
 		case operators.F64Const:
@@ -781,8 +781,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			} else {
 				va := blockStack.PushLhs(stackvar.F64)
 				bits := math.Float64bits(v)
-				appendBody("uint64_t stack0_%d = %dULL; // %f", tmpidx, bits, v)
-				appendBody("double %s = *reinterpret_cast<double*>(&stack0_%d);", va, tmpidx)
+				appendBody("uint64_t stack0_%d_ = %dULL; // %f", tmpidx, bits, v)
+				appendBody("double %s = *reinterpret_cast<double*>(&stack0_%d_);", va, tmpidx)
 				tmpidx++
 			}
 
@@ -1261,8 +1261,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 }
 
 var (
-	stackVarRe     = regexp.MustCompile(`stack[0-9]+_[0-9]+`)
-	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) (stack([0-9]+)_[0-9]+))`)
+	stackVarRe     = regexp.MustCompile(`stack[0-9]+_[0-9]+_`)
+	stackVarDeclRe = regexp.MustCompile(`^\s*((int32_t|int64_t|uint32_t|uint64_t|float|double|Type[0-9]+) (stack([0-9]+)_[0-9]+_))`)
 	labelRe        = regexp.MustCompile(`^\s*(label[0-9]+):;$`)
 	gotoRe         = regexp.MustCompile(`^\s*((case [0-9]+|default):\s*)?goto (label[0-9]+);$`)
 )
@@ -1288,7 +1288,7 @@ func aggregateStackVars(body []string, nomerge map[string]struct{}) []string {
 		default:
 			tname = "t" + t[4:]
 		}
-		return fmt.Sprintf("%s_%d", tname, idx)
+		return fmt.Sprintf("%s_%d_", tname, idx)
 	}
 
 	types := map[int]map[string]int{}
