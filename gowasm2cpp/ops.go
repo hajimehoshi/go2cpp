@@ -365,6 +365,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 				return nil, fmt.Errorf("br with a returning value is not implemented yet")
 			}
 			blockStack.UnindentTemporarily()
+			// TODO: Treat the stack correctly especially when 'if' returns some values.
 			appendBody("} else {")
 			blockStack.IndentTemporarily()
 		case operators.End:
