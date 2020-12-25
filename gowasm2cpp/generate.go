@@ -230,7 +230,7 @@ func removeUnusedLocalVariables(decls []string, body []string) []string {
 		return decls
 	}
 
-	r := make([]string, 0, len(decls) - len(unused))
+	r := make([]string, 0, len(decls)-len(unused))
 	for _, d := range decls {
 		v := decl2name[d]
 		if _, ok := unused[v]; ok {
@@ -407,16 +407,21 @@ func Generate(outDir string, include string, wasmFile string, namespace string) 
 	var fs []*wasmFunc
 	for i, t := range mod.Function.Types {
 		name := names[uint32(i+len(mod.Import.Entries))]
-		body := mod.Code.Bodies[i]
+		bodyStr, ok := specialFunctionBodies[name]
+		var body *wasm.FunctionBody
+		if !ok {
+			body = &mod.Code.Bodies[i]
+		}
 		fs = append(fs, &wasmFunc{
 			Type: types[t],
 			Wasm: wasm.Function{
 				Sig:  types[t].Sig,
-				Body: &body,
+				Body: body,
 				Name: name,
 			},
 			Globals: globals,
 			Index:   i + len(mod.Import.Entries),
+			BodyStr: bodyStr,
 		})
 	}
 
@@ -1003,3 +1008,10 @@ int32_t Go::GetIdFromValue(Value value) {
 
 }
 `))
+
+var specialFunctionBodies = map[string]string{
+	"cmpbody": `  return static_cast<int64_t>(mem_->Memcmp(local0_, local2_, std::min(local1_, local3_)));`,
+	"memcmp": `  return static_cast<int32_t>(mem_->Memcmp(local0_, local1_, local2_));`,
+	"memeqbody": `  return static_cast<int64_t>(mem_->Memcmp(local0_, local1_, local2_) == 0);`,
+	"memchr": `  return static_cast<int32_t>(mem_->Memchr(local0_, local1_, local2_));`,
+}

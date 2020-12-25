@@ -144,6 +144,9 @@ public:
   BytesSpan LoadSliceDirectly(int64_t array, int32_t len);
   std::string LoadString(int32_t addr) const;
 
+  int Memcmp(int32_t a, int32_t b, int32_t len);
+  int32_t Memchr(int32_t ptr, int32_t ch, int32_t count);
+
 private:
   Mem(const Mem&) = delete;
   Mem& operator=(const Mem&) = delete;
@@ -206,23 +209,35 @@ int32_t Mem::Grow(int32_t delta) {
 }
 
 void Mem::StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes) {
-  std::copy(bytes.begin(), bytes.end(), bytes_.begin() + addr);
+  std::copy(bytes.begin(), bytes.end(), bytes_begin_ + addr);
 }
 
 BytesSpan Mem::LoadSlice(int32_t addr) {
   int64_t array = LoadInt64(addr);
   int64_t len = LoadInt64(addr + 8);
-  return BytesSpan{&*(bytes_.begin() + array), static_cast<BytesSpan::size_type>(len)};
+  return BytesSpan{&*(bytes_begin_ + array), static_cast<BytesSpan::size_type>(len)};
 }
 
 BytesSpan Mem::LoadSliceDirectly(int64_t array, int32_t len) {
-  return BytesSpan{&*(bytes_.begin() + array), static_cast<BytesSpan::size_type>(len)};
+  return BytesSpan{&*(bytes_begin_ + array), static_cast<BytesSpan::size_type>(len)};
 }
 
 std::string Mem::LoadString(int32_t addr) const {
   int64_t saddr = LoadInt64(addr);
   int64_t len = LoadInt64(addr + 8);
-  return std::string{bytes_.begin() + saddr, bytes_.begin() + saddr + len};
+  return std::string{bytes_begin_ + saddr, bytes_begin_ + saddr + len};
+}
+
+int Mem::Memcmp(int32_t a, int32_t b, int32_t len) {
+  return std::memcmp(bytes_begin_ + a, bytes_begin_ + b, len);
+}
+
+int32_t Mem::Memchr(int32_t ptr, int32_t ch, int32_t count) {
+  void* result = std::memchr(bytes_begin_ + ptr, ch, count);
+  if (!result) {
+    return 0;
+  }
+  return static_cast<int32_t>(reinterpret_cast<uint8_t*>(result) - bytes_begin_);
 }
 
 }
