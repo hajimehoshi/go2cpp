@@ -146,6 +146,8 @@ public:
 
   int Memcmp(int32_t a, int32_t b, int32_t len);
   int32_t Memchr(int32_t ptr, int32_t ch, int32_t count);
+  void Memmove(int32_t dst, int32_t src, int32_t count);
+  void Memset(int32_t dst, uint8_t ch, int32_t count);
 
 private:
   Mem(const Mem&) = delete;
@@ -238,6 +240,14 @@ int32_t Mem::Memchr(int32_t ptr, int32_t ch, int32_t count) {
     return 0;
   }
   return static_cast<int32_t>(reinterpret_cast<uint8_t*>(result) - bytes_begin_);
+}
+
+void Mem::Memmove(int32_t dst, int32_t src, int32_t count) {
+  std::memmove(bytes_begin_ + dst, bytes_begin_ + src, count);
+}
+
+void Mem::Memset(int32_t dst, uint8_t ch, int32_t count) {
+  std::memset(bytes_begin_ + dst, ch, count);
 }
 
 }
