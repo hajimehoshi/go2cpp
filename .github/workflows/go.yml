@@ -25,7 +25,7 @@ jobs:
         ./run.sh fmt -test.v
         ./run.sh math -test.v
         ./run.sh math/bits -test.v
-        ./run.sh runtime -test.v -test.short
+        ./run.sh runtime -test.v -test.short -test.run=^Test
         ./run.sh runtime/internal/atomic -test.v
         ./run.sh runtime/internal/math -test.v
         ./run.sh runtime/internal/sys -test.v
