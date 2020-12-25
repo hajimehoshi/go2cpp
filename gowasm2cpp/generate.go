@@ -1010,7 +1010,6 @@ int32_t Go::GetIdFromValue(Value value) {
 `))
 
 var specialFunctionBodies = map[string]string{
-	"cmpbody":   `  return static_cast<int64_t>(mem_->Memcmp(local0_, local2_, std::min(local1_, local3_)));`,
 	"memcmp":    `  return static_cast<int32_t>(mem_->Memcmp(local0_, local1_, local2_));`,
 	"memeqbody": `  return static_cast<int64_t>(mem_->Memcmp(local0_, local1_, local2_) == 0);`,
 	"memchr":    `  return static_cast<int32_t>(mem_->Memchr(local0_, local1_, local2_));`,
