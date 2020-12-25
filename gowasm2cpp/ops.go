@@ -342,19 +342,13 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.Block:
 			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
-				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
-				ret = blockStack.PushLhs(t.stackVarType())
-				appendBody("%s %s;", t.Cpp(), ret)
-				nomerge[ret] = struct{}{}
+				return nil, fmt.Errorf("br with a returning value is not implemented yet")
 			}
 			blockStack.PushBlock(blockTypeBlock, ret)
 		case operators.Loop:
 			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
-				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
-				ret = blockStack.PushLhs(t.stackVarType())
-				appendBody("%s %s;", t.Cpp(), ret)
-				nomerge[ret] = struct{}{}
+				return nil, fmt.Errorf("br with a returning value is not implemented yet")
 			}
 			l := blockStack.PushBlock(blockTypeLoop, ret)
 			appendBody("label%d:;", l)
@@ -362,25 +356,20 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			cond, _ := blockStack.PopExpr()
 			var ret string
 			if t := instr.Immediates[0]; t != wasm.BlockTypeEmpty {
-				t := wasmTypeToReturnType(wasm.ValueType(t.(wasm.BlockType)))
-				ret = blockStack.PushLhs(t.stackVarType())
-				appendBody("%s %s;", t.Cpp(), ret)
-				nomerge[ret] = struct{}{}
+				return nil, fmt.Errorf("br with a returning value is not implemented yet")
 			}
 			appendBody("if (%s) {", optimizeCondition(cond))
 			blockStack.PushBlock(blockTypeIf, ret)
 		case operators.Else:
 			if _, _, ret := blockStack.PeepBlock(); ret != "" {
-				idx, _ := blockStack.PopExpr()
-				appendBody("%s = %s;", ret, idx)
+				return nil, fmt.Errorf("br with a returning value is not implemented yet")
 			}
 			blockStack.UnindentTemporarily()
 			appendBody("} else {")
 			blockStack.IndentTemporarily()
 		case operators.End:
-			if _, btype, ret := blockStack.PeepBlock(); btype != blockTypeLoop && ret != "" {
-				idx, _ := blockStack.PopExpr()
-				appendBody("%s = %s;", ret, idx)
+			if _, _, ret := blockStack.PeepBlock(); ret != "" {
+				return nil, fmt.Errorf("br with a returning value is not implemented yet")
 			}
 			idx, btype, _ := blockStack.PopBlock()
 			if btype == blockTypeIf {
