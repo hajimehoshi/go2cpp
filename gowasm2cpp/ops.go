@@ -262,6 +262,24 @@ func (b *blockStack) IsStackVarEmpty() bool {
 	return b.blocks[len(b.blocks)-1].stackvars.Empty()
 }
 
+func (f *wasmFunc) localVariableType(idx int) returnType {
+	if idx < len(f.Wasm.Sig.ParamTypes) {
+		return wasmTypeToReturnType(f.Wasm.Sig.ParamTypes[idx])
+	}
+
+	idx -= len(f.Wasm.Sig.ParamTypes)
+	var wt wasm.ValueType
+	for _, e := range f.Wasm.Body.Locals {
+		if idx >= int(e.Count) {
+			idx -= int(e.Count)
+			continue
+		}
+		wt = e.Type
+		break
+	}
+	return wasmTypeToReturnType(wt)
+}
+
 func (f *wasmFunc) bodyToCpp() ([]string, error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -468,22 +486,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushExpr(fmt.Sprintf("(%s) ? (%s) : (%s)", optimizeCondition(cond), arg0, arg1), t)
 
 		case operators.GetLocal:
-			var t returnType
-			if idx := int(instr.Immediates[0].(uint32)); idx < len(f.Wasm.Sig.ParamTypes) {
-				t = wasmTypeToReturnType(f.Wasm.Sig.ParamTypes[idx])
-			} else {
-				idx -= len(f.Wasm.Sig.ParamTypes)
-				var wt wasm.ValueType
-				for _, e := range f.Wasm.Body.Locals {
-					if idx >= int(e.Count) {
-						idx -= int(e.Count)
-						continue
-					}
-					wt = e.Type
-					break
-				}
-				t = wasmTypeToReturnType(wt)
-			}
+			t := f.localVariableType(int(instr.Immediates[0].(uint32)))
 			expr := fmt.Sprintf("local%d_", instr.Immediates[0])
 			blockStack.PushExpr(expr, t.stackVarType())
 		case operators.SetLocal:
