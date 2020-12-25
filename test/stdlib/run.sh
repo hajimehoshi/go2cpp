@@ -1,6 +1,6 @@
 set -e
 echo "# Test $1"
-env GOOS=js GOARCH=wasm go test -c -o test.wasm -trimpath $1
+env GOOS=js GOARCH=wasm go test -c -o test.wasm $1
 # wasm-opt -O2 -g -o test.opt.wasm ./test.wasm
 # mv test.opt.wasm test.wasm
 rm -rf autogen
