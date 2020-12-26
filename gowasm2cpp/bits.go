@@ -163,25 +163,25 @@ int32_t Bits::TailingZeros(uint32_t x) {
   if (x == 0) {
     return 32;
   }
-  return (int32_t)deBruijn32tab[(x&-x)*deBruijn32>>(32-5)];
+  return static_cast<int32_t>(deBruijn32tab[(x&-x)*deBruijn32>>(32-5)]);
 }
 
 int32_t Bits::TailingZeros(uint64_t x) {
   if (x == 0) {
     return 64;
   }
-  return (int32_t)deBruijn64tab[(x&(uint64_t)(-(int64_t)x))*deBruijn64>>(64-6)];
+  return static_cast<int32_t>(deBruijn64tab[(x&-x)*deBruijn64>>(64-6)]);
 }
 
 int32_t Bits::OnesCount(uint32_t x) {
-  return (int32_t)(pop8tab[x>>24] + pop8tab[x>>16&0xff] + pop8tab[x>>8&0xff] + pop8tab[x&0xff]);
+  return static_cast<int32_t>(pop8tab[x>>24] + pop8tab[(x>>16)&0xff] + pop8tab[(x>>8)&0xff] + pop8tab[x&0xff]);
 }
 
 int32_t Bits::OnesCount(uint64_t x) {
-  const uint64_t m0 = 0x5555555555555555ul;
-  const uint64_t m1 = 0x3333333333333333ul;
-  const uint64_t m2 = 0x0f0f0f0f0f0f0f0ful;
-  const uint64_t m  = 0xfffffffffffffffful;
+  constexpr uint64_t m0 = 0x5555555555555555ul;
+  constexpr uint64_t m1 = 0x3333333333333333ul;
+  constexpr uint64_t m2 = 0x0f0f0f0f0f0f0f0ful;
+  constexpr uint64_t m  = 0xfffffffffffffffful;
 
   x = ((x>>1)&(m0&m)) + (x&(m0&m));
   x = ((x>>2)&(m1&m)) + (x&(m1&m));
@@ -189,17 +189,17 @@ int32_t Bits::OnesCount(uint64_t x) {
   x += x >> 8;
   x += x >> 16;
   x += x >> 32;
-  return (int32_t)(x) & ((1<<7) - 1);
+  return static_cast<int32_t>(x) & ((1<<7) - 1);
 }
 
 uint32_t Bits::RotateLeft(uint32_t x, int32_t k) {
-  const int32_t n = 32;
+  constexpr int32_t n = 32;
   int32_t s = k & (n - 1);
   return x<<s | x>>(n-s);
 }
 
 uint64_t Bits::RotateLeft(uint64_t x, int32_t k) {
-  const int32_t n = 64;
+  constexpr int32_t n = 64;
   int32_t s = k & (n - 1);
   return x<<s | x>>(n-s);
 }
@@ -214,7 +214,7 @@ int32_t Bits::Len(uint32_t x) {
     x >>= 8;
     n += 8;
   }
-  return n + (int32_t)len8tab[x];
+  return n + static_cast<int32_t>(len8tab[x]);
 }
 
 int32_t Bits::Len(uint64_t x) {
@@ -231,7 +231,7 @@ int32_t Bits::Len(uint64_t x) {
     x >>= 8;
     n += 8;
   }
-  return n + (int32_t)len8tab[x];
+  return n + static_cast<int32_t>(len8tab[x]);
 }
 
 float Math::Round(float x) {
