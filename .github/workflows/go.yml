@@ -22,4 +22,13 @@ jobs:
     - name: Test stdlib
       working-directory: test/stdlib
       run: |
-        ./run.sh fmt math math/bits runtime runtime/internal/atomic runtime/internal/math runtime/internal/sys sort sync sync/atomic -test.v -test.short
+        ./run.sh fmt -test.v
+        ./run.sh math -test.v
+        ./run.sh math/bits -test.v
+        ./run.sh runtime -test.v -test.short
+        ./run.sh runtime/internal/atomic -test.v
+        ./run.sh runtime/internal/math -test.v
+        ./run.sh runtime/internal/sys -test.v
+        ./run.sh sort -test.v
+        ./run.sh sync -test.v
+        ./run.sh sync/atomic -test.v
