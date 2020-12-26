@@ -72,15 +72,7 @@ func run() error {
 				return err
 			}
 
-			args := []string{"clang++",
-				"-O3",
-				"-Wall",
-				"-std=c++14",
-				"-pthread",
-				"-I.",
-				"-g",
-				"-c",
-				"-o", obj, src}
+			args := []string{"clang++", "-Wall", "-std=c++14", "-pthread", "-I.", "-g", "-c", "-o", obj, src}
 			fmt.Println(strings.Join(args, " "))
 			buildcmd := exec.Command(args[0], args[1:]...)
 			buildcmd.Stderr = os.Stderr
