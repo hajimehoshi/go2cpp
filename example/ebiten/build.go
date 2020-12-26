@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -45,9 +46,15 @@ func run() error {
 	var objs []string
 	var objsm sync.Mutex
 	var g errgroup.Group
+	sem := make(chan struct{}, runtime.NumCPU())
 	for _, src := range srcs {
 		src := src
 		g.Go(func() error {
+			sem <- struct{}{}
+			defer func() {
+				<-sem
+			}()
+
 			ppcmd := exec.Command("clang++", "-E", "-std=c++14", src)
 			ppcmd.Stderr = os.Stderr
 			pp, err := ppcmd.Output()
