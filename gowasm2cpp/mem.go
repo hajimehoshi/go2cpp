@@ -44,25 +44,23 @@ func writeMem(dir string, incpath string, namespace string, initPageNum int, dat
 		}
 		defer f.Close()
 
-		offset := data[0].Offset
-		end := data[len(data)-1].Offset + len(data[len(data)-1].Data)
-		flatten := make([]byte, end-offset)
+		var flatten []byte
 		for _, d := range data {
-			copy(flatten[d.Offset-offset:], d.Data)
+			flatten = append(flatten, d.Data...)
 		}
 
 		if err := memCppTmpl.Execute(f, struct {
-			IncludePath       string
-			Namespace         string
-			InitPageNum       int
-			FlattenDataOffset int
-			FlattenData       []byte
+			IncludePath string
+			Namespace   string
+			InitPageNum int
+			Data        []wasmData
+			FlattenData []byte
 		}{
-			IncludePath:       incpath,
-			Namespace:         namespace,
-			InitPageNum:       initPageNum,
-			FlattenDataOffset: offset,
-			FlattenData:       flatten,
+			IncludePath: incpath,
+			Namespace:   namespace,
+			InitPageNum: initPageNum,
+			Data:        data,
+			FlattenData: flatten,
 		}); err != nil {
 			return err
 		}
@@ -195,6 +193,16 @@ const uint8_t initial_data_[] = {
   {{end}}{{end}}
 };
 
+struct WasmData {
+  int32_t offset;
+  int32_t length;
+};
+
+const WasmData initial_data_info_[] = {
+  {{range $index, $value := .Data}}{ {{$value.Offset}}, {{len $value.Data}} }, {{if needsNewLine $index}}
+  {{end}}{{end}}
+};
+
 }
 
 Mem::Mem() {
@@ -202,7 +210,13 @@ Mem::Mem() {
   bytes_.reserve(1ul * 1024 * 1024 * 1024);
   bytes_.resize({{.InitPageNum}} * kPageSize);
   bytes_begin_ = &*bytes_.begin();
-  std::memcpy(bytes_begin_ + {{.FlattenDataOffset}}, initial_data_, {{len .FlattenData}});
+  constexpr int32_t info_size = sizeof(initial_data_info_) / sizeof(initial_data_info_[0]);
+  int32_t src_offset = 0;
+  for (int32_t i = 0; i < info_size; i++) {
+    WasmData info = initial_data_info_[i];
+    std::memcpy(bytes_begin_ + info.offset, initial_data_ + src_offset, info.length);
+    src_offset += info.length;
+  }
 }
 
 int32_t Mem::GetSize() const {
