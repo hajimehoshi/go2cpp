@@ -927,14 +927,16 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32Add:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.I32)
+			// Cast to unsigned types to avoid undefined signed overflow.
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) + static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
 		case operators.I32Sub:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.I32)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) - static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
 		case operators.I32Mul:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
+			// TODO: Consider the possibility of undefined overflow.
 			blockStack.PushExpr(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32DivS:
 			arg1, _ := blockStack.PopExpr()
@@ -967,7 +969,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32Shl:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) << (%s)", arg0, arg1), stackvar.I32)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) << (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32ShrS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -996,14 +998,16 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64Add:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) + (%s)", arg0, arg1), stackvar.I64)
+			// Cast to unsigned types to avoid undefined signed overflow.
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) + static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
 		case operators.I64Sub:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) - (%s)", arg0, arg1), stackvar.I64)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) - static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
 		case operators.I64Mul:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
+			// TODO: Consider the possibility of undefined overflow.
 			blockStack.PushExpr(fmt.Sprintf("(%s) * (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64DivS:
 			arg1, _ := blockStack.PopExpr()
@@ -1036,7 +1040,7 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64Shl:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) << static_cast<int32_t>(%s)", arg0, arg1), stackvar.I64)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) << static_cast<int32_t>(%s))", arg0, arg1), stackvar.I64)
 		case operators.I64ShrS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
