@@ -129,17 +129,17 @@ int Game::Run() {
       Value{static_cast<double>(driver_->GetScreenHeight())});
   go2cpp->Set("devicePixelRatio", Value{driver_->GetDevicePixelRatio()});
   go2cpp->Set("touchCount", Value{0.0});
-  go2cpp->Set("getTouchPositionId", Value{std::make_shared<Function>(
+  go2cpp->Set("getTouchId", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
       return Value{static_cast<double>(touches_[idx].id)};
     })});
-  go2cpp->Set("getTouchPositionX", Value{std::make_shared<Function>(
+  go2cpp->Set("getTouchX", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
       return Value{static_cast<double>(touches_[idx].x)};
     })});
-  go2cpp->Set("getTouchPositionY", Value{std::make_shared<Function>(
+  go2cpp->Set("getTouchY", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
       return Value{static_cast<double>(touches_[idx].y)};

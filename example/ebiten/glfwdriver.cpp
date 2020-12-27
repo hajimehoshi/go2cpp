@@ -10,7 +10,7 @@ namespace {
 constexpr int kWidth = 640;
 constexpr int kHeight = 480;
 
-}
+} // namespace
 
 bool GLFWDriver::Init() {
   if (!glfwInit()) {
@@ -43,19 +43,13 @@ void GLFWDriver::Update(std::function<void()> f) {
   glfwSwapBuffers(window_);
 }
 
-int GLFWDriver::GetScreenWidth() {
-  return kWidth;
-}
+int GLFWDriver::GetScreenWidth() { return kWidth; }
 
-int GLFWDriver::GetScreenHeight() {
-  return kHeight;
-}
+int GLFWDriver::GetScreenHeight() { return kHeight; }
 
-double GLFWDriver::GetDevicePixelRatio() {
-  return device_pixel_ratio_;
-}
+double GLFWDriver::GetDevicePixelRatio() { return device_pixel_ratio_; }
 
-void* GLFWDriver::GetOpenGLFunction(const char* name) {
+void *GLFWDriver::GetOpenGLFunction(const char *name) {
   return dlsym(RTLD_DEFAULT, name);
 }
 
@@ -67,6 +61,6 @@ std::vector<go2cpp_autogen::Game::Touch> GLFWDriver::GetTouches() {
   double xpos, ypos;
   glfwGetCursorPos(window_, &xpos, &ypos);
   return {
-    {0, static_cast<int>(xpos), static_cast<int>(ypos)},
+      {0, static_cast<int>(xpos), static_cast<int>(ypos)},
   };
 }
