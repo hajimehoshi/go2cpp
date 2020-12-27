@@ -24,11 +24,17 @@ jobs:
       run: |
         ./run.sh fmt -test.v
         ./run.sh math -test.v
+        ./run.sh math/big -test.v
         ./run.sh math/bits -test.v
+        ./run.sh math/cmplx -test.v
+        ./run.sh math/rand -test.v
         ./run.sh runtime -test.v
+        ./run.sh runtime/debug -test.v
         ./run.sh runtime/internal/atomic -test.v
         ./run.sh runtime/internal/math -test.v
         ./run.sh runtime/internal/sys -test.v
+        ./run.sh strconv -test.v
+        ./run.sh strings -test.v
         ./run.sh sort -test.v
         ./run.sh sync -test.v
         ./run.sh sync/atomic -test.v
