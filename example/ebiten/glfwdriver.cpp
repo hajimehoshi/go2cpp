@@ -59,30 +59,14 @@ void* GLFWDriver::GetOpenGLFunction(const char* name) {
   return dlsym(RTLD_DEFAULT, name);
 }
 
-int GLFWDriver::GetTouchCount() {
+std::vector<go2cpp_autogen::Game::Touch> GLFWDriver::GetTouches() {
   if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) {
-    return 0;
-  }
-  return 1;
-}
-
-void GLFWDriver::GetTouch(int idx, int* id, int* x, int* y) {
-  if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS) {
-    // Not reached!
-    assert(false);
-    return;
-  }
-
-  if (id) {
-    *id = 0;
+    return {};
   }
 
   double xpos, ypos;
   glfwGetCursorPos(window_, &xpos, &ypos);
-  if (x) {
-    *x = static_cast<int>(xpos);
-  }
-  if (y) {
-    *y = static_cast<int>(ypos);
-  }
+  return {
+    {0, static_cast<int>(xpos), static_cast<int>(ypos)},
+  };
 }

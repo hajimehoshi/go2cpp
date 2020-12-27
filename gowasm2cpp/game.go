@@ -61,6 +61,12 @@ namespace {{.Namespace}} {
 
 class Game {
 public:
+  struct Touch {
+    int id;
+    int x;
+    int y;
+  };
+
   class Driver {
   public:
     virtual ~Driver();
@@ -70,8 +76,7 @@ public:
     virtual int GetScreenHeight() = 0;
     virtual double GetDevicePixelRatio() = 0;
     virtual void* GetOpenGLFunction(const char* name) = 0;
-    virtual int GetTouchCount() = 0;
-    virtual void GetTouch(int index, int* id, int* x, int* y) = 0;
+    virtual std::vector<Touch> GetTouches() = 0;
   };
 
   Game(std::unique_ptr<Driver> driver);
@@ -82,6 +87,7 @@ private:
   void Update(Value f);
 
   std::unique_ptr<Driver> driver_;
+  std::vector<Touch> touches_;
 };
 
 }
@@ -126,23 +132,17 @@ int Game::Run() {
   go2cpp->Set("getTouchPositionId", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
-      int id;
-      driver_->GetTouch(idx, &id, nullptr, nullptr);
-      return Value{static_cast<double>(id)};
+      return Value{static_cast<double>(touches_[idx].id)};
     })});
   go2cpp->Set("getTouchPositionX", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
-      int x;
-      driver_->GetTouch(idx, nullptr, &x, nullptr);
-      return Value{static_cast<double>(x)};
+      return Value{static_cast<double>(touches_[idx].x)};
     })});
   go2cpp->Set("getTouchPositionY", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
-      int y;
-      driver_->GetTouch(idx, nullptr, nullptr, &y);
-      return Value{static_cast<double>(y)};
+      return Value{static_cast<double>(touches_[idx].y)};
     })});
 
   Go go;
@@ -163,7 +163,9 @@ int Game::Run() {
 void Game::Update(Value f) {
   auto& global = Value::Global().ToObject();
   auto& go2cpp = global.Get("go2cpp").ToObject();
-  go2cpp.Set("touchCount", Value{static_cast<double>(driver_->GetTouchCount())});
+
+  touches_ = driver_->GetTouches();
+  go2cpp.Set("touchCount", Value{static_cast<double>(touches_.size())});
 
   f.ToObject().Invoke(Value{}, {});
 }

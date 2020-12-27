@@ -15,8 +15,7 @@ public:
   int GetScreenHeight() override;
   double GetDevicePixelRatio() override;
   void* GetOpenGLFunction(const char* name) override;
-  int GetTouchCount() override;
-  void GetTouch(int index, int* id, int* x, int* y) override;
+  std::vector<go2cpp_autogen::Game::Touch> GetTouches() override;
 
 private:
   GLFWwindow* window_;
