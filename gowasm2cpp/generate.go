@@ -1013,15 +1013,4 @@ var specialFunctionBodies = map[string]string{
 	"memcmp":    `  return static_cast<int32_t>(mem_->Memcmp(local0_, local1_, local2_));`,
 	"memeqbody": `  return static_cast<int64_t>(mem_->Memcmp(local0_, local1_, local2_) == 0);`,
 	"memchr":    `  return static_cast<int32_t>(mem_->Memchr(local0_, local1_, local2_));`,
-	"runtime.memclrNoHeapPointers": `  int64_t ptr = mem_->LoadInt64(global0_ + 8);
-  int64_t n = mem_->LoadInt64(global0_ + 16);
-  mem_->Memset(ptr, 0, n);
-  global0_ += 8;
-  return 0;`,
-	"runtime.memmove": `  int64_t to = mem_->LoadInt64(global0_ + 8);
-  int64_t from = mem_->LoadInt64(global0_ + 16);
-  int64_t n = mem_->LoadInt64(global0_ + 24);
-  mem_->Memmove(to, from, n);
-  global0_ += 8;
-  return 0;`,
 }
