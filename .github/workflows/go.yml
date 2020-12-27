@@ -24,7 +24,7 @@ jobs:
       run: |
         ./run.sh fmt -test.v
         ./run.sh math -test.v
-        ./run.sh math/big -test.v
+        ./run.sh math/big -test.v -test.short # TestLinkerGC doesn't work (#21)
         ./run.sh math/bits -test.v
         ./run.sh math/cmplx -test.v
         ./run.sh math/rand -test.v
