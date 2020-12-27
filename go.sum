@@ -11,8 +11,8 @@ github.com/hajimehoshi/bitmapfont/v2 v2.1.0/go.mod h1:2BnYrkTQGThpr/CY6LorYtt/zE
 github.com/hajimehoshi/bitmapfont/v2 v2.1.2 h1:pocVwRwAAuTBrUerTOIob0AIX5AHw1RbrJDQ99dHJ3o=
 github.com/hajimehoshi/bitmapfont/v2 v2.1.2/go.mod h1:2BnYrkTQGThpr/CY6LorYtt/zEPNzvE/ND69CRTaHMs=
 github.com/hajimehoshi/ebiten/v2 v2.0.0-alpha.0.20201010065233-7f55fdf76944/go.mod h1:EvUbs3LB1sybSHLl0cdcCciJ7Uw2KIbtxIO9Y92fsKM=
-github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.6.0.20201227111045-bb20c9719ecd h1:e79rG6RM6I0HSTPUz+q5w3KrZnX/1KeTDfjngw+IdTI=
-github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.6.0.20201227111045-bb20c9719ecd/go.mod h1:V1/pNQlNn/Ngj1E5yXHXUp8zlsKMnkCGcY/1gawkTbU=
+github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.6.0.20201227125608-62b199f9eba7 h1:ifEGkX81TnEYPexAFEym00tVIMe6iQ5v92s9E4IqnRw=
+github.com/hajimehoshi/ebiten/v2 v2.1.0-alpha.6.0.20201227125608-62b199f9eba7/go.mod h1:V1/pNQlNn/Ngj1E5yXHXUp8zlsKMnkCGcY/1gawkTbU=
 github.com/hajimehoshi/file2byteslice v0.0.0-20200812174855-0e5e8a80490e/go.mod h1:CqqAHp7Dk/AqQiwuhV1yT2334qbA/tFWQW0MD2dGqUE=
 github.com/hajimehoshi/go-inovation v0.0.0-20201221094410-67d53f8aff15 h1:Dl/R/73N9+0+FNm2YoFMrLtxYBY1JlFmNFvZTPMjRqk=
 github.com/hajimehoshi/go-inovation v0.0.0-20201221094410-67d53f8aff15/go.mod h1:RjcTbBraZqituZouaM7K3sxFPyJq+vpgzf3cp1Nv5Vs=
