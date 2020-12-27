@@ -14,11 +14,12 @@ public:
   int GetScreenWidth() override;
   int GetScreenHeight() override;
   double GetDevicePixelRatio() override;
-  void* GetOpenGLFunction(const char* name) override;
+  void *GetOpenGLFunction(const char *name) override;
   std::vector<go2cpp_autogen::Game::Touch> GetTouches() override;
+  std::vector<go2cpp_autogen::Game::Gamepad> GetGamepads() override;
 
 private:
-  GLFWwindow* window_;
+  GLFWwindow *window_;
   double device_pixel_ratio_;
 };
 

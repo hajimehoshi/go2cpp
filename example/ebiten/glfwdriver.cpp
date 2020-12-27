@@ -60,7 +60,45 @@ std::vector<go2cpp_autogen::Game::Touch> GLFWDriver::GetTouches() {
 
   double xpos, ypos;
   glfwGetCursorPos(window_, &xpos, &ypos);
-  return {
-      {0, static_cast<int>(xpos), static_cast<int>(ypos)},
-  };
+  go2cpp_autogen::Game::Touch touch;
+  touch.id = 0;
+  touch.x = static_cast<int>(xpos);
+  touch.y = static_cast<int>(ypos);
+  return {touch};
+}
+
+std::vector<go2cpp_autogen::Game::Gamepad> GLFWDriver::GetGamepads() {
+  std::vector<go2cpp_autogen::Game::Gamepad> gamepads;
+  for (int id = GLFW_JOYSTICK_1; id <= GLFW_JOYSTICK_LAST; id++) {
+    if (!glfwJoystickPresent(id)) {
+      continue;
+    }
+
+    go2cpp_autogen::Game::Gamepad gamepad;
+    gamepad.id = id;
+
+    const unsigned char *button_states =
+        glfwGetJoystickButtons(id, &gamepad.button_count);
+    constexpr int kButtonMaxCount =
+        sizeof(gamepad.buttons) / sizeof(gamepad.buttons[0]);
+    if (kButtonMaxCount < gamepad.button_count) {
+      gamepad.button_count = kButtonMaxCount;
+    }
+    for (int i = 0; i < gamepad.button_count; i++) {
+      gamepad.buttons[i] = button_states[i] == GLFW_PRESS;
+    }
+
+    const float *axis_states = glfwGetJoystickAxes(id, &gamepad.axis_count);
+    constexpr int kAxisMaxCount =
+        sizeof(gamepad.axes) / sizeof(gamepad.axes[0]);
+    if (kAxisMaxCount < gamepad.axis_count) {
+      gamepad.axis_count = kAxisMaxCount;
+    }
+    for (int i = 0; i < gamepad.axis_count; i++) {
+      gamepad.axes[i] = axis_states[i];
+    }
+
+    gamepads.push_back(gamepad);
+  }
+  return gamepads;
 }

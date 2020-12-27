@@ -67,6 +67,14 @@ public:
     int y;
   };
 
+  struct Gamepad {
+    int id;
+    int button_count;
+    bool buttons[256];
+    int axis_count;
+    float axes[16];
+  };
+
   class Driver {
   public:
     virtual ~Driver();
@@ -77,6 +85,7 @@ public:
     virtual double GetDevicePixelRatio() = 0;
     virtual void* GetOpenGLFunction(const char* name) = 0;
     virtual std::vector<Touch> GetTouches() = 0;
+    virtual std::vector<Gamepad> GetGamepads() = 0;
   };
 
   Game(std::unique_ptr<Driver> driver);
@@ -88,6 +97,7 @@ private:
 
   std::unique_ptr<Driver> driver_;
   std::vector<Touch> touches_;
+  std::vector<Gamepad> gamepads_;
 };
 
 }
@@ -128,6 +138,7 @@ int Game::Run() {
   go2cpp->Set("screenHeight",
       Value{static_cast<double>(driver_->GetScreenHeight())});
   go2cpp->Set("devicePixelRatio", Value{driver_->GetDevicePixelRatio()});
+
   go2cpp->Set("touchCount", Value{0.0});
   go2cpp->Set("getTouchId", Value{std::make_shared<Function>(
     [this](Value self, std::vector<Value> args) -> Value {
@@ -143,6 +154,35 @@ int Game::Run() {
     [this](Value self, std::vector<Value> args) -> Value {
       int idx = static_cast<int>(args[0].ToNumber());
       return Value{static_cast<double>(touches_[idx].y)};
+    })});
+
+  go2cpp->Set("gamepadCount", Value{0.0});
+  go2cpp->Set("getGamepadId", Value{std::make_shared<Function>(
+    [this](Value self, std::vector<Value> args) -> Value {
+      int idx = static_cast<int>(args[0].ToNumber());
+      return Value{static_cast<double>(gamepads_[idx].id)};
+    })});
+  go2cpp->Set("getGamepadButtonCount", Value{std::make_shared<Function>(
+    [this](Value self, std::vector<Value> args) -> Value {
+      int idx = static_cast<int>(args[0].ToNumber());
+      return Value{static_cast<double>(gamepads_[idx].button_count)};
+    })});
+  go2cpp->Set("isGamepadButtonPressed", Value{std::make_shared<Function>(
+    [this](Value self, std::vector<Value> args) -> Value {
+      int idx = static_cast<int>(args[0].ToNumber());
+      int button_idx = static_cast<int>(args[1].ToNumber());
+      return Value{gamepads_[idx].buttons[button_idx]};
+    })});
+  go2cpp->Set("getGamepadAxisCount", Value{std::make_shared<Function>(
+    [this](Value self, std::vector<Value> args) -> Value {
+      int idx = static_cast<int>(args[0].ToNumber());
+      return Value{static_cast<double>(gamepads_[idx].axis_count)};
+    })});
+  go2cpp->Set("getGamepadAxis", Value{std::make_shared<Function>(
+    [this](Value self, std::vector<Value> args) -> Value {
+      int idx = static_cast<int>(args[0].ToNumber());
+      int axis_idx = static_cast<int>(args[1].ToNumber());
+      return Value{static_cast<double>(gamepads_[idx].axes[axis_idx])};
     })});
 
   Go go;
@@ -166,6 +206,9 @@ void Game::Update(Value f) {
 
   touches_ = driver_->GetTouches();
   go2cpp.Set("touchCount", Value{static_cast<double>(touches_.size())});
+
+  gamepads_ = driver_->GetGamepads();
+  go2cpp.Set("gamepadCount", Value{static_cast<double>(gamepads_.size())});
 
   f.ToObject().Invoke(Value{}, {});
 }
