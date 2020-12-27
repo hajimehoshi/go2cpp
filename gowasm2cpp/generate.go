@@ -771,9 +771,7 @@ int Go::Run(const std::vector<std::string>& args) {
 
   while (!exited_) {
     TaskQueue::Task task = task_queue_.Dequeue();
-    if (task) {
-      task();
-    }
+    task();
   }
 
   return static_cast<int>(exit_code_);
@@ -882,8 +880,8 @@ void Go::Resume() {
     error("Go program has already exited");
   }
   inst_->resume();
-  // Post a null task and procceed the loop.
-  task_queue_.Enqueue(TaskQueue::Task{});
+  // In wasm_exec.js, |exitPromise| is resolved.
+  // In this C++, the loop automatically ends when |exited_| is true.
 }
 
 Value Go::MakeFuncWrapper(int32_t id) {
