@@ -160,6 +160,7 @@ public:
 
   virtual bool IsFunction() const { return false; }
   virtual bool IsConstructor() const { return false; }
+  virtual bool IsBytes() const { return false; }
   virtual Value Invoke(Value self, std::vector<Value> args);
   virtual Value New(std::vector<Value> args);
 
@@ -175,6 +176,7 @@ public:
 
   size_t ByteLength() const;
   Value Get(const std::string& key) override;
+  bool IsBytes() const override;
   BytesSpan ToBytes() override;
   std::string ToString() const override;
 
@@ -986,6 +988,10 @@ public:
     panic("TypedArray::Set: invalid key: " + key);
   }
 
+  bool IsBytes() const override {
+    return true;
+  }
+
   BytesSpan ToBytes() override {
     auto bs = array_buffer_->ToBytes();
     return BytesSpan{bs.begin() + offset_, length_};
@@ -1530,7 +1536,7 @@ bool Value::IsString() const {
 }
 
 bool Value::IsBytes() const {
-  return type_ == Type::Object && !object_value_->ToBytes().IsNull();
+  return type_ == Type::Object && object_value_->IsBytes();
 }
 
 bool Value::IsObject() const {
@@ -1566,11 +1572,13 @@ BytesSpan Value::ToBytes() {
   if (type_ != Type::Object) {
     panic("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
   }
-  BytesSpan bytes = object_value_->ToBytes();
-  if (bytes.IsNull()) {
-    panic("Value::ToBytes: object_value_->ToBytes() must not be null");
+  if (!object_value_) {
+    panic("Value::ToBytes: object_value_ must not be null");
   }
-  return bytes;
+  if (!object_value_->IsBytes()) {
+    panic("Value::ToBytes: object_value_->IsBytes() must be true");
+  }
+  return object_value_->ToBytes();
 }
 
 Object& Value::ToObject() {
@@ -1695,6 +1703,10 @@ Value ArrayBuffer::Get(const std::string& key) {
     return Value{static_cast<double>(ByteLength())};
   }
   return Value{};
+}
+
+bool ArrayBuffer::IsBytes() const {
+  return true;
 }
 
 BytesSpan ArrayBuffer::ToBytes() {
