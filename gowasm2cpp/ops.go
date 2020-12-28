@@ -917,13 +917,19 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 
 		case operators.I32Clz:
 			arg, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("Bits::LeadingZeros(static_cast<uint32_t>(%s))", arg), stackvar.I32)
+			v := fmt.Sprintf("stack0_%d_", tmpidx)
+			tmpidx++
+			appendBody("uint32_t %s = static_cast<uint32_t>(%s);", v, arg)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(%s ? __builtin_clzl(%s) : 32)", v, v), stackvar.I32)
 		case operators.I32Ctz:
 			arg, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("Bits::TailingZeros(static_cast<uint32_t>(%s))", arg), stackvar.I32)
+			v := fmt.Sprintf("stack0_%d_", tmpidx)
+			tmpidx++
+			appendBody("uint32_t %s = static_cast<uint32_t>(%s);", v, arg)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(%s ? __builtin_ctzl(%s) : 32)", v, v), stackvar.I32)
 		case operators.I32Popcnt:
 			arg, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("Bits::OnesCount(static_cast<uint32_t>(%s))", arg), stackvar.I32)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(__builtin_popcountl(static_cast<uint32_t>(%s)))", arg), stackvar.I32)
 		case operators.I32Add:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -987,13 +993,19 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(static_cast<uint32_t>(%s), -static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I32)
 		case operators.I64Clz:
 			arg, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::LeadingZeros(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
+			v := fmt.Sprintf("stack0_%d_", tmpidx)
+			tmpidx++
+			appendBody("uint64_t %s = static_cast<uint64_t>(%s);", v, arg)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(%s ? __builtin_clzll(%s) : 64)", v, v), stackvar.I64)
 		case operators.I64Ctz:
 			arg, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::TailingZeros(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
+			v := fmt.Sprintf("stack0_%d_", tmpidx)
+			tmpidx++
+			appendBody("uint64_t %s = static_cast<uint64_t>(%s);", v, arg)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(%s ? __builtin_ctzll(%s) : 64)", v, v), stackvar.I64)
 		case operators.I64Popcnt:
 			arg, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::OnesCount(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(__builtin_popcountll(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
 		case operators.I64Add:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
