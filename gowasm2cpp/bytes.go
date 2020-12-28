@@ -85,6 +85,7 @@ public:
 private:
   uint8_t* data_ = nullptr;
   size_t size_ = 0;
+  bool is_null_ = true;
 };
 
 }
@@ -102,7 +103,8 @@ BytesSpan::BytesSpan() = default;
 
 BytesSpan::BytesSpan(uint8_t* data, size_t size)
     : data_(data),
-      size_(size) {
+      size_(size),
+      is_null_(false) {
 }
 
 BytesSpan::BytesSpan(const BytesSpan& span) = default;
@@ -138,7 +140,7 @@ BytesSpan::const_iterator BytesSpan::end() const {
 }
 
 bool BytesSpan::IsNull() const {
-  return !data_;
+  return is_null_;
 }
 
 }
