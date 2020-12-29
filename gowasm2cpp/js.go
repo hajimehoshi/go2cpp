@@ -249,16 +249,9 @@ namespace {{.Namespace}} {
 
 namespace {
 
-void panic(const std::string& msg) {
-  // TODO: Can we call a Go function without registering _panic?
-  auto handler = Value::Global().ToObject().Get("_panic");
-  if (handler.IsUndefined()) {
-    std::cerr << msg << std::endl;
-    assert(false);
-    std::exit(1);
-    return;
-  }
-  handler.ToObject().Invoke(Value{}, std::vector<Value>{Value{msg}});
+void Panic(const std::string& msg) {
+  std::cerr << msg << std::endl;
+  __builtin_unreachable();
 }
 
 std::string JoinObjects(const std::vector<Value>& objs) {
@@ -985,7 +978,7 @@ public:
       array_buffer_ = value.ToArrayBuffer();
       return;
     }
-    panic("TypedArray::Set: invalid key: " + key);
+    Panic("TypedArray::Set: invalid key: " + key);
   }
 
   bool IsBytes() const override {
@@ -1352,7 +1345,7 @@ public:
 #endif
     }
 
-    panic(key + " on fs is not implemented");
+    Panic(key + " on fs is not implemented");
     return Value{};
   }
 
@@ -1414,13 +1407,13 @@ public:
         [](Value self, std::vector<Value> args) -> Value {
           char path[PATH_MAX];
           if (!getcwd(path, PATH_MAX)) {
-            panic(std::string("getcwd failed: ") + std::strerror(errno));
+            Panic(std::string("getcwd failed: ") + std::strerror(errno));
             return Value{};
           }
           return Value{path};
         })};
     }
-    panic(key + " on process is not implemented");
+    Panic(key + " on process is not implemented");
     return Value{};
   }
 
@@ -1549,74 +1542,74 @@ bool Value::IsArray() const {
 
 bool Value::ToBool() const {
   if (type_ != Type::Bool) {
-    panic("Value::ToBool: the type must be Type::Bool but not: " + Inspect());
+    Panic("Value::ToBool: the type must be Type::Bool but not: " + Inspect());
   }
   return static_cast<bool>(num_value_);
 }
 
 double Value::ToNumber() const {
   if (type_ != Type::Number) {
-    panic("Value::ToNumber: the type must be Type::Number but not: " + Inspect());
+    Panic("Value::ToNumber: the type must be Type::Number but not: " + Inspect());
   }
   return num_value_;
 }
 
 std::string Value::ToString() const {
   if (type_ != Type::String) {
-    panic("Value::ToString: the type must be Type::String but not: " + Inspect());
+    Panic("Value::ToString: the type must be Type::String but not: " + Inspect());
   }
   return str_value_;
 }
 
 BytesSpan Value::ToBytes() {
   if (type_ != Type::Object) {
-    panic("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
+    Panic("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
   }
   if (!object_value_) {
-    panic("Value::ToBytes: object_value_ must not be null");
+    Panic("Value::ToBytes: object_value_ must not be null");
   }
   if (!object_value_->IsBytes()) {
-    panic("Value::ToBytes: object_value_->IsBytes() must be true");
+    Panic("Value::ToBytes: object_value_->IsBytes() must be true");
   }
   return object_value_->ToBytes();
 }
 
 Object& Value::ToObject() {
   if (type_ != Type::Object) {
-    panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
+    Panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
   if (!object_value_) {
-    panic("Value::ToObject: object_value_ must not be null");
+    Panic("Value::ToObject: object_value_ must not be null");
   }
   return *object_value_;
 }
 
 const Object& Value::ToObject() const {
   if (type_ != Type::Object) {
-    panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
+    Panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
   }
   if (!object_value_) {
-    panic("Value::ToObject: object_value_ must not be null");
+    Panic("Value::ToObject: object_value_ must not be null");
   }
   return *object_value_;
 }
 
 std::vector<Value>& Value::ToArray() {
   if (type_ != Type::Object) {
-    panic("Value::ToArray: the type must be Type::Object but not: " + Inspect());
+    Panic("Value::ToArray: the type must be Type::Object but not: " + Inspect());
   }
   if (!array_value_) {
-    panic("Value::ToArray: array_value_ must not be null");
+    Panic("Value::ToArray: array_value_ must not be null");
   }
   return *array_value_;
 }
 
 std::shared_ptr<ArrayBuffer> Value::ToArrayBuffer() {
   if (type_ != Type::Object) {
-    panic("Value::ToArrayBuffer: the type must be Type::Object but not: " + Inspect());
+    Panic("Value::ToArrayBuffer: the type must be Type::Object but not: " + Inspect());
   }
   if (!object_value_) {
-    panic("Value::ToArrayBuffer: object_value_ must not be null");
+    Panic("Value::ToArrayBuffer: object_value_ must not be null");
   }
   return std::static_pointer_cast<ArrayBuffer>(object_value_);
 }
@@ -1650,7 +1643,7 @@ std::string Value::Inspect() const {
     }
     return "(object)";
   default:
-    panic("invalid type: " + std::to_string(static_cast<int>(type_)));
+    Panic("invalid type: " + std::to_string(static_cast<int>(type_)));
   }
   return "";
 }
@@ -1658,27 +1651,27 @@ std::string Value::Inspect() const {
 Object::~Object() = default;
 
 Value Object::Get(const std::string& key) {
-  panic("Object::Get is not implemented: this: " + Inspect() + ", key: " + key);
+  Panic("Object::Get is not implemented: this: " + Inspect() + ", key: " + key);
   return Value{};
 }
 
 void Object::Set(const std::string& key, Value value) {
-  panic("Object::Set is not implemented: this: " + Inspect() + ", key: " + key + ", value: " + value.Inspect());
+  Panic("Object::Set is not implemented: this: " + Inspect() + ", key: " + key + ", value: " + value.Inspect());
 }
 
 void Object::Delete(const std::string& key) {
-  panic("Object::Delete is not implemented: this: " + Inspect() + ", key: " + key);
+  Panic("Object::Delete is not implemented: this: " + Inspect() + ", key: " + key);
 }
 
 Value Object::Invoke(Value self, std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  panic("Object::Invoke is not implemented: this: " + Inspect() + ", self: " + self.Inspect());
+  Panic("Object::Invoke is not implemented: this: " + Inspect() + ", self: " + self.Inspect());
   return Value{};
 };
 
 Value Object::New(std::vector<Value> args) {
   // TODO: Make this a pure virtual function?
-  panic("Object::New is not implemented: this: " + Inspect());
+  Panic("Object::New is not implemented: this: " + Inspect());
   return Value{};
 };
 
@@ -1778,7 +1771,7 @@ Value Value::MakeGlobal() {
   std::shared_ptr<Constructor> obj = std::make_shared<Constructor>("Object",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 1) {
-        panic("new Object(" + args[0].Inspect() + ") is not implemented");
+        Panic("new Object(" + args[0].Inspect() + ") is not implemented");
       }
       return Value{std::make_shared<DictionaryValues>()};
     });
@@ -1786,17 +1779,17 @@ Value Value::MakeGlobal() {
   std::shared_ptr<Constructor> arrayBuffer = std::make_shared<Constructor>("ArrayBuffer",
     [](Value self, std::vector<Value> args) -> Value {
       if (args.size() == 0) {
-        panic("new ArrayBuffer() is not implemented");
+        Panic("new ArrayBuffer() is not implemented");
       }
       if (args.size() == 1) {
         Value vlen = args[0];
         if (!vlen.IsNumber()) {
-          panic("new ArrayBuffer(" + args[0].Inspect() + ") is not implemented");
+          Panic("new ArrayBuffer(" + args[0].Inspect() + ") is not implemented");
         }
         size_t len = static_cast<size_t>(vlen.ToNumber());
         return Value{std::make_shared<ArrayBuffer>(len)};
       }
-      panic("new ArrayBuffer with " + std::to_string(args.size()) + " args is not implemented");
+      Panic("new ArrayBuffer with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
     });
 
@@ -1815,18 +1808,18 @@ Value Value::MakeGlobal() {
           auto u8 = std::make_shared<Uint8Array>(ab, 0, ab->ByteLength());
           return Value{u8};
         }
-        panic("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
+        Panic("new Uint8Array(" + args[0].Inspect() + ") is not implemented");
         return Value{};
       }
       if (args.size() == 3) {
         if (!args[0].IsObject()) {
-          panic("new Uint8Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
+          Panic("new Uint8Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
         }
         if (!args[1].IsNumber()) {
-          panic("new Uint8Array's second argument must be a number but " + args[1].Inspect());
+          Panic("new Uint8Array's second argument must be a number but " + args[1].Inspect());
         }
         if (!args[2].IsNumber()) {
-          panic("new Uint8Array's third argument must be a number but " + args[2].Inspect());
+          Panic("new Uint8Array's third argument must be a number but " + args[2].Inspect());
         }
         std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
         size_t offset = static_cast<size_t>(args[1].ToNumber());
@@ -1834,7 +1827,7 @@ Value Value::MakeGlobal() {
         auto u8 = std::make_shared<Uint8Array>(ab, offset, length);
         return Value{u8};
       }
-      panic("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
+      Panic("new Uint8Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
     });
 
@@ -1845,7 +1838,7 @@ Value Value::MakeGlobal() {
       }
       if (args.size() == 1) {
         if (!args[0].IsObject()) {
-          panic("new Float32Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
+          Panic("new Float32Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
         }
         std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
         auto f32 = std::make_shared<Float32Array>(ab, 0, ab->ByteLength());
@@ -1853,13 +1846,13 @@ Value Value::MakeGlobal() {
       }
       if (args.size() == 3) {
         if (!args[0].IsObject()) {
-          panic("new Float32Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
+          Panic("new Float32Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
         }
         if (!args[1].IsNumber()) {
-          panic("new Float32Array's second argument must be a number but " + args[1].Inspect());
+          Panic("new Float32Array's second argument must be a number but " + args[1].Inspect());
         }
         if (!args[2].IsNumber()) {
-          panic("new Float32Array's third argument must be a number but " + args[2].Inspect());
+          Panic("new Float32Array's third argument must be a number but " + args[2].Inspect());
         }
         std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
         size_t offset = static_cast<size_t>(args[1].ToNumber());
@@ -1867,7 +1860,7 @@ Value Value::MakeGlobal() {
         auto f32 = std::make_shared<Float32Array>(ab, offset, length);
         return Value{f32};
       }
-      panic("new Float32Array with " + std::to_string(args.size()) + " args is not implemented");
+      Panic("new Float32Array with " + std::to_string(args.size()) + " args is not implemented");
       return Value{};
     });
 
@@ -1931,11 +1924,11 @@ Value Value::MakeGlobal() {
 
 Value Value::ReflectGet(Value target, const std::string& key) {
   if (target.IsUndefined()) {
-    panic("get on undefined (key: " + key + ") is forbidden");
+    Panic("get on undefined (key: " + key + ") is forbidden");
     return Value{};
   }
   if (target.IsNull()) {
-    panic("get on null (key: " + key + ") is forbidden");
+    Panic("get on null (key: " + key + ") is forbidden");
     return Value{};
   }
   if (target.IsObject()) {
@@ -1947,77 +1940,77 @@ Value Value::ReflectGet(Value target, const std::string& key) {
       return target.ToArray()[idx];
     }
   }
-  panic(target.Inspect() + "." + key + " not found");
+  Panic(target.Inspect() + "." + key + " not found");
   return Value{};
 }
 
 void Value::ReflectSet(Value target, const std::string& key, Value value) {
   if (target.IsUndefined()) {
-    panic("set on undefined (key: " + key + ") is forbidden");
+    Panic("set on undefined (key: " + key + ") is forbidden");
   }
   if (target.IsNull()) {
-    panic("set on null (key: " + key + ") is forbidden");
+    Panic("set on null (key: " + key + ") is forbidden");
   }
   if (target.IsObject()) {
     target.ToObject().Set(key, value);
     return;
   }
-  panic(target.Inspect() + "." + key + " cannot be set");
+  Panic(target.Inspect() + "." + key + " cannot be set");
 }
 
 void Value::ReflectDelete(Value target, const std::string& key) {
   if (target.IsUndefined()) {
-    panic("delete on undefined (key: " + key + ") is forbidden");
+    Panic("delete on undefined (key: " + key + ") is forbidden");
   }
   if (target.IsNull()) {
-    panic("delete on null (key: " + key + ") is forbidden");
+    Panic("delete on null (key: " + key + ") is forbidden");
   }
   if (target.IsObject()) {
     target.ToObject().Delete(key);
     return;
   }
-  panic(target.Inspect() + "." + key + " cannot be deleted");
+  Panic(target.Inspect() + "." + key + " cannot be deleted");
 }
 
 Value Value::ReflectConstruct(Value target, std::vector<Value> args) {
   if (target.IsUndefined()) {
-    panic("new on undefined is forbidden");
+    Panic("new on undefined is forbidden");
     return Value{};
   }
   if (target.IsNull()) {
-    panic("new on null is forbidden");
+    Panic("new on null is forbidden");
     return Value{};
   }
   if (target.IsObject()) {
     Object& t = target.ToObject();
     if (!t.IsConstructor()) {
-      panic(t.ToString() + " is not a constructor");
+      Panic(t.ToString() + " is not a constructor");
       return Value{};
     }
     return t.New(args);
   }
-  panic("new " + target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
+  Panic("new " + target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
 }
 
 Value Value::ReflectApply(Value target, Value self, std::vector<Value> args) {
   if (target.IsUndefined()) {
-    panic("apply on undefined is forbidden");
+    Panic("apply on undefined is forbidden");
     return Value{};
   }
   if (target.IsNull()) {
-    panic("apply on null is forbidden");
+    Panic("apply on null is forbidden");
     return Value{};
   }
   if (target.IsObject()) {
     Object& t = target.ToObject();
     if (t.IsConstructor()) {
-      panic(t.ToString() + " is a constructor");
+      Panic(t.ToString() + " is a constructor");
       return Value{};
     }
     return t.Invoke(self, args);
   }
-  panic(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
+  Panic(target.Inspect() + "(" + JoinObjects(args) + ") cannot be called");
   return Value{};
 }
 
