@@ -115,7 +115,6 @@ var gameCppTmpl = template.Must(template.New("game.cpp").Parse(`// Code generate
 
 #include "{{.IncludePath}}gl.h"
 
-#include <chrono>
 #include <thread>
 
 namespace {{.Namespace}} {
