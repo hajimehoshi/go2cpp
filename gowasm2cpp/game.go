@@ -87,7 +87,7 @@ public:
     virtual std::vector<Touch> GetTouches() = 0;
     virtual std::vector<Gamepad> GetGamepads() = 0;
 
-    virtual void SetAudio(int sample_rate_, int channel_num_, int bit_depth_in_bytes_, int buffer_size) = 0;
+    virtual void SetAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
     // SendDataToAudio is called from a differen thread than the main thread.
     virtual void SendDataToAudio(const std::vector<uint8_t>& buffer) = 0;
   };
