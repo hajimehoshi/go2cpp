@@ -3,7 +3,10 @@
 #include "glfwdriver.h"
 
 #include <GLFW/glfw3.h>
+
+#include <chrono>
 #include <dlfcn.h>
+#include <thread>
 
 namespace {
 
@@ -101,4 +104,18 @@ std::vector<go2cpp_autogen::Game::Gamepad> GLFWDriver::GetGamepads() {
     gamepads.push_back(gamepad);
   }
   return gamepads;
+}
+
+void GLFWDriver::SetAudio(int sample_rate, int channel_num,
+                          int bit_depth_in_bytes, int buffer_size) {
+  sample_rate_ = sample_rate;
+  channel_num_ = channel_num;
+  bit_depth_in_bytes_ = bit_depth_in_bytes;
+}
+
+void GLFWDriver::SendDataToAudio(const std::vector<uint8_t> &buffer) {
+  int bytes_per_sec = sample_rate_ * channel_num_ * bit_depth_in_bytes_;
+  std::chrono::duration<double> duration(static_cast<double>(buffer.size()) /
+                                         static_cast<double>(bytes_per_sec));
+  std::this_thread::sleep_for(duration);
 }

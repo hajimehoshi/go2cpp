@@ -86,6 +86,10 @@ public:
     virtual void* GetOpenGLFunction(const char* name) = 0;
     virtual std::vector<Touch> GetTouches() = 0;
     virtual std::vector<Gamepad> GetGamepads() = 0;
+
+    virtual void SetAudio(int sample_rate_, int channel_num_, int bit_depth_in_bytes_, int buffer_size) = 0;
+    // SendDataToAudio is called from a differen thread than the main thread.
+    virtual void SendDataToAudio(const std::vector<uint8_t>& buffer) = 0;
   };
 
   Game(std::unique_ptr<Driver> driver);
@@ -120,11 +124,9 @@ namespace {
 
 class Audio : public Object {
 public:
-  Audio(Go* go, int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size)
+  Audio(Go* go, Game::Driver* driver, int buffer_size)
     : go_{go},
-      sample_rate_{sample_rate},
-      channel_num_{channel_num},
-      bit_depth_in_bytes_{bit_depth_in_bytes},
+      driver_{driver},
       buffer_size_{buffer_size},
       thread_{[this]() { Loop(); }} {
   }
@@ -187,11 +189,7 @@ private:
 
       // TODO: Implement this to use the driver.
       int n = buf.size();
-      int bytes_per_sec = sample_rate_ * channel_num_ * bit_depth_in_bytes_;
-      std::chrono::duration<double> duration(
-          static_cast<double>(n) / static_cast<double>(bytes_per_sec));
-      std::this_thread::sleep_for(duration);
-
+      driver_->SendDataToAudio(buf);
       go_->EnqueueTask([this, n]() {
         on_buffer_consumed_.ToObject().Invoke(Value{}, {Value{static_cast<double>(n)}});
       });
@@ -199,9 +197,7 @@ private:
   }
 
   Go* go_;
-  int sample_rate_;
-  int channel_num_;
-  int bit_depth_in_bytes_;
+  Game::Driver* driver_;
   int buffer_size_;
   Value on_buffer_consumed_;
   std::vector<uint8_t> current_buf_;
@@ -289,13 +285,14 @@ int Game::Run() {
   Go go;
 
   go2cpp->Set("createAudio", Value{std::make_shared<Function>(
-    [&go](Value self, std::vector<Value> args) -> Value {
+    [this, &go](Value self, std::vector<Value> args) -> Value {
       int sample_rate = static_cast<int>(args[0].ToNumber());
       int channel_num = static_cast<int>(args[1].ToNumber());
       int bit_depth_in_bytes = static_cast<int>(args[2].ToNumber());
       int buffer_size = static_cast<int>(args[3].ToNumber());
-      return Value{std::make_shared<Audio>(
-          &go, sample_rate, channel_num, bit_depth_in_bytes, buffer_size)};
+
+      driver_->SetAudio(sample_rate, channel_num, bit_depth_in_bytes, buffer_size);
+      return Value{std::make_shared<Audio>(&go, driver_.get(), buffer_size)};
     })});
 
   global.Set("requestAnimationFrame",
