@@ -599,6 +599,8 @@ public:
   int Run();
   int Run(int argc, char** argv);
   int Run(const std::vector<std::string>& args);
+
+  // EnqueuTask is concurrent-safe.
   void EnqueueTask(std::function<void()> task);
 
 private:

@@ -111,12 +111,113 @@ var gameCppTmpl = template.Must(template.New("game.cpp").Parse(`// Code generate
 
 #include "{{.IncludePath}}gl.h"
 
+#include <chrono>
+#include <thread>
+
 namespace {{.Namespace}} {
+
+namespace {
+
+class Audio : public Object {
+public:
+  Audio(Go* go, int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size)
+    : go_{go},
+      sample_rate_{sample_rate},
+      channel_num_{channel_num},
+      bit_depth_in_bytes_{bit_depth_in_bytes},
+      buffer_size_{buffer_size},
+      thread_{[this]() { Loop(); }} {
+  }
+
+  Value Get(const std::string& key) override {
+    if (key == "sendDataToBuffer") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          BytesSpan buf = args[0].ToBytes();
+          int len = static_cast<int>(args[1].ToNumber());
+          int n = SendDataToLoopThread(BytesSpan(buf.begin(), len));
+          return Value{static_cast<double>(n)};
+        })};
+    }
+    return Value{};
+  }
+
+  void Set(const std::string& key, Value value) override {
+    if (key == "onBufferConsumed") {
+      on_buffer_consumed_ = value;
+    }
+  }
+
+  std::string ToString() const override {
+    return "Audio";
+  }
+
+private:
+  int SendDataToLoopThread(BytesSpan buf) {
+    int n;
+    {
+      std::lock_guard<std::mutex> lock{mutex_};
+      if (current_buf_.capacity() < buffer_size_) {
+        current_buf_.reserve(buffer_size_);
+      }
+
+      if (current_buf_.size() == buffer_size_) {
+        return 0;
+      }
+
+      n = buf.size();
+      if (n > buffer_size_ - current_buf_.size()) {
+        n = buffer_size_ - current_buf_.size();
+      }
+      current_buf_.insert(current_buf_.end(), buf.begin(), buf.begin() + n);
+    }
+    cond_.notify_one();
+    return n;
+  }
+
+  void Loop() {
+    for (;;) {
+      std::vector<uint8_t> buf;
+      {
+        std::unique_lock<std::mutex> lock{mutex_};
+        cond_.wait(lock, [this]{ return current_buf_.size() > 0; });
+        buf = current_buf_;
+        current_buf_.resize(0);
+      }
+
+      // TODO: Implement this to use the driver.
+      int n = buf.size();
+      int bytes_per_sec = sample_rate_ * channel_num_ * bit_depth_in_bytes_;
+      std::chrono::duration<double> duration(
+          static_cast<double>(n) / static_cast<double>(bytes_per_sec));
+      std::this_thread::sleep_for(duration);
+
+      go_->EnqueueTask([this, n]() {
+        on_buffer_consumed_.ToObject().Invoke(Value{}, {Value{static_cast<double>(n)}});
+      });
+    }
+  }
+
+  Go* go_;
+  int sample_rate_;
+  int channel_num_;
+  int bit_depth_in_bytes_;
+  int buffer_size_;
+  Value on_buffer_consumed_;
+  std::vector<uint8_t> current_buf_;
+
+  std::mutex mutex_;
+  std::condition_variable cond_;
+
+  std::thread thread_;
+};
+
+} // namespace
 
 Game::Driver::~Driver() = default;
 
 Game::Game(std::unique_ptr<Driver> driver)
-  : driver_(std::move(driver)) {
+  : driver_{std::move(driver)} {
 }
 
 int Game::Run() {
@@ -186,6 +287,17 @@ int Game::Run() {
     })});
 
   Go go;
+
+  go2cpp->Set("createAudio", Value{std::make_shared<Function>(
+    [&go](Value self, std::vector<Value> args) -> Value {
+      int sample_rate = static_cast<int>(args[0].ToNumber());
+      int channel_num = static_cast<int>(args[1].ToNumber());
+      int bit_depth_in_bytes = static_cast<int>(args[2].ToNumber());
+      int buffer_size = static_cast<int>(args[3].ToNumber());
+      return Value{std::make_shared<Audio>(
+          &go, sample_rate, channel_num, bit_depth_in_bytes, buffer_size)};
+    })});
+
   global.Set("requestAnimationFrame",
              Value{std::make_shared<Function>(
                  [this, &go](Value self, std::vector<Value> args) -> Value {
