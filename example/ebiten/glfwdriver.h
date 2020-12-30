@@ -17,9 +17,9 @@ public:
   void *GetOpenGLFunction(const char *name) override;
   std::vector<go2cpp_autogen::Game::Touch> GetTouches() override;
   std::vector<go2cpp_autogen::Game::Gamepad> GetGamepads() override;
-  void SetAudio(int sample_rate_, int channel_num_,
-                int bit_depth_in_bytes_, int buffer_size) override;
-  void SendDataToAudio(const std::vector<uint8_t> &buffer) override;
+  void OpenAudio(int sample_rate_, int channel_num_, int bit_depth_in_bytes_,
+                 int buffer_size) override;
+  int SendDataToAudio(const uint8_t *buffer, int length) override;
 
 private:
   GLFWwindow *window_;
