@@ -91,6 +91,9 @@ public:
     virtual std::vector<Gamepad> GetGamepads() = 0;
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
+
+    // SendDataToAudio returns the number of the written bytes.
+    // SendDataToAudio can return 0, only when the given buffer is not enough.
     // SendDataToAudio is called from a differen thread than the main thread.
     virtual int SendDataToAudio(const uint8_t* buffer, int length) = 0;
   };
@@ -180,19 +183,25 @@ private:
   }
 
   void Loop() {
+    int require = 0;
+
     for (;;) {
       std::vector<uint8_t> buf;
       int n = 0;
       {
         std::unique_lock<std::mutex> lock{mutex_};
-        cond_.wait(lock, [this]{ return current_buf_.size() > 0; });
+        cond_.wait(lock, [this, require]{ return current_buf_.size() > require; });
         buf = current_buf_;
         lock.unlock();
+
         n = driver_->SendDataToAudio(&(*buf.begin()), buf.size());
-        // Sleep for a little while when there is no progress, in order to avoid a busy loop.
+        // The given data is not enough. Wait for new inputs again.
         if (!n) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          require = buf.size();
+          continue;
         }
+        require = 0;
+
         lock.lock();
         // TODO: This is not efficient. Replace this with a deque?
         current_buf_.erase(current_buf_.begin(), current_buf_.begin() + n);
