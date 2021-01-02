@@ -93,7 +93,7 @@ public:
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
 
     // SendDataToAudio returns the number of the written bytes.
-    // SendDataToAudio can return 0, only when the given buffer is not enough.
+    // SendDataToAudio can return 0 only when the given buffer is not enough.
     // SendDataToAudio is called from a differen thread than the main thread.
     virtual int SendDataToAudio(const uint8_t* buffer, int length) = 0;
   };
