@@ -95,10 +95,18 @@ public:
     // SendDataToAudio returns the number of the written bytes.
     // SendDataToAudio can return 0 only when the given buffer is not enough.
     // SendDataToAudio is called from a differen thread than the main thread.
-    virtual int SendDataToAudio(const uint8_t* buffer, int length) = 0;
+    virtual int SendDataToAudio(const uint8_t* data, int length) = 0;
   };
 
-  Game(std::unique_ptr<Driver> driver);
+  class Binding {
+  public:
+    virtual ~Binding();
+    virtual std::vector<uint8_t> Get(const std::string& key) = 0;
+    virtual void Set(const std::string& key, const uint8_t* data, int length) = 0;
+  };
+
+  explicit Game(std::unique_ptr<Driver> driver);
+  Game(std::unique_ptr<Driver> driver, std::unique_ptr<Binding> binding);
 
   int Run();
 
@@ -108,6 +116,7 @@ private:
   std::unique_ptr<Driver> driver_;
   std::vector<Touch> touches_;
   std::vector<Gamepad> gamepads_;
+  std::unique_ptr<Binding> binding_;
 };
 
 }
@@ -126,6 +135,32 @@ var gameCppTmpl = template.Must(template.New("game.cpp").Parse(`// Code generate
 namespace {{.Namespace}} {
 
 namespace {
+
+class BindingObject : public Object {
+public:
+  explicit BindingObject(Game::Binding* binding)
+      : binding_{binding} {
+  }
+
+  Value Get(const std::string& key) override {
+    auto bytes = binding_->Get(key);
+    auto u8 = std::make_shared<Uint8Array>(bytes.size());
+    std::memcpy(u8->ToBytes().begin(), &(*bytes.begin()), bytes.size());
+    return Value{u8};
+  }
+
+  void Set(const std::string& key, Value value) override {
+    auto bytes = value.ToBytes();
+    binding_->Set(key, &(*bytes.begin()), bytes.size());
+  }
+
+  std::string ToString() const override {
+    return "BindingObject";
+  }
+
+private:
+  Game::Binding* binding_;
+};
 
 class Audio : public Object {
 public:
@@ -229,7 +264,12 @@ private:
 Game::Driver::~Driver() = default;
 
 Game::Game(std::unique_ptr<Driver> driver)
-  : driver_{std::move(driver)} {
+  : Game(std::move(driver), nullptr) {
+}
+
+Game::Game(std::unique_ptr<Driver> driver, std::unique_ptr<Binding> binding)
+  : driver_{std::move(driver)},
+    binding_{std::move(binding)} {
 }
 
 int Game::Run() {
@@ -311,6 +351,10 @@ int Game::Run() {
       return Value{std::make_shared<Audio>(&go, driver_.get(), buffer_size)};
     })});
 
+  if (binding_) {
+    go2cpp->Set("binding", Value{std::make_shared<BindingObject>(binding_.get())});
+  }
+
   global.Set("requestAnimationFrame",
              Value{std::make_shared<Function>(
                  [this, &go](Value self, std::vector<Value> args) -> Value {
@@ -322,6 +366,7 @@ int Game::Run() {
                    });
                    return Value{};
                  })});
+
   return go.Run();
 }
 
@@ -337,6 +382,8 @@ void Game::Update(Value f) {
 
   f.ToObject().Invoke(Value{}, {});
 }
+
+Game::Binding::~Binding() = default;
 
 }
 `))

@@ -184,6 +184,39 @@ private:
   std::vector<uint8_t> data_;
 };
 
+class TypedArray : public Object {
+public:
+  explicit TypedArray(size_t size);
+  TypedArray(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length);
+
+  Value Get(const std::string& key) override;
+  void Set(const std::string& key, Value value) override;
+  bool IsBytes() const override;
+  BytesSpan ToBytes() override;
+  std::string ToString() const override;
+
+private:
+  std::shared_ptr<ArrayBuffer> array_buffer_;
+  size_t offset_ = 0;
+  size_t length_ = 0;
+};
+
+class Uint8Array : public TypedArray {
+public:
+  explicit Uint8Array(size_t size);
+
+  Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length);
+  std::string ToString() const override;
+};
+
+class Float32Array : public TypedArray {
+public:
+  explicit Float32Array(size_t size);
+
+  Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length);
+  std::string ToString() const override;
+};
+
 class DictionaryValues : public Object {
 public:
   DictionaryValues();
@@ -939,97 +972,6 @@ const char* ToErrorCodeName(int errno_) {
   return "";
 }
 
-class TypedArray : public Object {
-public:
-  explicit TypedArray(size_t size)
-      : array_buffer_{std::make_shared<ArrayBuffer>(size)},
-        length_{size} {
-  }
-
-  TypedArray(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
-      : array_buffer_{arrayBuffer},
-        offset_{offset},
-        length_{length} {
-  }
-
-  Value Get(const std::string& key) override {
-    if (key == "byteLength") {
-      return Value{static_cast<double>(length_)};
-    }
-    if (key == "byteOffset") {
-      return Value{static_cast<double>(offset_)};
-    }
-    if (key == "buffer") {
-      return Value{array_buffer_};
-    }
-    return Value{};
-  }
-
-  void Set(const std::string& key, Value value) override {
-    if (key == "byteLength") {
-      length_ = static_cast<size_t>(value.ToNumber());
-      return;
-    }
-    if (key == "byteOffset") {
-      offset_ = static_cast<size_t>(value.ToNumber());
-      return;
-    }
-    if (key == "buffer") {
-      array_buffer_ = value.ToArrayBuffer();
-      return;
-    }
-    Panic("TypedArray::Set: invalid key: " + key);
-  }
-
-  bool IsBytes() const override {
-    return true;
-  }
-
-  BytesSpan ToBytes() override {
-    auto bs = array_buffer_->ToBytes();
-    return BytesSpan{bs.begin() + offset_, length_};
-  }
-
-  std::string ToString() const override {
-    return "TypedArray";
-  }
-
-private:
-  std::shared_ptr<ArrayBuffer> array_buffer_;
-  size_t offset_ = 0;
-  size_t length_ = 0;
-};
-
-class Uint8Array : public TypedArray {
-public:
-  explicit Uint8Array(size_t size)
-      : TypedArray(size) {
-  }
-
-  Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
-      : TypedArray(arrayBuffer, offset, length) {
-  }
-
-  std::string ToString() const override {
-    return "Uint8Array";
-  }
-};
-
-class Float32Array : public TypedArray {
-public:
-  explicit Float32Array(size_t size)
-      : TypedArray(size*4) {
-  }
-
-  Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
-      : TypedArray(arrayBuffer, offset*4, length*4) {
-  }
-
-  std::string ToString() const override {
-    return "Float32Array";
-  }
-};
-
 class Errno : public Object {
 public:
   explicit Errno(int errno_)
@@ -1708,6 +1650,83 @@ BytesSpan ArrayBuffer::ToBytes() {
 
 std::string ArrayBuffer::ToString() const {
   return "ArrayBuffer";
+}
+
+TypedArray::TypedArray(size_t size)
+    : array_buffer_{std::make_shared<ArrayBuffer>(size)},
+      length_{size} {
+}
+
+TypedArray::TypedArray(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+    : array_buffer_{arrayBuffer},
+      offset_{offset},
+      length_{length} {
+}
+
+Value TypedArray::Get(const std::string& key) {
+  if (key == "byteLength") {
+    return Value{static_cast<double>(length_)};
+  }
+  if (key == "byteOffset") {
+    return Value{static_cast<double>(offset_)};
+  }
+  if (key == "buffer") {
+    return Value{array_buffer_};
+  }
+  return Value{};
+}
+
+void TypedArray::Set(const std::string& key, Value value) {
+  if (key == "byteLength") {
+    length_ = static_cast<size_t>(value.ToNumber());
+    return;
+  }
+  if (key == "byteOffset") {
+    offset_ = static_cast<size_t>(value.ToNumber());
+    return;
+  }
+  if (key == "buffer") {
+    array_buffer_ = value.ToArrayBuffer();
+    return;
+  }
+  Panic("TypedArray::Set: invalid key: " + key);
+}
+
+bool TypedArray::IsBytes() const {
+  return true;
+}
+
+BytesSpan TypedArray::ToBytes() {
+  auto bs = array_buffer_->ToBytes();
+  return BytesSpan{bs.begin() + offset_, length_};
+}
+
+std::string TypedArray::ToString() const {
+  return "TypedArray";
+}
+
+Uint8Array::Uint8Array(size_t size)
+    : TypedArray(size) {
+}
+
+Uint8Array::Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+    : TypedArray(arrayBuffer, offset, length) {
+}
+
+std::string Uint8Array::ToString() const {
+  return "Uint8Array";
+}
+
+Float32Array::Float32Array(size_t size)
+    : TypedArray(size*4) {
+}
+
+Float32Array::Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length)
+    : TypedArray(arrayBuffer, offset*4, length*4) {
+}
+
+std::string Float32Array::ToString() const {
+  return "Float32Array";
 }
 
 DictionaryValues::DictionaryValues() {

@@ -113,7 +113,7 @@ void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
   bit_depth_in_bytes_ = bit_depth_in_bytes;
 }
 
-int GLFWDriver::SendDataToAudio(const uint8_t *buffer, int length) {
+int GLFWDriver::SendDataToAudio(const uint8_t *data, int length) {
   int bytes_per_sec = sample_rate_ * channel_num_ * bit_depth_in_bytes_;
   std::chrono::duration<double> duration(static_cast<double>(length) /
                                          static_cast<double>(bytes_per_sec));
