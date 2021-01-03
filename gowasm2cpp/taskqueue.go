@@ -53,9 +53,9 @@ var taskqueueHTmpl = template.Must(template.New("taskqueue.h").Parse(`// Code ge
 #ifndef {{.IncludeGuard}}
 #define {{.IncludeGuard}}
 
-#include <mutex>
 #include <condition_variable>
 #include <functional>
+#include <mutex>
 #include <queue>
 #include <thread>
 

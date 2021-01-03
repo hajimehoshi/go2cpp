@@ -53,8 +53,7 @@ var bytesHTmpl = template.Must(template.New("bytes.h").Parse(`// Code generated 
 #ifndef {{.IncludeGuard}}
 #define {{.IncludeGuard}}
 
-#include <cstdint>
-#include <vector>
+#include <cstdlib>
 
 namespace {{.Namespace}} {
 

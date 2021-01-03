@@ -213,10 +213,11 @@ var instFuncCppTmpl = template.Must(template.New("inst.funcs.cpp").Parse(`// Cod
 
 #include "{{.IncludePath}}inst.h"
 
-#include <cassert>
-#include <cmath>
 #include "{{.IncludePath}}bits.h"
 #include "{{.IncludePath}}mem.h"
+
+#include <cassert>
+#include <cmath>
 
 namespace {{.Namespace}} {
 
