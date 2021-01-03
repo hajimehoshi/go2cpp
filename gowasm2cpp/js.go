@@ -1889,7 +1889,7 @@ Value Value::MakeGlobal() {
           Panic("new Float32Array's first argument must be an ArrayBuffer but " + args[0].Inspect());
         }
         std::shared_ptr<ArrayBuffer> ab = args[0].ToArrayBuffer();
-        auto f32 = std::make_shared<Float32Array>(ab, 0, ab->ByteLength());
+        auto f32 = std::make_shared<Float32Array>(ab, 0, ab->ByteLength()/4);
         return Value{f32};
       }
       if (args.size() == 3) {
