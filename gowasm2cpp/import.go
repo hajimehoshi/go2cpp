@@ -119,7 +119,7 @@ var importFuncBodies = map[string]string{
 	"syscall/js.valueLoadString": `  std::string src = go_->LoadValue(local0_ + 8).ToString();
   BytesSpan dst = go_->mem_->LoadSlice(local0_ + 16);
   int len = std::min(dst.size(), src.size());
-  std::copy(src.begin(), src.begin() + len, dst.begin());`,
+  std::memcpy(dst.begin(), &(*src.begin()), len);`,
 
 	/*// func valueInstanceOf(v ref, t ref) bool
 	"syscall/js.valueInstanceOf": (sp) => {
@@ -134,7 +134,7 @@ var importFuncBodies = map[string]string{
     return;
   }
   BytesSpan srcbs = src.ToBytes();
-  std::copy_n(srcbs.begin(), std::min(srcbs.size(), dst.size()), dst.begin());
+  std::memcpy(dst.begin(), srcbs.begin(), std::min(srcbs.size(), dst.size()));
   go_->mem_->StoreInt64(local0_ + 40, static_cast<int64_t>(dst.size()));
   go_->mem_->StoreInt8(local0_ + 48, 1);`,
 
@@ -146,7 +146,7 @@ var importFuncBodies = map[string]string{
     return;
   }
   BytesSpan dstbs = dst.ToBytes();
-  std::copy_n(src.begin(), std::min(src.size(), dstbs.size()), dstbs.begin());
+  std::memcpy(dstbs.begin(), src.begin(), std::min(src.size(), dstbs.size()));
   go_->mem_->StoreInt64(local0_ + 40, static_cast<int64_t>(dstbs.size()));
   go_->mem_->StoreInt8(local0_ + 48, 1);`,
 
