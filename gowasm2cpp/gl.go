@@ -927,7 +927,7 @@ Value GL::Get(const std::string &key) {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
-          GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
+          GLboolean transpose = static_cast<GLboolean>(args[1].ToBool());
           BytesSpan bytes = args[2].ToBytes();
           int offset = 0;
           if (args.size() > 3) {
@@ -947,7 +947,7 @@ Value GL::Get(const std::string &key) {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
-          GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
+          GLboolean transpose = static_cast<GLboolean>(args[1].ToBool());
           BytesSpan bytes = args[2].ToBytes();
           int offset = 0;
           if (args.size() > 3) {
@@ -967,7 +967,7 @@ Value GL::Get(const std::string &key) {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           GLint location = static_cast<GLint>(args[0].ToNumber());
-          GLboolean transpose = static_cast<GLboolean>(args[0].ToBool());
+          GLboolean transpose = static_cast<GLboolean>(args[1].ToBool());
           BytesSpan bytes = args[2].ToBytes();
           int offset = 0;
           if (args.size() > 3) {
