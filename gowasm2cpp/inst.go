@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"text/template"
 
 	"golang.org/x/sync/errgroup"
@@ -20,6 +21,10 @@ func min(a, b int) int {
 
 func writeInst(dir string, incpath string, namespace string, importFuncs, funcs []*wasmFunc, exports []*wasmExport, globals []*wasmGlobal, types []*wasmType, tables [][]uint32) error {
 	const groupSize = 64
+
+	sort.Slice(funcs, func(a, b int) bool {
+		return funcs[a].Wasm.Name < funcs[b].Wasm.Name
+	})
 
 	var g errgroup.Group
 	g.Go(func() error {
@@ -65,11 +70,18 @@ func writeInst(dir string, incpath string, namespace string, importFuncs, funcs 
 		return nil
 	})
 
-	for i := 0; i < (len(funcs)-1)/groupSize+1; i++ {
-		i := i
-		fs := funcs[groupSize*i : min(groupSize*(i+1), len(funcs))]
+	groups := map[byte][]*wasmFunc{}
+	for _, f := range funcs {
+		n := f.Wasm.Name
+		g := n[0]
+		groups[g] = append(groups[g], f)
+	}
+
+	for gp, fs := range groups {
+		gp := gp
+		fs := fs
 		g.Go(func() error {
-			f, err := os.Create(filepath.Join(dir, fmt.Sprintf("inst.funcs%d.cpp", i)))
+			f, err := os.Create(filepath.Join(dir, fmt.Sprintf("inst.funcs.%c.cpp", gp)))
 			if err != nil {
 				return err
 			}
@@ -89,6 +101,8 @@ func writeInst(dir string, incpath string, namespace string, importFuncs, funcs 
 			return nil
 		})
 	}
+
+	// exports
 	g.Go(func() error {
 		f, err := os.Create(filepath.Join(dir, "inst.exports.cpp"))
 		if err != nil {
@@ -109,6 +123,8 @@ func writeInst(dir string, incpath string, namespace string, importFuncs, funcs 
 		}
 		return nil
 	})
+
+	// init
 	g.Go(func() error {
 		f, err := os.Create(filepath.Join(dir, "inst.init.cpp"))
 		if err != nil {
