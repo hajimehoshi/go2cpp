@@ -93,6 +93,7 @@ private:
   void *glEnableVertexAttribArray_;
   void *glFlush_;
   void *glFramebufferTexture2D_;
+  void *glGetBufferSubData_;
   void *glGenBuffers_;
   void *glGenFramebuffers_;
   void *glGenTextures_;
@@ -179,6 +180,7 @@ GL::GL(std::function<void*(const char*)> get_proc_address) {
   glGenBuffers_ = get_proc_address("glGenBuffers");
   glGenFramebuffers_ = get_proc_address("glGenFramebuffers");
   glGenTextures_ = get_proc_address("glGenTextures");
+  glGetBufferSubData_ = get_proc_address("glGetBufferSubData");
   glGetError_ = get_proc_address("glGetError");
   glGetIntegerv_ = get_proc_address("glGetIntegerv");
   glGetProgramInfoLog_ = get_proc_address("glGetProgramInfoLog");
@@ -307,16 +309,16 @@ Value GL::Get(const std::string &key) {
           GLenum target = static_cast<GLenum>(args[0].ToNumber());
           GLintptr offset = static_cast<GLintptr>(args[1].ToNumber());
           BytesSpan data = args[2].ToBytes();
-          ptrdiff_t srcOffset = 0;
+          ptrdiff_t src_offset = 0;
           if (args.size() > 3 && args[3].IsNumber()) {
-            srcOffset = static_cast<size_t>(args[3].ToNumber());
+            src_offset = static_cast<size_t>(args[3].ToNumber());
           }
           GLsizeiptr size = data.size();
           if (args.size() > 4 && args[4].IsNumber()) {
             size = static_cast<GLsizeiptr>(args[4].ToNumber());
           }
           using f = void(*)(GLenum, GLintptr, GLsizeiptr, const void*);
-          reinterpret_cast<f>(glBufferSubData_)(target, offset, size, data.begin() + srcOffset);
+          reinterpret_cast<f>(glBufferSubData_)(target, offset, size, data.begin() + src_offset);
           return Value{};
         })};
   }
@@ -492,6 +494,20 @@ Value GL::Get(const std::string &key) {
           using f = void(*)(GLenum, GLenum, GLenum, GLuint, GLint);
           reinterpret_cast<f>(glFramebufferTexture2D_)(
               target, attachment, textarget, texture, level);
+          return Value{};
+        })};
+  }
+  if (key == "getBufferSubData") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLenum target = static_cast<GLenum>(args[0].ToNumber());
+          GLintptr offset = static_cast<GLintptr>(args[1].ToNumber());
+          BytesSpan data = args[2].ToBytes();
+          ptrdiff_t dst_offset = static_cast<ptrdiff_t>(args[3].ToNumber());
+          GLsizeiptr size = static_cast<GLsizeiptr>(args[4].ToNumber());
+          using f = void(*)(GLenum, GLintptr, GLsizeiptr, void*);
+          reinterpret_cast<f>(glGetBufferSubData_)(
+              target, offset, size, data.begin() + dst_offset);
           return Value{};
         })};
   }
