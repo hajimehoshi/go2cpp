@@ -25,6 +25,9 @@ func writeInst(dir string, incpath string, namespace string, importFuncs, funcs 
 	sort.Slice(funcs, func(a, b int) bool {
 		return funcs[a].Wasm.Name < funcs[b].Wasm.Name
 	})
+	sort.Slice(exports, func(a, b int) bool {
+		return exports[a].Name < exports[b].Name
+	})
 
 	var g errgroup.Group
 	g.Go(func() error {
