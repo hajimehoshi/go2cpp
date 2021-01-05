@@ -199,19 +199,19 @@ private:
   int SendDataToLoopThread(BytesSpan buf) {
     int n = 0;
     {
-      std::lock_guard<std::mutex> lock{mutex_};
+      std::unique_lock<std::mutex> lock{mutex_};
 
       if (current_buf_.capacity() < buffer_size_) {
         current_buf_.reserve(buffer_size_);
       }
 
-      if (current_buf_.size() < buffer_size_) {
-        n = buf.size();
-        if (n > buffer_size_ - current_buf_.size()) {
-          n = buffer_size_ - current_buf_.size();
-        }
-        current_buf_.insert(current_buf_.end(), buf.begin(), buf.begin() + n);
+      cond_.wait(lock, [this]{ return current_buf_.size() < buffer_size_; });
+
+      n = buf.size();
+      if (n > buffer_size_ - current_buf_.size()) {
+        n = buffer_size_ - current_buf_.size();
       }
+      current_buf_.insert(current_buf_.end(), buf.begin(), buf.begin() + n);
     }
     cond_.notify_one();
     return n;
@@ -241,6 +241,7 @@ private:
         // TODO: This is not efficient. Replace this with a deque?
         current_buf_.erase(current_buf_.begin(), current_buf_.begin() + n);
       }
+      cond_.notify_one();
 
       go_->EnqueueTask([this, n]() {
         on_buffer_consumed_.ToObject().Invoke(Value{}, {Value{static_cast<double>(n)}});
