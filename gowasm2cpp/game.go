@@ -91,11 +91,14 @@ public:
     virtual std::vector<Gamepad> GetGamepads() = 0;
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
-
-    // SendDataToAudio returns the number of the written bytes.
-    // SendDataToAudio can return 0 only when the given buffer is not enough.
-    // SendDataToAudio is called from a differen thread than the main thread.
-    virtual int SendDataToAudio(const uint8_t* data, int length) = 0;
+    virtual int CreateAudioPlayer(std::function<void()> on_written) = 0;
+    virtual double AudioPlayerGetVolume(int player_id) = 0;
+    virtual void AudioPlayerSetVolume(int player_id, double volume) = 0;
+    virtual void AudioPlayerPause(int player_id) = 0;
+    virtual void AudioPlayerPlay(int player_id) = 0;
+    virtual void AudioPlayerClose(int player_id) = 0;
+    virtual void AudioPlayerWrite(int player_id, const uint8_t* data, int length) = 0;
+    virtual bool AudioPlayerIsWritable(int player_id) = 0;
   };
 
   class Binding {
@@ -163,32 +166,109 @@ private:
   Game::Binding* binding_;
 };
 
-class Audio : public Object {
+class AudioPlayer : public Object {
 public:
-  Audio(Go* go, Game::Driver* driver, int buffer_size)
-    : go_{go},
-      driver_{driver},
-      buffer_size_{buffer_size},
-      thread_{[this]() { Loop(); }} {
+  AudioPlayer(Go* go, Game::Driver* driver, Value on_written)
+      : go_{go},
+        driver_{driver},
+        on_written_{on_written} {
+    player_id_ = driver->CreateAudioPlayer([this]() {
+      go_->EnqueueTask([this] {
+        if (closed_) {
+          return;
+        }
+        on_written_.ToObject().Invoke({}, {});
+      });
+    });
+  }
+
+  ~AudioPlayer() override {
+    Close();
   }
 
   Value Get(const std::string& key) override {
-    if (key == "sendDataToBuffer") {
+    if (key == "volume") {
+      return Value{driver_->AudioPlayerGetVolume(player_id_)};
+    }
+    if (key == "pause") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          driver_->AudioPlayerPause(player_id_);
+          return Value{};
+        })};
+    }
+    if (key == "play") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          driver_->AudioPlayerPlay(player_id_);
+          return Value{};
+        })};
+    }
+    if (key == "close") {
+      closed_ = true;
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          Close();
+          return Value{};
+        })};
+    }
+    if (key == "write") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           BytesSpan buf = args[0].ToBytes();
-          int len = static_cast<int>(args[1].ToNumber());
-          int n = SendDataToLoopThread(BytesSpan(buf.begin(), len));
-          return Value{static_cast<double>(n)};
+          int size = static_cast<int>(args[1].ToNumber());
+          driver_->AudioPlayerWrite(player_id_, buf.begin(), size);
+          return Value{};
+        })};
+    }
+    if (key == "isWritable") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          return Value{driver_->AudioPlayerIsWritable(player_id_)};
         })};
     }
     return Value{};
   }
 
   void Set(const std::string& key, Value value) override {
-    if (key == "onBufferConsumed") {
-      on_buffer_consumed_ = value;
+    if (key == "volume") {
+      driver_->AudioPlayerSetVolume(player_id_, value.ToNumber());
+      return;
     }
+  }
+
+  std::string ToString() const override {
+    return "AudioPlayer";
+  }
+
+private:
+  void Close() {
+    driver_->AudioPlayerClose(player_id_);
+  }
+
+  Go* go_;
+  Game::Driver* driver_;
+  int player_id_;
+  Value buf_;
+  Value on_written_;
+  bool closed_ = false;
+};
+
+class Audio : public Object {
+public:
+  Audio(Go* go, Game::Driver* driver)
+      : go_{go},
+        driver_{driver} {
+  }
+
+  Value Get(const std::string& key) override {
+    if (key == "createPlayer") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          return Value{std::make_shared<AudioPlayer>(go_, driver_, args[0])};
+        })};
+    }
+    return Value{};
   }
 
   std::string ToString() const override {
@@ -196,69 +276,8 @@ public:
   }
 
 private:
-  int SendDataToLoopThread(BytesSpan buf) {
-    int n = 0;
-    {
-      std::unique_lock<std::mutex> lock{mutex_};
-
-      if (current_buf_.capacity() < buffer_size_) {
-        current_buf_.reserve(buffer_size_);
-      }
-
-      cond_.wait(lock, [this]{ return current_buf_.size() < buffer_size_; });
-
-      n = buf.size();
-      if (n > buffer_size_ - current_buf_.size()) {
-        n = buffer_size_ - current_buf_.size();
-      }
-      current_buf_.insert(current_buf_.end(), buf.begin(), buf.begin() + n);
-    }
-    cond_.notify_one();
-    return n;
-  }
-
-  void Loop() {
-    int require = 0;
-
-    for (;;) {
-      std::vector<uint8_t> buf;
-      int n = 0;
-      {
-        std::unique_lock<std::mutex> lock{mutex_};
-        cond_.wait(lock, [this, require]{ return current_buf_.size() > require; });
-        buf = current_buf_;
-        lock.unlock();
-
-        n = driver_->SendDataToAudio(&(*buf.begin()), buf.size());
-        // The given data is not enough. Wait for new inputs again.
-        if (!n) {
-          require = buf.size();
-          continue;
-        }
-        require = 0;
-
-        lock.lock();
-        // TODO: This is not efficient. Replace this with a deque?
-        current_buf_.erase(current_buf_.begin(), current_buf_.begin() + n);
-      }
-      cond_.notify_one();
-
-      go_->EnqueueTask([this, n]() {
-        on_buffer_consumed_.ToObject().Invoke(Value{}, {Value{static_cast<double>(n)}});
-      });
-    }
-  }
-
   Go* go_;
   Game::Driver* driver_;
-  int buffer_size_;
-  Value on_buffer_consumed_;
-  std::vector<uint8_t> current_buf_;
-
-  std::mutex mutex_;
-  std::condition_variable cond_;
-
-  std::thread thread_;
 };
 
 } // namespace
@@ -350,7 +369,7 @@ int Game::Run() {
       int buffer_size = static_cast<int>(args[3].ToNumber());
 
       driver_->OpenAudio(sample_rate, channel_num, bit_depth_in_bytes, buffer_size);
-      return Value{std::make_shared<Audio>(&go, driver_.get(), buffer_size)};
+      return Value{std::make_shared<Audio>(&go, driver_.get())};
     })});
 
   if (binding_) {

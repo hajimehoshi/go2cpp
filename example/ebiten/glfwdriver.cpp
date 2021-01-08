@@ -111,12 +111,127 @@ void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
   sample_rate_ = sample_rate;
   channel_num_ = channel_num;
   bit_depth_in_bytes_ = bit_depth_in_bytes;
+  buffer_size_ = buffer_size;
 }
 
-int GLFWDriver::SendDataToAudio(const uint8_t *data, int length) {
-  int bytes_per_sec = sample_rate_ * channel_num_ * bit_depth_in_bytes_;
-  std::chrono::duration<double> duration(static_cast<double>(length) /
-                                         static_cast<double>(bytes_per_sec));
-  std::this_thread::sleep_for(duration);
-  return length;
+int GLFWDriver::CreateAudioPlayer(std::function<void()> on_written) {
+  next_player_id_++;
+  int player_id = next_player_id_;
+  players_[player_id] = std::make_unique<AudioPlayer>(
+      sample_rate_, channel_num_, bit_depth_in_bytes_, buffer_size_,
+      on_written);
+  return player_id;
+}
+
+double GLFWDriver::AudioPlayerGetVolume(int player_id) { return 1; }
+
+void GLFWDriver::AudioPlayerSetVolume(int player_id, double volume) {}
+
+void GLFWDriver::AudioPlayerPause(int player_id) {
+  players_[player_id]->Pause();
+}
+
+void GLFWDriver::AudioPlayerPlay(int player_id) { players_[player_id]->Play(); }
+
+void GLFWDriver::AudioPlayerClose(int player_id) {
+  players_.erase(player_id);
+}
+
+void GLFWDriver::AudioPlayerWrite(int player_id, const uint8_t *data,
+                                  int length) {
+  players_[player_id]->Write(length);
+}
+
+bool GLFWDriver::AudioPlayerIsWritable(int player_id) {
+  return players_[player_id]->IsWritable();
+}
+
+GLFWDriver::AudioPlayer::AudioPlayer(int sample_rate, int channel_num,
+                                     int bit_depth_in_bytes, int buffer_size,
+                                     std::function<void()> on_written)
+    : sample_rate_{sample_rate}, channel_num_{channel_num},
+      bit_depth_in_bytes_{bit_depth_in_bytes}, buffer_size_{buffer_size},
+      on_written_{on_written}, thread_{[this] {
+        Loop();
+      }} {}
+
+GLFWDriver::AudioPlayer::~AudioPlayer() {
+  Close();
+  if (thread_.joinable()) {
+    thread_.join();
+  }
+}
+
+void GLFWDriver::AudioPlayer::Pause() {
+  {
+    std::lock_guard<std::mutex> lock{mutex_};
+    if (closed_) {
+      return;
+    }
+    paused_ = true;
+  }
+  cond_.notify_all();
+}
+
+void GLFWDriver::AudioPlayer::Play() {
+  {
+    std::lock_guard<std::mutex> lock{mutex_};
+    if (closed_) {
+      return;
+    }
+    paused_ = false;
+  }
+  cond_.notify_all();
+}
+
+void GLFWDriver::AudioPlayer::Write(int length) {
+  {
+    std::unique_lock<std::mutex> lock{mutex_};
+    cond_.wait(lock, [this] { return IsWritableImpl(); });
+    if (closed_) {
+      return;
+    }
+    written_ += length;
+  }
+  on_written_();
+  cond_.notify_one();
+}
+
+bool GLFWDriver::AudioPlayer::IsWritable() {
+  std::lock_guard<std::mutex> lock{mutex_};
+  return IsWritableImpl();
+}
+
+void GLFWDriver::AudioPlayer::Loop() {
+  for (;;) {
+    {
+      std::unique_lock<std::mutex> lock{mutex_};
+      cond_.wait(lock, [this] {
+        return (written_ >= buffer_size_ || closed_) && !paused_;
+      });
+      if (closed_) {
+        return;
+      }
+      written_ -= buffer_size_;
+    }
+    cond_.notify_one();
+    int bytes_per_sec = sample_rate_ * channel_num_ * bit_depth_in_bytes_;
+    std::chrono::duration<double> duration(
+                                           static_cast<double>(buffer_size_) /
+                                           static_cast<double>(bytes_per_sec));
+    std::this_thread::sleep_for(duration);
+  }
+}
+
+bool GLFWDriver::AudioPlayer::IsWritableImpl() const {
+  return (written_ < buffer_size_ || closed_) && !paused_;
+}
+
+void GLFWDriver::AudioPlayer::Close() {
+  {
+    std::lock_guard<std::mutex> lock{mutex_};
+    paused_ = false;
+    closed_ = true;
+  }
+  cond_.notify_all();
 }
