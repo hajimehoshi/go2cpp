@@ -91,7 +91,7 @@ public:
     virtual std::vector<Gamepad> GetGamepads() = 0;
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
-    virtual int CreateAudioPlayer(std::function<void()> on_written) = 0;
+    virtual int CreateAudioPlayer() = 0;
     virtual double AudioPlayerGetVolume(int player_id) = 0;
     virtual void AudioPlayerSetVolume(int player_id, double volume) = 0;
     virtual void AudioPlayerPause(int player_id) = 0;
@@ -168,18 +168,10 @@ private:
 
 class AudioPlayer : public Object {
 public:
-  AudioPlayer(Go* go, Game::Driver* driver, Value on_written)
-      : go_{go},
-        driver_{driver},
+  AudioPlayer(Game::Driver* driver, Value on_written)
+      : driver_{driver},
         on_written_{on_written} {
-    player_id_ = driver->CreateAudioPlayer([this]() {
-      go_->EnqueueTask([this] {
-        if (closed_) {
-          return;
-        }
-        on_written_.ToObject().Invoke({}, {});
-      });
-    });
+    player_id_ = driver->CreateAudioPlayer();
   }
 
   ~AudioPlayer() override {
@@ -205,7 +197,6 @@ public:
         })};
     }
     if (key == "close") {
-      closed_ = true;
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           Close();
@@ -218,6 +209,7 @@ public:
           BytesSpan buf = args[0].ToBytes();
           int size = static_cast<int>(args[1].ToNumber());
           driver_->AudioPlayerWrite(player_id_, buf.begin(), size);
+          on_written_.ToObject().Invoke({}, {});
           return Value{};
         })};
     }
@@ -246,26 +238,23 @@ private:
     driver_->AudioPlayerClose(player_id_);
   }
 
-  Go* go_;
   Game::Driver* driver_;
   int player_id_;
   Value buf_;
   Value on_written_;
-  bool closed_ = false;
 };
 
 class Audio : public Object {
 public:
-  Audio(Go* go, Game::Driver* driver)
-      : go_{go},
-        driver_{driver} {
+  explicit Audio(Game::Driver* driver)
+      : driver_{driver} {
   }
 
   Value Get(const std::string& key) override {
     if (key == "createPlayer") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
-          return Value{std::make_shared<AudioPlayer>(go_, driver_, args[0])};
+          return Value{std::make_shared<AudioPlayer>(driver_, args[0])};
         })};
     }
     return Value{};
@@ -276,7 +265,6 @@ public:
   }
 
 private:
-  Go* go_;
   Game::Driver* driver_;
 };
 
@@ -362,14 +350,14 @@ int Game::Run() {
   Go go;
 
   go2cpp->Set("createAudio", Value{std::make_shared<Function>(
-    [this, &go](Value self, std::vector<Value> args) -> Value {
+    [this](Value self, std::vector<Value> args) -> Value {
       int sample_rate = static_cast<int>(args[0].ToNumber());
       int channel_num = static_cast<int>(args[1].ToNumber());
       int bit_depth_in_bytes = static_cast<int>(args[2].ToNumber());
       int buffer_size = static_cast<int>(args[3].ToNumber());
 
       driver_->OpenAudio(sample_rate, channel_num, bit_depth_in_bytes, buffer_size);
-      return Value{std::make_shared<Audio>(&go, driver_.get())};
+      return Value{std::make_shared<Audio>(driver_.get())};
     })});
 
   if (binding_) {

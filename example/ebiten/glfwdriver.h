@@ -19,7 +19,7 @@ public:
   std::vector<go2cpp_autogen::Game::Gamepad> GetGamepads() override;
   void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes,
                  int buffer_size) override;
-  int CreateAudioPlayer(std::function<void()> on_written) override;
+  int CreateAudioPlayer() override;
   double AudioPlayerGetVolume(int player_id) override;
   void AudioPlayerSetVolume(int player_id, double volume) override;
   void AudioPlayerPause(int player_id) override;
@@ -33,7 +33,7 @@ private:
   class AudioPlayer {
   public:
     AudioPlayer(int sample_rate, int channel_num, int bit_depth_in_bytes,
-                int buffer_size, std::function<void()> on_written);
+                int buffer_size);
     ~AudioPlayer();
 
     void Pause();
@@ -50,7 +50,6 @@ private:
     const int channel_num_;
     const int bit_depth_in_bytes_;
     const int buffer_size_;
-    std::function<void()> on_written_;
     int written_ = 0;
     bool paused_ = false;
     bool closed_ = false;
