@@ -78,6 +78,17 @@ public:
     float axes[16];
   };
 
+  class AudioPlayer {
+  public:
+    virtual ~AudioPlayer();
+    virtual double GetVolume() = 0;
+    virtual void SetVolume(double volume) = 0;
+    virtual void Pause() = 0;
+    virtual void Play() = 0;
+    virtual void Write(const uint8_t* data, int length) = 0;
+    virtual bool IsWritable() = 0;
+  };
+
   class Driver {
   public:
     virtual ~Driver();
@@ -91,14 +102,7 @@ public:
     virtual std::vector<Gamepad> GetGamepads() = 0;
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
-    virtual int CreateAudioPlayer(std::function<void()> on_written) = 0;
-    virtual double AudioPlayerGetVolume(int player_id) = 0;
-    virtual void AudioPlayerSetVolume(int player_id, double volume) = 0;
-    virtual void AudioPlayerPause(int player_id) = 0;
-    virtual void AudioPlayerPlay(int player_id) = 0;
-    virtual void AudioPlayerClose(int player_id) = 0;
-    virtual void AudioPlayerWrite(int player_id, const uint8_t* data, int length) = 0;
-    virtual bool AudioPlayerIsWritable(int player_id) = 0;
+    virtual std::unique_ptr<AudioPlayer> CreateAudioPlayer(std::function<void()> on_written) = 0;
   };
 
   class Binding {
@@ -172,13 +176,9 @@ public:
       : driver_{driver} {
   }
 
-  ~AudioPlayer() override {
-    Close();
-  }
-
   void SetOnWrittenCallback(Value on_written, std::function<void()> on_written_callback) {
     on_written_ = on_written;
-    player_id_ = driver_->CreateAudioPlayer(on_written_callback);
+    player_ = driver_->CreateAudioPlayer(on_written_callback);
   }
 
   void InvokeOnWrittenCallback() {
@@ -190,19 +190,19 @@ public:
 
   Value Get(const std::string& key) override {
     if (key == "volume") {
-      return Value{driver_->AudioPlayerGetVolume(player_id_)};
+      return Value{player_->GetVolume()};
     }
     if (key == "pause") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
-          driver_->AudioPlayerPause(player_id_);
+          player_->Pause();
           return Value{};
         })};
     }
     if (key == "play") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
-          driver_->AudioPlayerPlay(player_id_);
+          player_->Play();
           return Value{};
         })};
     }
@@ -210,7 +210,7 @@ public:
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           closed_ = true;
-          Close();
+          player_.reset();
           return Value{};
         })};
     }
@@ -219,7 +219,7 @@ public:
         [this](Value self, std::vector<Value> args) -> Value {
           BytesSpan buf = args[0].ToBytes();
           int size = static_cast<int>(args[1].ToNumber());
-          driver_->AudioPlayerWrite(player_id_, buf.begin(), size);
+          player_->Write(buf.begin(), size);
           on_written_.ToObject().Invoke({}, {});
           return Value{};
         })};
@@ -227,7 +227,7 @@ public:
     if (key == "isWritable") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
-          return Value{driver_->AudioPlayerIsWritable(player_id_)};
+          return Value{player_->IsWritable()};
         })};
     }
     return Value{};
@@ -235,7 +235,7 @@ public:
 
   void Set(const std::string& key, Value value) override {
     if (key == "volume") {
-      driver_->AudioPlayerSetVolume(player_id_, value.ToNumber());
+      player_->SetVolume(value.ToNumber());
       return;
     }
   }
@@ -245,12 +245,8 @@ public:
   }
 
 private:
-  void Close() {
-    driver_->AudioPlayerClose(player_id_);
-  }
-
   Game::Driver* driver_;
-  int player_id_ = 0;
+  std::unique_ptr<Game::AudioPlayer> player_;
   Value buf_;
   Value on_written_;
 
@@ -294,6 +290,8 @@ private:
 };
 
 } // namespace
+
+Game::AudioPlayer::~AudioPlayer() = default;
 
 Game::Driver::~Driver() = default;
 

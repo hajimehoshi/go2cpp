@@ -114,34 +114,11 @@ void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
   buffer_size_ = buffer_size;
 }
 
-int GLFWDriver::CreateAudioPlayer(std::function<void()> on_written) {
-  next_player_id_++;
-  int player_id = next_player_id_;
-  players_[player_id] = std::make_unique<AudioPlayer>(
-      sample_rate_, channel_num_, bit_depth_in_bytes_, buffer_size_,
-      on_written);
-  return player_id;
-}
-
-double GLFWDriver::AudioPlayerGetVolume(int player_id) { return 1; }
-
-void GLFWDriver::AudioPlayerSetVolume(int player_id, double volume) {}
-
-void GLFWDriver::AudioPlayerPause(int player_id) {
-  players_[player_id]->Pause();
-}
-
-void GLFWDriver::AudioPlayerPlay(int player_id) { players_[player_id]->Play(); }
-
-void GLFWDriver::AudioPlayerClose(int player_id) { players_.erase(player_id); }
-
-void GLFWDriver::AudioPlayerWrite(int player_id, const uint8_t *data,
-                                  int length) {
-  players_[player_id]->Write(length);
-}
-
-bool GLFWDriver::AudioPlayerIsWritable(int player_id) {
-  return players_[player_id]->IsWritable();
+std::unique_ptr<go2cpp_autogen::Game::AudioPlayer>
+GLFWDriver::CreateAudioPlayer(std::function<void()> on_written) {
+  return std::make_unique<AudioPlayer>(sample_rate_, channel_num_,
+                                       bit_depth_in_bytes_, buffer_size_,
+                                       on_written);
 }
 
 GLFWDriver::AudioPlayer::AudioPlayer(int sample_rate, int channel_num,
@@ -152,11 +129,20 @@ GLFWDriver::AudioPlayer::AudioPlayer(int sample_rate, int channel_num,
       on_written_{on_written}, thread_{[this] { Loop(); }} {}
 
 GLFWDriver::AudioPlayer::~AudioPlayer() {
-  Close();
+  {
+    std::lock_guard<std::mutex> lock{mutex_};
+    paused_ = false;
+    closed_ = true;
+  }
+  cond_.notify_all();
   if (thread_.joinable()) {
     thread_.join();
   }
 }
+
+double GLFWDriver::AudioPlayer::GetVolume() { return volume_; }
+
+void GLFWDriver::AudioPlayer::SetVolume(double volume) { volume_ = volume; }
 
 void GLFWDriver::AudioPlayer::Pause() {
   {
@@ -180,7 +166,7 @@ void GLFWDriver::AudioPlayer::Play() {
   cond_.notify_all();
 }
 
-void GLFWDriver::AudioPlayer::Write(int length) {
+void GLFWDriver::AudioPlayer::Write(const uint8_t *data, int length) {
   {
     std::unique_lock<std::mutex> lock{mutex_};
     cond_.wait(lock, [this] { return IsWritableImpl(); });
@@ -220,13 +206,4 @@ void GLFWDriver::AudioPlayer::Loop() {
 
 bool GLFWDriver::AudioPlayer::IsWritableImpl() const {
   return (written_ < buffer_size_ || closed_) && !paused_;
-}
-
-void GLFWDriver::AudioPlayer::Close() {
-  {
-    std::lock_guard<std::mutex> lock{mutex_};
-    paused_ = false;
-    closed_ = true;
-  }
-  cond_.notify_all();
 }

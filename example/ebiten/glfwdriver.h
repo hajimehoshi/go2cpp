@@ -19,38 +19,33 @@ public:
   std::vector<go2cpp_autogen::Game::Gamepad> GetGamepads() override;
   void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes,
                  int buffer_size) override;
-  int CreateAudioPlayer(std::function<void()> on_written) override;
-  double AudioPlayerGetVolume(int player_id) override;
-  void AudioPlayerSetVolume(int player_id, double volume) override;
-  void AudioPlayerPause(int player_id) override;
-  void AudioPlayerPlay(int player_id) override;
-  void AudioPlayerClose(int player_id) override;
-  void AudioPlayerWrite(int player_id, const uint8_t *data,
-                        int length) override;
-  bool AudioPlayerIsWritable(int player_id) override;
+  std::unique_ptr<go2cpp_autogen::Game::AudioPlayer>
+  CreateAudioPlayer(std::function<void()> on_written) override;
 
 private:
-  class AudioPlayer {
+  class AudioPlayer : public go2cpp_autogen::Game::AudioPlayer {
   public:
     AudioPlayer(int sample_rate, int channel_num, int bit_depth_in_bytes,
                 int buffer_size, std::function<void()> on_written);
-    ~AudioPlayer();
+    ~AudioPlayer() override;
 
-    void Pause();
-    void Play();
-    void Write(int length);
-    bool IsWritable();
+    double GetVolume() override;
+    void SetVolume(double volume) override;
+    void Pause() override;
+    void Play() override;
+    void Write(const uint8_t *data, int length) override;
+    bool IsWritable() override;
 
   private:
     void Loop();
     bool IsWritableImpl() const;
-    void Close();
 
     const int sample_rate_;
     const int channel_num_;
     const int bit_depth_in_bytes_;
     const int buffer_size_;
     std::function<void()> on_written_;
+    double volume_ = 1.0;
     int written_ = 0;
     bool paused_ = false;
     bool closed_ = false;
@@ -65,9 +60,6 @@ private:
   int channel_num_ = 0;
   int bit_depth_in_bytes_ = 0;
   int buffer_size_ = 0;
-
-  std::unordered_map<int, std::unique_ptr<AudioPlayer>> players_;
-  int next_player_id_ = 0;
 };
 
 #endif
