@@ -81,6 +81,7 @@ public:
   class AudioPlayer {
   public:
     virtual ~AudioPlayer();
+    virtual void Close() = 0;
     virtual double GetVolume() = 0;
     virtual void SetVolume(double volume) = 0;
     virtual void Pause() = 0;
@@ -210,7 +211,9 @@ public:
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           closed_ = true;
-          player_.reset();
+          // Removing a player might cause joining its thread, which can take long.
+          // Call Close explicitly.
+          player_->Close();
           return Value{};
         })};
     }

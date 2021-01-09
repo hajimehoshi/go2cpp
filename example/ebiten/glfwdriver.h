@@ -29,6 +29,7 @@ private:
                 int buffer_size, std::function<void()> on_written);
     ~AudioPlayer() override;
 
+    void Close() override;
     double GetVolume() override;
     void SetVolume(double volume) override;
     void Pause() override;

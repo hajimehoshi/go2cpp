@@ -129,15 +129,18 @@ GLFWDriver::AudioPlayer::AudioPlayer(int sample_rate, int channel_num,
       on_written_{on_written}, thread_{[this] { Loop(); }} {}
 
 GLFWDriver::AudioPlayer::~AudioPlayer() {
+  if (thread_.joinable()) {
+    thread_.join();
+  }
+}
+
+void GLFWDriver::AudioPlayer::Close() {
   {
     std::lock_guard<std::mutex> lock{mutex_};
     paused_ = false;
     closed_ = true;
   }
   cond_.notify_all();
-  if (thread_.joinable()) {
-    thread_.join();
-  }
 }
 
 double GLFWDriver::AudioPlayer::GetVolume() { return volume_; }
