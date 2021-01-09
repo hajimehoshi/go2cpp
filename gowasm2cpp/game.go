@@ -91,7 +91,7 @@ public:
     virtual std::vector<Gamepad> GetGamepads() = 0;
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
-    virtual int CreateAudioPlayer() = 0;
+    virtual int CreateAudioPlayer(std::function<void()> on_written) = 0;
     virtual double AudioPlayerGetVolume(int player_id) = 0;
     virtual void AudioPlayerSetVolume(int player_id, double volume) = 0;
     virtual void AudioPlayerPause(int player_id) = 0;
@@ -168,14 +168,24 @@ private:
 
 class AudioPlayer : public Object {
 public:
-  AudioPlayer(Game::Driver* driver, Value on_written)
-      : driver_{driver},
-        on_written_{on_written} {
-    player_id_ = driver->CreateAudioPlayer();
+  explicit AudioPlayer(Game::Driver* driver)
+      : driver_{driver} {
   }
 
   ~AudioPlayer() override {
     Close();
+  }
+
+  void SetOnWrittenCallback(Value on_written, std::function<void()> on_written_callback) {
+    on_written_ = on_written;
+    player_id_ = driver_->CreateAudioPlayer(on_written_callback);
+  }
+
+  void InvokeOnWrittenCallback() {
+    if (closed_) {
+      return;
+    }
+    on_written_.ToObject().Invoke({}, {});
   }
 
   Value Get(const std::string& key) override {
@@ -199,6 +209,7 @@ public:
     if (key == "close") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
+          closed_ = true;
           Close();
           return Value{};
         })};
@@ -239,22 +250,35 @@ private:
   }
 
   Game::Driver* driver_;
-  int player_id_;
+  int player_id_ = 0;
   Value buf_;
   Value on_written_;
+
+  bool closed_ = false;
+  std::mutex mutex_;
 };
 
 class Audio : public Object {
 public:
-  explicit Audio(Game::Driver* driver)
-      : driver_{driver} {
+  Audio(Go* go, Game::Driver* driver)
+      : go_{go},
+        driver_{driver} {
   }
 
   Value Get(const std::string& key) override {
     if (key == "createPlayer") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
-          return Value{std::make_shared<AudioPlayer>(driver_, args[0])};
+          auto p = std::make_shared<AudioPlayer>(driver_);
+          // Capture the shared pointer and use it in the lambda.
+          // The AudioPlayer must exist when invoking.
+          p->SetOnWrittenCallback(args[0], [this, p]() {
+            // This callback can be invoked from a different thread. Use EnqueueTask here.
+            go_->EnqueueTask([p]() {
+              p->InvokeOnWrittenCallback();
+            });
+          });
+          return Value{p};
         })};
     }
     return Value{};
@@ -265,6 +289,7 @@ public:
   }
 
 private:
+  Go* go_;
   Game::Driver* driver_;
 };
 
@@ -350,14 +375,14 @@ int Game::Run() {
   Go go;
 
   go2cpp->Set("createAudio", Value{std::make_shared<Function>(
-    [this](Value self, std::vector<Value> args) -> Value {
+    [this, &go](Value self, std::vector<Value> args) -> Value {
       int sample_rate = static_cast<int>(args[0].ToNumber());
       int channel_num = static_cast<int>(args[1].ToNumber());
       int bit_depth_in_bytes = static_cast<int>(args[2].ToNumber());
       int buffer_size = static_cast<int>(args[3].ToNumber());
 
       driver_->OpenAudio(sample_rate, channel_num, bit_depth_in_bytes, buffer_size);
-      return Value{std::make_shared<Audio>(driver_.get())};
+      return Value{std::make_shared<Audio>(&go, driver_.get())};
     })});
 
   if (binding_) {

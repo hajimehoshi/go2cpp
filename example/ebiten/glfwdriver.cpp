@@ -114,11 +114,12 @@ void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
   buffer_size_ = buffer_size;
 }
 
-int GLFWDriver::CreateAudioPlayer() {
+int GLFWDriver::CreateAudioPlayer(std::function<void()> on_written) {
   next_player_id_++;
   int player_id = next_player_id_;
   players_[player_id] = std::make_unique<AudioPlayer>(
-      sample_rate_, channel_num_, bit_depth_in_bytes_, buffer_size_);
+      sample_rate_, channel_num_, bit_depth_in_bytes_, buffer_size_,
+      on_written);
   return player_id;
 }
 
@@ -132,9 +133,7 @@ void GLFWDriver::AudioPlayerPause(int player_id) {
 
 void GLFWDriver::AudioPlayerPlay(int player_id) { players_[player_id]->Play(); }
 
-void GLFWDriver::AudioPlayerClose(int player_id) {
-  players_.erase(player_id);
-}
+void GLFWDriver::AudioPlayerClose(int player_id) { players_.erase(player_id); }
 
 void GLFWDriver::AudioPlayerWrite(int player_id, const uint8_t *data,
                                   int length) {
@@ -146,12 +145,11 @@ bool GLFWDriver::AudioPlayerIsWritable(int player_id) {
 }
 
 GLFWDriver::AudioPlayer::AudioPlayer(int sample_rate, int channel_num,
-                                     int bit_depth_in_bytes, int buffer_size)
+                                     int bit_depth_in_bytes, int buffer_size,
+                                     std::function<void()> on_written)
     : sample_rate_{sample_rate}, channel_num_{channel_num},
       bit_depth_in_bytes_{bit_depth_in_bytes}, buffer_size_{buffer_size},
-      thread_{[this] {
-        Loop();
-      }} {}
+      on_written_{on_written}, thread_{[this] { Loop(); }} {}
 
 GLFWDriver::AudioPlayer::~AudioPlayer() {
   Close();
@@ -210,11 +208,11 @@ void GLFWDriver::AudioPlayer::Loop() {
         return;
       }
       written_ -= buffer_size_;
+      on_written_();
     }
     cond_.notify_one();
     int bytes_per_sec = sample_rate_ * channel_num_ * bit_depth_in_bytes_;
-    std::chrono::duration<double> duration(
-                                           static_cast<double>(buffer_size_) /
+    std::chrono::duration<double> duration(static_cast<double>(buffer_size_) /
                                            static_cast<double>(bytes_per_sec));
     std::this_thread::sleep_for(duration);
   }
