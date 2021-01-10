@@ -223,7 +223,6 @@ public:
           BytesSpan buf = args[0].ToBytes();
           int size = static_cast<int>(args[1].ToNumber());
           player_->Write(buf.begin(), size);
-          on_written_.ToObject().Invoke({}, {});
           return Value{};
         })};
     }
