@@ -169,6 +169,18 @@ void GLFWDriver::AudioPlayer::Play() {
   cond_.notify_all();
 }
 
+void GLFWDriver::AudioPlayer::Reset() {
+  {
+    std::lock_guard<std::mutex> lock{mutex_};
+    if (closed_) {
+      written_ = 0;
+      return;
+    }
+    paused_ = false;
+  }
+  cond_.notify_all();
+}
+
 void GLFWDriver::AudioPlayer::Write(const uint8_t *data, int length) {
   {
     std::unique_lock<std::mutex> lock{mutex_};

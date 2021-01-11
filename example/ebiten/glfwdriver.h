@@ -34,6 +34,7 @@ private:
     void SetVolume(double volume) override;
     void Pause() override;
     void Play() override;
+    void Reset() override;
     void Write(const uint8_t *data, int length) override;
     bool IsWritable() override;
 

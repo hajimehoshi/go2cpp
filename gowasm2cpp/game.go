@@ -86,6 +86,7 @@ public:
     virtual void SetVolume(double volume) = 0;
     virtual void Pause() = 0;
     virtual void Play() = 0;
+    virtual void Reset() = 0;
     virtual void Write(const uint8_t* data, int length) = 0;
     virtual bool IsWritable() = 0;
   };
@@ -204,6 +205,13 @@ public:
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           player_->Play();
+          return Value{};
+        })};
+    }
+    if (key == "reset") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          player_->Reset();
           return Value{};
         })};
     }
