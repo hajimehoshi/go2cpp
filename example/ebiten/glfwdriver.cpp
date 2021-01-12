@@ -134,7 +134,7 @@ GLFWDriver::AudioPlayer::~AudioPlayer() {
   }
 }
 
-void GLFWDriver::AudioPlayer::Close() {
+void GLFWDriver::AudioPlayer::Close(bool immediately) {
   {
     std::lock_guard<std::mutex> lock{mutex_};
     paused_ = false;
@@ -162,18 +162,6 @@ void GLFWDriver::AudioPlayer::Play() {
   {
     std::lock_guard<std::mutex> lock{mutex_};
     if (closed_) {
-      return;
-    }
-    paused_ = false;
-  }
-  cond_.notify_all();
-}
-
-void GLFWDriver::AudioPlayer::Reset() {
-  {
-    std::lock_guard<std::mutex> lock{mutex_};
-    if (closed_) {
-      written_ = 0;
       return;
     }
     paused_ = false;

@@ -81,12 +81,11 @@ public:
   class AudioPlayer {
   public:
     virtual ~AudioPlayer();
-    virtual void Close() = 0;
+    virtual void Close(bool immediately) = 0;
     virtual double GetVolume() = 0;
     virtual void SetVolume(double volume) = 0;
     virtual void Pause() = 0;
     virtual void Play() = 0;
-    virtual void Reset() = 0;
     virtual void Write(const uint8_t* data, int length) = 0;
     virtual bool IsWritable() = 0;
   };
@@ -208,20 +207,14 @@ public:
           return Value{};
         })};
     }
-    if (key == "reset") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          player_->Reset();
-          return Value{};
-        })};
-    }
     if (key == "close") {
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           closed_ = true;
+          bool immediately = args[0].ToBool();
           // Removing a player might cause joining its thread, which can take long.
           // Call Close explicitly.
-          player_->Close();
+          player_->Close(immediately);
           return Value{};
         })};
     }
