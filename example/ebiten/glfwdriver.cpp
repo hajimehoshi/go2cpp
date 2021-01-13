@@ -107,11 +107,11 @@ std::vector<go2cpp_autogen::Game::Gamepad> GLFWDriver::GetGamepads() {
 }
 
 void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
-                           int bit_depth_in_bytes, int buffer_size) {
+                           int bit_depth_in_bytes) {
   sample_rate_ = sample_rate;
   channel_num_ = channel_num;
   bit_depth_in_bytes_ = bit_depth_in_bytes;
-  buffer_size_ = buffer_size;
+  buffer_size_ = 8192;
 }
 
 std::unique_ptr<go2cpp_autogen::Game::AudioPlayer>

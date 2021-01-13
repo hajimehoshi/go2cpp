@@ -102,7 +102,7 @@ public:
     virtual std::vector<Touch> GetTouches() = 0;
     virtual std::vector<Gamepad> GetGamepads() = 0;
 
-    virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes, int buffer_size) = 0;
+    virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes) = 0;
     virtual std::unique_ptr<AudioPlayer> CreateAudioPlayer(std::function<void()> on_written) = 0;
   };
 
@@ -380,9 +380,8 @@ int Game::Run() {
       int sample_rate = static_cast<int>(args[0].ToNumber());
       int channel_num = static_cast<int>(args[1].ToNumber());
       int bit_depth_in_bytes = static_cast<int>(args[2].ToNumber());
-      int buffer_size = static_cast<int>(args[3].ToNumber());
 
-      driver_->OpenAudio(sample_rate, channel_num, bit_depth_in_bytes, buffer_size);
+      driver_->OpenAudio(sample_rate, channel_num, bit_depth_in_bytes);
       return Value{std::make_shared<Audio>(&go, driver_.get())};
     })});
 
