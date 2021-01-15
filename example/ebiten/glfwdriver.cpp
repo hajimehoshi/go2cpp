@@ -129,6 +129,7 @@ GLFWDriver::AudioPlayer::AudioPlayer(int sample_rate, int channel_num,
       on_written_{on_written}, thread_{[this] { Loop(); }} {}
 
 GLFWDriver::AudioPlayer::~AudioPlayer() {
+  Close(false);
   if (thread_.joinable()) {
     thread_.join();
   }
