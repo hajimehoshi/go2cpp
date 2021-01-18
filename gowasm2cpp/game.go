@@ -117,6 +117,7 @@ public:
   Game(std::unique_ptr<Driver> driver, std::unique_ptr<Binding> binding);
 
   int Run();
+  int Run(const std::vector<std::string>& args);
 
 private:
   void Update(Value f);
@@ -308,6 +309,10 @@ Game::Game(std::unique_ptr<Driver> driver, std::unique_ptr<Binding> binding)
 }
 
 int Game::Run() {
+  return Run({})
+}
+
+int Game::Run(const std::vector<std::string> args) {
   if (!driver_->Init()) {
     return EXIT_FAILURE;
   }
@@ -401,7 +406,7 @@ int Game::Run() {
                    return Value{};
                  })});
 
-  return go.Run();
+  return go.Run(args);
 }
 
 void Game::Update(Value f) {
