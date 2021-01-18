@@ -309,10 +309,10 @@ Game::Game(std::unique_ptr<Driver> driver, std::unique_ptr<Binding> binding)
 }
 
 int Game::Run() {
-  return Run({})
+  return Run({});
 }
 
-int Game::Run(const std::vector<std::string> args) {
+int Game::Run(const std::vector<std::string>& args) {
   if (!driver_->Init()) {
     return EXIT_FAILURE;
   }
