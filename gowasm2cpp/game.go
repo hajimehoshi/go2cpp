@@ -117,6 +117,7 @@ public:
   Game(std::unique_ptr<Driver> driver, std::unique_ptr<Binding> binding);
 
   int Run();
+  int Run(int argc, char *argv[]);
   int Run(const std::vector<std::string>& args);
 
 private:
@@ -310,6 +311,11 @@ Game::Game(std::unique_ptr<Driver> driver, std::unique_ptr<Binding> binding)
 
 int Game::Run() {
   return Run({});
+}
+
+int Game::Run(int argc, char *argv[]) {
+  std::vector<std::string> args(argv, argv + argc);
+  return Run(args);
 }
 
 int Game::Run(const std::vector<std::string>& args) {
