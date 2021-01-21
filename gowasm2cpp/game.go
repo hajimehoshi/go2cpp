@@ -101,6 +101,8 @@ public:
     virtual void* GetOpenGLFunction(const char* name) = 0;
     virtual std::vector<Touch> GetTouches() = 0;
     virtual std::vector<Gamepad> GetGamepads() = 0;
+    virtual std::string GetLocalStorageItem(const std::string& key) = 0;
+    virtual void SetLocalStorageItem(const std::string& key, const std::string& value) = 0;
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes) = 0;
     virtual std::unique_ptr<AudioPlayer> CreateAudioPlayer(std::function<void()> on_written) = 0;
@@ -171,6 +173,41 @@ public:
 
 private:
   Game::Binding* binding_;
+};
+
+class LocalStorage : public Object {
+public:
+  explicit LocalStorage(Game::Driver* driver)
+      : driver_{driver} {
+  }
+
+  Value Get(const std::string& key) override {
+    if (key == "setItem") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          const std::string& key = args[0].ToString();
+          const std::string& value = args[1].ToString();
+          driver_->SetLocalStorageItem(key, value);
+          return Value{};
+        })};
+    }
+    if (key == "getItem") {
+      return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          const std::string& key = args[0].ToString();
+          const std::string& value = driver_->GetLocalStorageItem(key);
+          return Value{value};
+        })};
+    }
+    return Value{};
+  }
+
+  std::string ToString() const override {
+    return "LocalStorage";
+  }
+
+private:
+  Game::Driver* driver_;
 };
 
 class AudioPlayer : public Object {
@@ -324,6 +361,8 @@ int Game::Run(const std::vector<std::string>& args) {
   }
 
   auto& global = Value::Global().ToObject();
+  global.Set("localStorage", Value{std::make_shared<LocalStorage>(driver_.get())});
+
   auto go2cpp = std::make_shared<DictionaryValues>();
   global.Set("go2cpp", Value{go2cpp});
 

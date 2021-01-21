@@ -106,6 +106,15 @@ std::vector<go2cpp_autogen::Game::Gamepad> GLFWDriver::GetGamepads() {
   return gamepads;
 }
 
+std::string GLFWDriver::GetLocalStorageItem(const std::string &key) {
+  return local_storage_[key];
+}
+
+void GLFWDriver::SetLocalStorageItem(const std::string &key,
+                                     const std::string &value) {
+  local_storage_[key] = value;
+}
+
 void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
                            int bit_depth_in_bytes) {
   sample_rate_ = sample_rate;

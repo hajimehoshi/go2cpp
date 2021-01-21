@@ -5,6 +5,14 @@
 
 #include "autogen/game.h"
 
+#include <condition_variable>
+#include <functional>
+#include <map>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+
 struct GLFWwindow;
 
 class GLFWDriver : public go2cpp_autogen::Game::Driver {
@@ -19,6 +27,9 @@ public:
   std::vector<go2cpp_autogen::Game::Gamepad> GetGamepads() override;
   void OpenAudio(int sample_rate, int channel_num,
                  int bit_depth_in_bytes) override;
+  std::string GetLocalStorageItem(const std::string &key) override;
+  void SetLocalStorageItem(const std::string &key,
+                           const std::string &value) override;
   std::unique_ptr<go2cpp_autogen::Game::AudioPlayer>
   CreateAudioPlayer(std::function<void()> on_written) override;
 
@@ -57,6 +68,7 @@ private:
 
   GLFWwindow *window_;
   double device_pixel_ratio_;
+  std::map<std::string, std::string> local_storage_;
   int sample_rate_ = 0;
   int channel_num_ = 0;
   int bit_depth_in_bytes_ = 0;
