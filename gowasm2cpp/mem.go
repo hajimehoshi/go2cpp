@@ -86,68 +86,69 @@ public:
   static constexpr int32_t kPageSize = {{.PageSize}};
 
   Mem();
+  ~Mem();
 
   int32_t GetSize() const;
   int32_t Grow(int32_t delta);
 
   inline int8_t LoadInt8(int32_t addr) const {
-    return static_cast<int8_t>(*(bytes_begin_ + addr));
+    return static_cast<int8_t>(*(bytes_ + addr));
   }
 
   inline uint8_t LoadUint8(int32_t addr) const {
-    return *(bytes_begin_ + addr);
+    return *(bytes_ + addr);
   }
 
   inline int16_t LoadInt16(int32_t addr) const {
-    return *(reinterpret_cast<const int16_t*>(bytes_begin_ + addr));
+    return *(reinterpret_cast<const int16_t*>(bytes_ + addr));
   }
 
   inline uint16_t LoadUint16(int32_t addr) const {
-    return *(reinterpret_cast<const uint16_t*>(bytes_begin_ + addr));
+    return *(reinterpret_cast<const uint16_t*>(bytes_ + addr));
   }
 
   inline int32_t LoadInt32(int32_t addr) const {
-    return *(reinterpret_cast<const int32_t*>(bytes_begin_ + addr));
+    return *(reinterpret_cast<const int32_t*>(bytes_ + addr));
   }
 
   inline uint32_t LoadUint32(int32_t addr) const {
-    return *(reinterpret_cast<const uint32_t*>(bytes_begin_ + addr));
+    return *(reinterpret_cast<const uint32_t*>(bytes_ + addr));
   }
 
   inline int64_t LoadInt64(int32_t addr) const {
-    return *(reinterpret_cast<const int64_t*>(bytes_begin_ + addr));
+    return *(reinterpret_cast<const int64_t*>(bytes_ + addr));
   }
 
   inline float LoadFloat32(int32_t addr) const {
-    return *(reinterpret_cast<const float*>(bytes_begin_ + addr));
+    return *(reinterpret_cast<const float*>(bytes_ + addr));
   }
 
   inline double LoadFloat64(int32_t addr) const {
-    return *(reinterpret_cast<const double*>(bytes_begin_ + addr));
+    return *(reinterpret_cast<const double*>(bytes_ + addr));
   }
 
   void StoreInt8(int32_t addr, int8_t val) {
-    *(bytes_begin_ + addr) = static_cast<uint8_t>(val);
+    *(bytes_ + addr) = static_cast<uint8_t>(val);
   }
 
   inline void StoreInt16(int32_t addr, int16_t val) {
-    *(reinterpret_cast<int16_t*>(bytes_begin_ + addr)) = val;
+    *(reinterpret_cast<int16_t*>(bytes_ + addr)) = val;
   }
 
   inline void StoreInt32(int32_t addr, int32_t val) {
-    *(reinterpret_cast<int32_t*>(bytes_begin_ + addr)) = val;
+    *(reinterpret_cast<int32_t*>(bytes_ + addr)) = val;
   }
 
   inline void StoreInt64(int32_t addr, int64_t val) {
-    *(reinterpret_cast<int64_t*>(bytes_begin_ + addr)) = val;
+    *(reinterpret_cast<int64_t*>(bytes_ + addr)) = val;
   }
 
   inline void StoreFloat32(int32_t addr, float val) {
-    *(reinterpret_cast<float*>(bytes_begin_ + addr)) = val;
+    *(reinterpret_cast<float*>(bytes_ + addr)) = val;
   }
 
   inline void StoreFloat64(int32_t addr, double val) {
-    *(reinterpret_cast<double*>(bytes_begin_ + addr)) = val;
+    *(reinterpret_cast<double*>(bytes_ + addr)) = val;
   }
 
   void StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes);
@@ -165,8 +166,8 @@ private:
   Mem(const Mem&) = delete;
   Mem& operator=(const Mem&) = delete;
 
-  std::vector<uint8_t> bytes_;
-  uint8_t* bytes_begin_;
+  uint8_t* bytes_;
+  size_t size_ = 0;
 };
 
 }
@@ -189,6 +190,9 @@ namespace {{.Namespace}} {
 
 namespace {
 
+// 2GB. 4GB seems too big on some machines.
+constexpr size_t kMaxMemorySize = 2ull * 1024ull * 1024ull * 1024ull;
+
 const uint8_t initial_data_[] = {
   {{range $index, $value := .FlattenData}}{{$value}}, {{if needsNewLine $index}}
   {{end}}{{end}}
@@ -206,80 +210,70 @@ const WasmData initial_data_info_[] = {
 
 }
 
-Mem::Mem() {
-  // Reserving 4GB memory might fail on some consoles. 1GB should be safe in most environments.
-  bytes_.reserve(1ul * 1024 * 1024 * 1024);
-  bytes_.resize({{.InitPageNum}} * kPageSize);
-  bytes_begin_ = &*bytes_.begin();
+Mem::Mem()
+    : size_({{.InitPageNum}} * kPageSize) {
+  bytes_ = reinterpret_cast<uint8_t*>(std::calloc(1, kMaxMemorySize));
   constexpr int32_t info_size = sizeof(initial_data_info_) / sizeof(initial_data_info_[0]);
   int32_t src_offset = 0;
   for (int32_t i = 0; i < info_size; i++) {
     WasmData info = initial_data_info_[i];
-    std::memcpy(bytes_begin_ + info.offset, initial_data_ + src_offset, info.length);
+    std::memcpy(bytes_ + info.offset, initial_data_ + src_offset, info.length);
     src_offset += info.length;
   }
 }
 
+Mem::~Mem() {
+  std::free(bytes_);
+}
+
 int32_t Mem::GetSize() const {
-  return bytes_.size() / kPageSize;
+  return size_ / kPageSize;
 }
 
 int32_t Mem::Grow(int32_t delta) {
-  constexpr size_t kMaxMemorySizeOnWasm = 4ul * 1024ul * 1024ul * 1024ul;
-
-  int prev_size = GetSize();
-  size_t new_size = (prev_size + delta) * kPageSize;
-  if (bytes_.capacity() < new_size) {
-    size_t new_capacity = bytes_.capacity();
-    while (new_capacity < new_size) {
-      new_capacity *= 2;
-    }
-    new_capacity = std::min(new_capacity, kMaxMemorySizeOnWasm);
-    bytes_.reserve(new_capacity);
-    bytes_begin_ = &*bytes_.begin();
-  }
-  bytes_.resize(new_size);
-  return prev_size;
+  int prev_page_num = GetSize();
+  size_ = std::min(static_cast<size_t>((prev_page_num + delta) * kPageSize), kMaxMemorySize);
+  return prev_page_num;
 }
 
-void Mem::StoreBytes(int32_t addr, const std::vector<uint8_t>& bytes) {
-  std::copy(bytes.begin(), bytes.end(), bytes_begin_ + addr);
+void Mem::StoreBytes(int32_t addr, const std::vector<uint8_t>& src) {
+  std::memcpy(bytes_ + addr, &(*src.begin()), src.size());
 }
 
 BytesSpan Mem::LoadSlice(int32_t addr) {
   int64_t array = LoadInt64(addr);
   int64_t len = LoadInt64(addr + 8);
-  return BytesSpan{&*(bytes_begin_ + array), static_cast<BytesSpan::size_type>(len)};
+  return BytesSpan{&*(bytes_ + array), static_cast<BytesSpan::size_type>(len)};
 }
 
 BytesSpan Mem::LoadSliceDirectly(int64_t array, int32_t len) {
-  return BytesSpan{&*(bytes_begin_ + array), static_cast<BytesSpan::size_type>(len)};
+  return BytesSpan{&*(bytes_ + array), static_cast<BytesSpan::size_type>(len)};
 }
 
 std::string Mem::LoadString(int32_t addr) const {
   int64_t saddr = LoadInt64(addr);
   int64_t len = LoadInt64(addr + 8);
-  return std::string{bytes_begin_ + saddr, bytes_begin_ + saddr + len};
+  return std::string{bytes_ + saddr, bytes_ + saddr + len};
 }
 
 int Mem::Memcmp(int32_t a, int32_t b, int32_t len) {
-  return std::memcmp(bytes_begin_ + a, bytes_begin_ + b, len);
+  return std::memcmp(bytes_ + a, bytes_ + b, len);
 }
 
 int32_t Mem::Memchr(int32_t ptr, int32_t ch, int32_t count) {
-  void* result = std::memchr(bytes_begin_ + ptr, ch, count);
+  void* result = std::memchr(bytes_ + ptr, ch, count);
   if (!result) {
     return 0;
   }
-  return static_cast<int32_t>(reinterpret_cast<uint8_t*>(result) - bytes_begin_);
+  return static_cast<int32_t>(reinterpret_cast<uint8_t*>(result) - bytes_);
 }
 
 void Mem::Memmove(int32_t dst, int32_t src, int32_t count) {
-  std::memmove(bytes_begin_ + dst, bytes_begin_ + src, count);
+  std::memmove(bytes_ + dst, bytes_ + src, count);
 }
 
 void Mem::Memset(int32_t dst, uint8_t ch, int32_t count) {
-  std::memset(bytes_begin_ + dst, ch, count);
+  std::memset(bytes_ + dst, ch, count);
 }
 
 }
