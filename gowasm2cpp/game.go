@@ -103,6 +103,7 @@ public:
     virtual std::vector<Gamepad> GetGamepads() = 0;
     virtual std::string GetLocalStorageItem(const std::string& key) = 0;
     virtual void SetLocalStorageItem(const std::string& key, const std::string& value) = 0;
+    virtual std::string GetDefaultLanguage() { return "en"; }
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes) = 0;
     virtual std::unique_ptr<AudioPlayer> CreateAudioPlayer(std::function<void()> on_written) = 0;
@@ -208,6 +209,28 @@ public:
 
 private:
   Game::Driver* driver_;
+};
+
+class Navigator : public Object {
+public:
+  explicit Navigator(Game::Driver* driver)
+      : driver_{driver} {
+  }
+
+  Value Get(const std::string& key) override {
+    if (key == "language") {
+      return Value{driver_->GetDefaultLanguage()};
+    }
+    return Value{};
+  }
+
+  std::string ToString() const override {
+    return "Navigator";
+  }
+
+private:
+  Game::Driver* driver_;
+
 };
 
 class AudioPlayer : public Object {
@@ -362,6 +385,7 @@ int Game::Run(const std::vector<std::string>& args) {
 
   auto& global = Value::Global().ToObject();
   global.Set("localStorage", Value{std::make_shared<LocalStorage>(driver_.get())});
+  global.Set("navigator", Value{std::make_shared<Navigator>(driver_.get())});
 
   auto go2cpp = std::make_shared<DictionaryValues>();
   global.Set("go2cpp", Value{go2cpp});
