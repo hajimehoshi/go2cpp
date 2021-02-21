@@ -1,4 +1,4 @@
 set -e
-./gen.sh
+./gen.sh -tags=example github.com/hajimehoshi/go-inovation
 go run build.go
 ./ebiten
