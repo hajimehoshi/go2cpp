@@ -47,6 +47,7 @@ private:
     void Play() override;
     void Write(const uint8_t *data, int length) override;
     bool IsWritable() override;
+    size_t GetUnwrittenBufferSize() override;
 
   private:
     void Loop();
@@ -58,7 +59,7 @@ private:
     const int buffer_size_;
     std::function<void()> on_written_;
     double volume_ = 1.0;
-    int written_ = 0;
+    int ready_to_write_ = 0;
     bool paused_ = false;
     bool closed_ = false;
     std::mutex mutex_;
