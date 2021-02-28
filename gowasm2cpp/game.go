@@ -88,7 +88,7 @@ public:
     virtual void Play() = 0;
     virtual void Write(const uint8_t* data, int length) = 0;
     virtual bool IsWritable() = 0;
-    virtual size_t GetUnwrittenBufferSize() = 0;
+    virtual size_t GetUnplayedBufferSize() = 0;
   };
 
   class Driver {
@@ -296,8 +296,8 @@ public:
           return Value{player_->IsWritable()};
         })};
     }
-    if (key == "unwrittenBufferSize") {
-      return Value{static_cast<double>(player_->GetUnwrittenBufferSize())};
+    if (key == "unplayedBufferSize") {
+      return Value{static_cast<double>(player_->GetUnplayedBufferSize())};
     }
     return Value{};
   }
