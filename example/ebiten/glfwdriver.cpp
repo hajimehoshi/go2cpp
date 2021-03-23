@@ -181,18 +181,15 @@ void GLFWDriver::AudioPlayer::Play() {
 void GLFWDriver::AudioPlayer::Write(const uint8_t *data, int length) {
   {
     std::unique_lock<std::mutex> lock{mutex_};
-    cond_.wait(lock, [this] { return IsWritableImpl(); });
+    cond_.wait(lock, [this] {
+      return (ready_to_play_ < buffer_size_ || closed_) && !paused_;
+    });
     if (closed_) {
       return;
     }
     ready_to_play_ += length;
   }
   cond_.notify_one();
-}
-
-bool GLFWDriver::AudioPlayer::IsWritable() {
-  std::lock_guard<std::mutex> lock{mutex_};
-  return IsWritableImpl();
 }
 
 size_t GLFWDriver::AudioPlayer::GetUnplayedBufferSize() {
@@ -219,8 +216,4 @@ void GLFWDriver::AudioPlayer::Loop() {
                                            static_cast<double>(bytes_per_sec));
     std::this_thread::sleep_for(duration);
   }
-}
-
-bool GLFWDriver::AudioPlayer::IsWritableImpl() const {
-  return (ready_to_play_ < buffer_size_ || closed_) && !paused_;
 }

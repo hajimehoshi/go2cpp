@@ -87,7 +87,6 @@ public:
     virtual void Pause() = 0;
     virtual void Play() = 0;
     virtual void Write(const uint8_t* data, int length) = 0;
-    virtual bool IsWritable() = 0;
     virtual size_t GetUnplayedBufferSize() = 0;
   };
 
@@ -288,12 +287,6 @@ public:
           int size = static_cast<int>(args[1].ToNumber());
           player_->Write(buf.begin(), size);
           return Value{};
-        })};
-    }
-    if (key == "isWritable") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          return Value{player_->IsWritable()};
         })};
     }
     if (key == "unplayedBufferSize") {

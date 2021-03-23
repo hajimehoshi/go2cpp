@@ -46,12 +46,10 @@ private:
     void Pause() override;
     void Play() override;
     void Write(const uint8_t *data, int length) override;
-    bool IsWritable() override;
     size_t GetUnplayedBufferSize() override;
 
   private:
     void Loop();
-    bool IsWritableImpl() const;
 
     const int sample_rate_;
     const int channel_num_;
