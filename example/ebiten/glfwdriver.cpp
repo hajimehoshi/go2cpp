@@ -120,7 +120,7 @@ void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
   sample_rate_ = sample_rate;
   channel_num_ = channel_num;
   bit_depth_in_bytes_ = bit_depth_in_bytes;
-  buffer_size_ = 8192;
+  buffer_size_ = sample_rate * channel_num * bit_depth_in_bytes / 2;
 }
 
 std::unique_ptr<go2cpp_autogen::Game::AudioPlayer>
