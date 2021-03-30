@@ -93,6 +93,7 @@ public:
   class Driver {
   public:
     virtual ~Driver();
+    virtual void DebugWrite(BytesSpan bytes);
     virtual bool Init() = 0;
     virtual void Update(std::function<void()> f) = 0;
     virtual int GetScreenWidth() = 0;
@@ -103,10 +104,13 @@ public:
     virtual std::vector<Gamepad> GetGamepads() = 0;
     virtual std::string GetLocalStorageItem(const std::string& key) = 0;
     virtual void SetLocalStorageItem(const std::string& key, const std::string& value) = 0;
-    virtual std::string GetDefaultLanguage() { return "en"; }
+    virtual std::string GetDefaultLanguage();
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes) = 0;
     virtual std::unique_ptr<AudioPlayer> CreateAudioPlayer(std::function<void()> on_written) = 0;
+
+  private:
+    std::unique_ptr<Writer> default_debug_writer_;
   };
 
   class Binding {
@@ -149,6 +153,20 @@ var gameCppTmpl = template.Must(template.New("game.cpp").Parse(`// Code generate
 namespace {{.Namespace}} {
 
 namespace {
+
+class DriverDebugWriter : public Writer {
+public:
+  DriverDebugWriter(Game::Driver* driver)
+      : driver_{driver} {
+  }
+
+  void Write(BytesSpan bytes) override {
+    driver_->DebugWrite(bytes);
+  }
+
+private:
+  Game::Driver* driver_;
+};
 
 class BindingObject : public Object {
 public:
@@ -357,6 +375,17 @@ Game::AudioPlayer::~AudioPlayer() = default;
 
 Game::Driver::~Driver() = default;
 
+void Game::Driver::DebugWrite(BytesSpan bytes) {
+  if (!default_debug_writer_) {
+    default_debug_writer_ = std::make_unique<StreamWriter>(std::cerr);
+  }
+  default_debug_writer_->Write(bytes);
+}
+
+std::string Game::Driver::GetDefaultLanguage() {
+  return "en";
+}
+
 Game::Game(std::unique_ptr<Driver> driver)
   : Game(std::move(driver), nullptr) {
 }
@@ -444,7 +473,7 @@ int Game::Run(const std::vector<std::string>& args) {
       return Value{static_cast<double>(gamepads_[idx].axes[axis_idx])};
     })});
 
-  Go go;
+  Go go{std::make_unique<DriverDebugWriter>(driver_.get())};
 
   go2cpp->Set("createAudio", Value{std::make_shared<Function>(
     [this, &go](Value self, std::vector<Value> args) -> Value {

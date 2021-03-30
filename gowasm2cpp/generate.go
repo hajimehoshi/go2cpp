@@ -597,6 +597,7 @@ class Mem;
 class Go {
 public:
   Go();
+  Go(std::unique_ptr<Writer> debug_writer);
   int Run();
   int Run(int argc, char** argv);
   int Run(const std::vector<std::string>& args);
@@ -642,7 +643,7 @@ private:
   int32_t GetIdFromValue(Value value);
 
   ImportImpl import_;
-  Writer debug_writer_;
+  std::unique_ptr<Writer> debug_writer_;
   // A TaskQueue must be destructed after the timers are destructed.
   TaskQueue task_queue_;
 
@@ -694,8 +695,12 @@ void error(const std::string& msg) {
 }
 
 Go::Go()
+    : Go(std::make_unique<StreamWriter>(std::cerr)) {
+}
+
+Go::Go(std::unique_ptr<Writer> debug_writer)
     : import_{this},
-      debug_writer_{std::cerr},
+      debug_writer_{std::move(debug_writer)},
       pending_event_{Value::Null()} {
 }
 
@@ -951,7 +956,7 @@ Value Go::MakeFuncWrapper(int32_t id) {
 }
 
 void Go::DebugWrite(BytesSpan bytes) {
-  debug_writer_.Write(bytes);
+  debug_writer_->Write(bytes);
 }
 
 int64_t Go::PreciseNowInNanoseconds() {

@@ -70,8 +70,14 @@ class Object;
 
 class Writer {
 public:
-  explicit Writer(std::ostream& out);
-  void Write(BytesSpan bytes);
+  virtual ~Writer();
+  virtual void Write(BytesSpan bytes) = 0;
+};
+
+class StreamWriter : public Writer {
+public:
+  explicit StreamWriter(std::ostream& out);
+  void Write(BytesSpan bytes) override;
 
 private:
   std::ostream& out_;
@@ -1395,11 +1401,13 @@ public:
 
 }  // namespace
 
-Writer::Writer(std::ostream& out)
+Writer::~Writer() = default;
+
+StreamWriter::StreamWriter(std::ostream& out)
     : out_{out} {
 }
 
-void Writer::Write(BytesSpan bytes) {
+void StreamWriter::Write(BytesSpan bytes) {
   buf_.insert(buf_.end(), bytes.begin(), bytes.end());
   for (;;) {
     auto it = std::find(buf_.begin(), buf_.end(), '\n');
