@@ -605,9 +605,9 @@ public:
   void EnqueueTask(std::function<void()> task);
 
 private:
-  class Import : public IImport {
+  class ImportImpl : public Import {
   public:
-    explicit Import(Go* go);
+    explicit ImportImpl(Go* go);
 
 {{range $value := .ImportFuncs}}{{$value.CppDecl "    " false true}}
 
@@ -641,7 +641,7 @@ private:
   void GetRandomBytes(BytesSpan bytes);
   int32_t GetIdFromValue(Value value);
 
-  Import import_;
+  ImportImpl import_;
   Writer debug_writer_;
   // A TaskQueue must be destructed after the timers are destructed.
   TaskQueue task_queue_;
@@ -782,11 +782,11 @@ int Go::Run(const std::vector<std::string>& args) {
   return static_cast<int>(exit_code_);
 }
 
-Go::Import::Import(Go* go)
+Go::ImportImpl::ImportImpl(Go* go)
     : go_{go} {
 }
 
-{{range $value := .ImportFuncs}}{{$value.CppImpl "Go::Import" ""}}
+{{range $value := .ImportFuncs}}{{$value.CppImpl "Go::ImportImpl" ""}}
 {{end}}
 
 Go::GoObject::GoObject(Go* go)

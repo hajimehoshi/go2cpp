@@ -173,9 +173,9 @@ namespace {{.Namespace}} {
 
 class Mem;
 
-class IImport {
+class Import {
 public:
-  virtual ~IImport();
+  virtual ~Import();
 
 {{range $value := .ImportFuncs}}{{$value.CppDecl "  " true false}}
 
@@ -183,7 +183,7 @@ public:
 
 class Inst {
 public:
-  Inst(Mem* mem, IImport* import);
+  Inst(Mem* mem, Import* import);
 
 {{range $value := .Exports}}{{$value.CppDecl "  "}}
 {{end}}
@@ -197,7 +197,7 @@ private:
 {{range $value := .Funcs}}{{$value.CppDecl "  " false false}}
 
 {{end}}  Mem* mem_;
-  IImport* import_;
+  Import* import_;
   Func funcs_[{{.NumFuncs}}];
   uint32_t table_[{{.NumTable}}][{{.NumMaxTableElements}}];
 
@@ -241,9 +241,9 @@ var instInitCppTmpl = template.Must(template.New("inst.init.cpp").Parse(`// Code
 
 namespace {{.Namespace}} {
 
-IImport::~IImport() = default;
+Import::~Import() = default;
 
-Inst::Inst(Mem* mem, IImport* import)
+Inst::Inst(Mem* mem, Import* import)
     : mem_{mem},
       import_{import},
       table_{
