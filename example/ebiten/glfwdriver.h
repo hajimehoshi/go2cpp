@@ -17,7 +17,8 @@ struct GLFWwindow;
 
 class GLFWDriver : public go2cpp_autogen::Game::Driver {
 public:
-  bool Init() override;
+  bool Initialize() override;
+  bool Finalize() override;
   void Update(std::function<void()> f) override;
   int GetScreenWidth() override;
   int GetScreenHeight() override;

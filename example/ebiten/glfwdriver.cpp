@@ -15,7 +15,7 @@ constexpr int kHeight = 480;
 
 } // namespace
 
-bool GLFWDriver::Init() {
+bool GLFWDriver::Initialize() {
   if (!glfwInit()) {
     return false;
   }
@@ -37,6 +37,11 @@ bool GLFWDriver::Init() {
   glfwGetFramebufferSize(window_, &framebuffer_width, nullptr);
   device_pixel_ratio_ = static_cast<double>(framebuffer_width) / kWidth;
 
+  return true;
+}
+
+bool GLFWDriver::Finalize() {
+  glfwTerminate();
   return true;
 }
 

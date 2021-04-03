@@ -94,7 +94,8 @@ public:
   public:
     virtual ~Driver();
     virtual void DebugWrite(const std::vector<uint8_t>& bytes);
-    virtual bool Init() = 0;
+    virtual bool Initialize() = 0;
+    virtual bool Finalize() = 0;
     virtual void Update(std::function<void()> f) = 0;
     virtual int GetScreenWidth() = 0;
     virtual int GetScreenHeight() = 0;
@@ -405,7 +406,7 @@ int Game::Run(int argc, char *argv[]) {
 }
 
 int Game::Run(const std::vector<std::string>& args) {
-  if (!driver_->Init()) {
+  if (!driver_->Initialize()) {
     return EXIT_FAILURE;
   }
 
@@ -501,7 +502,14 @@ int Game::Run(const std::vector<std::string>& args) {
                    return Value{};
                  })});
 
-  return go.Run(args);
+  int code = go.Run(args);
+  if (!driver_->Finalize()) {
+    if (code) {
+      return code;
+    }
+    return EXIT_FAILURE;
+  }
+  return code;
 }
 
 void Game::Update(Value f) {
