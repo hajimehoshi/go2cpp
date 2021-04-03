@@ -93,7 +93,7 @@ public:
   class Driver {
   public:
     virtual ~Driver();
-    virtual void DebugWrite(BytesSpan bytes);
+    virtual void DebugWrite(const std::vector<uint8_t>& bytes);
     virtual bool Init() = 0;
     virtual void Update(std::function<void()> f) = 0;
     virtual int GetScreenWidth() = 0;
@@ -160,7 +160,7 @@ public:
       : driver_{driver} {
   }
 
-  void Write(BytesSpan bytes) override {
+  void Write(const std::vector<uint8_t>& bytes) override {
     driver_->DebugWrite(bytes);
   }
 
@@ -375,7 +375,7 @@ Game::AudioPlayer::~AudioPlayer() = default;
 
 Game::Driver::~Driver() = default;
 
-void Game::Driver::DebugWrite(BytesSpan bytes) {
+void Game::Driver::DebugWrite(const std::vector<uint8_t>& bytes) {
   if (!default_debug_writer_) {
     default_debug_writer_ = std::make_unique<StreamWriter>(std::cerr);
   }

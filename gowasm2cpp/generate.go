@@ -956,7 +956,7 @@ Value Go::MakeFuncWrapper(int32_t id) {
 }
 
 void Go::DebugWrite(BytesSpan bytes) {
-  debug_writer_->Write(bytes);
+  debug_writer_->Write(std::vector<uint8_t>(bytes.begin(), bytes.end()));
 }
 
 int64_t Go::PreciseNowInNanoseconds() {

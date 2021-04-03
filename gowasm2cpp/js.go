@@ -71,13 +71,13 @@ class Object;
 class Writer {
 public:
   virtual ~Writer();
-  virtual void Write(BytesSpan bytes) = 0;
+  virtual void Write(const std::vector<uint8_t>& bytes) = 0;
 };
 
 class StreamWriter : public Writer {
 public:
   explicit StreamWriter(std::ostream& out);
-  void Write(BytesSpan bytes) override;
+  void Write(const std::vector<uint8_t>& bytes) override;
 
 private:
   std::ostream& out_;
@@ -1407,7 +1407,7 @@ StreamWriter::StreamWriter(std::ostream& out)
     : out_{out} {
 }
 
-void StreamWriter::Write(BytesSpan bytes) {
+void StreamWriter::Write(const std::vector<uint8_t>& bytes) {
   buf_.insert(buf_.end(), bytes.begin(), bytes.end());
   for (;;) {
     auto it = std::find(buf_.begin(), buf_.end(), '\n');
