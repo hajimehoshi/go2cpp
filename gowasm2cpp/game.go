@@ -108,6 +108,7 @@ public:
     virtual std::string GetDefaultLanguage();
 
     virtual void OpenAudio(int sample_rate, int channel_num, int bit_depth_in_bytes) = 0;
+    virtual void CloseAudio() = 0;
     virtual std::unique_ptr<AudioPlayer> CreateAudioPlayer(std::function<void()> on_written) = 0;
 
   private:
@@ -135,6 +136,7 @@ private:
   std::vector<Touch> touches_;
   std::vector<Gamepad> gamepads_;
   std::unique_ptr<Binding> binding_;
+  bool is_audio_opened_ = false;
 };
 
 }
@@ -483,6 +485,7 @@ int Game::Run(const std::vector<std::string>& args) {
       int bit_depth_in_bytes = static_cast<int>(args[2].ToNumber());
 
       driver_->OpenAudio(sample_rate, channel_num, bit_depth_in_bytes);
+      is_audio_opened_ = true;
       return Value{std::make_shared<Audio>(&go, driver_.get())};
     })});
 
@@ -503,6 +506,9 @@ int Game::Run(const std::vector<std::string>& args) {
                  })});
 
   int code = go.Run(args);
+  if (is_audio_opened_) {
+    driver_->CloseAudio();
+  }
   if (!driver_->Finalize()) {
     if (code) {
       return code;

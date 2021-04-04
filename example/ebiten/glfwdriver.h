@@ -28,6 +28,7 @@ public:
   std::vector<go2cpp_autogen::Game::Gamepad> GetGamepads() override;
   void OpenAudio(int sample_rate, int channel_num,
                  int bit_depth_in_bytes) override;
+  void CloseAudio() override;
   std::string GetLocalStorageItem(const std::string &key) override;
   void SetLocalStorageItem(const std::string &key,
                            const std::string &value) override;

@@ -128,6 +128,9 @@ void GLFWDriver::OpenAudio(int sample_rate, int channel_num,
   buffer_size_ = sample_rate * channel_num * bit_depth_in_bytes / 2;
 }
 
+void GLFWDriver::CloseAudio() {
+}
+
 std::unique_ptr<go2cpp_autogen::Game::AudioPlayer>
 GLFWDriver::CreateAudioPlayer(std::function<void()> on_written) {
   return std::make_unique<AudioPlayer>(sample_rate_, channel_num_,
