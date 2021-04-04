@@ -157,6 +157,12 @@ namespace {{.Namespace}} {
 
 namespace {
 
+// TODO: This is duplicated with js.go. Unify them?
+void Panic(const std::string& msg) {
+  std::cerr << msg << std::endl;
+  __builtin_unreachable();
+}
+
 class DriverDebugWriter : public Writer {
 public:
   DriverDebugWriter(Game::Driver* driver)
@@ -185,8 +191,17 @@ public:
   }
 
   void Set(const std::string& key, Value value) override {
-    auto bytes = value.ToBytes();
-    binding_->Set(key, &(*bytes.begin()), bytes.size());
+    if (value.IsString()) {
+      auto str = value.ToString();
+      binding_->Set(key, reinterpret_cast<const uint8_t*>(&(*str.begin())), str.size());
+      return;
+    }
+    if (value.IsObject()) {
+      auto bytes = value.ToBytes();
+      binding_->Set(key, &(*bytes.begin()), bytes.size());
+      return;
+    }
+    Panic("BindingObject::Set: value must be a string or bytes but not: " + value.Inspect());
   }
 
   std::string ToString() const override {
