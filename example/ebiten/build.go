@@ -5,9 +5,11 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -57,12 +59,17 @@ func run() error {
 
 			ppcmd := exec.Command("clang++", "-E", "-std=c++14", src)
 			ppcmd.Stderr = os.Stderr
-			pp, err := ppcmd.Output()
-			if err != nil {
+			var stdout bytes.Buffer
+			ppcmd.Stdout = &stdout
+			if err := ppcmd.Run(); err != nil {
 				return err
 			}
-			hash := sha256.Sum256(pp)
-			obj := filepath.Join(cachedir, hex.EncodeToString(hash[:])+".o")
+			hash := sha256.New()
+			if _, err := io.Copy(hash, &stdout); err != nil {
+				return err
+			}
+			hashsum := hash.Sum(nil)
+			obj := filepath.Join(cachedir, hex.EncodeToString(hashsum[:])+".o")
 			objsm.Lock()
 			objs = append(objs, obj)
 			objsm.Unlock()
