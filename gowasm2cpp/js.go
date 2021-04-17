@@ -211,16 +211,16 @@ private:
 class Uint8Array : public TypedArray {
 public:
   explicit Uint8Array(size_t size);
-
   Uint8Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length);
+
   std::string ToString() const override;
 };
 
 class Float32Array : public TypedArray {
 public:
   explicit Float32Array(size_t size);
-
   Float32Array(std::shared_ptr<ArrayBuffer> arrayBuffer, size_t offset, size_t length);
+
   std::string ToString() const override;
 };
 
@@ -228,6 +228,7 @@ class DictionaryValues : public Object {
 public:
   DictionaryValues();
   explicit DictionaryValues(const std::map<std::string, Value>& dict);
+
   Value Get(const std::string& key) override;
   void Set(const std::string& key, Value value) override;
   void Delete(const std::string& key) override;
@@ -241,7 +242,9 @@ private:
 class Function : public Object {
 public:
   explicit Function(Object::Func fn);
+  Function(Object::Func fn, Value self);
 
+  Value Get(const std::string& key) override;
   bool IsFunction() const override { return true; }
   bool IsConstructor() const override { return false; }
   Value Invoke(Value self, std::vector<Value> args) override;
@@ -249,6 +252,7 @@ public:
 
 private:
   Object::Func fn_;
+  Value self_;
 };
 
 class Constructor : public Object {
@@ -1806,11 +1810,26 @@ std::string DictionaryValues::Inspect() const {
 }
 
 Function::Function(Object::Func fn)
-    : fn_(fn) {
+    : Function(fn, {}) {
+}
+
+Function::Function(Object::Func fn, Value self)
+    : fn_(fn),
+      self_(self) {
+}
+
+Value Function::Get(const std::string& key) {
+  if (key == "bind") {
+    return Value{std::make_shared<Function>(
+      [this](Value self, std::vector<Value> args) -> Value {
+        return Value{std::make_shared<Function>(fn_, args[0])};
+      })};
+  }
+  return Object::Get(key);
 }
 
 Value Function::Invoke(Value self, std::vector<Value> args) {
-  return fn_(Value{}, args);
+  return fn_(self_, args);
 }
 
 Value Value::Global() {
