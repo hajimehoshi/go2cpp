@@ -28,8 +28,8 @@ var importFuncBodies = map[string]string{
 	// func nanotime1() int64
 	"runtime.nanotime1": `  go_->mem_->StoreInt64(local0_ + 8, go_->PreciseNowInNanoseconds());`,
 
-	// func walltime1() (sec int64, nsec int32)
-	"runtime.walltime1": `  double now = go_->UnixNowInMilliseconds();
+	// func walltime() (sec int64, nsec int32)
+	runtimeWalltimeName: `  double now = go_->UnixNowInMilliseconds();
   go_->mem_->StoreInt64(local0_ + 8, static_cast<int64_t>(now / 1000));
   go_->mem_->StoreInt32(local0_ + 16, static_cast<int32_t>(std::fmod(now, 1000) * 1000000));`,
 
