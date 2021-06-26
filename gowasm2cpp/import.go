@@ -29,7 +29,7 @@ var importFuncBodies = map[string]string{
 	"runtime.nanotime1": `  go_->mem_->StoreInt64(local0_ + 8, go_->PreciseNowInNanoseconds());`,
 
 	// func walltime() (sec int64, nsec int32)
-	runtimeWalltimeName: `  double now = go_->UnixNowInMilliseconds();
+	"runtime.walltime": `  double now = go_->UnixNowInMilliseconds();
   go_->mem_->StoreInt64(local0_ + 8, static_cast<int64_t>(now / 1000));
   go_->mem_->StoreInt32(local0_ + 16, static_cast<int32_t>(std::fmod(now, 1000) * 1000000));`,
 
@@ -151,4 +151,9 @@ var importFuncBodies = map[string]string{
   go_->mem_->StoreInt8(local0_ + 48, 1);`,
 
 	"debug": `  std::cout << local0_ << std::endl;`,
+}
+
+func init() {
+	// Add an old name for backward compatibility with Go 1.16 and before.
+	importFuncBodies["runtime.walltime1"] = importFuncBodies["runtime.walltime"]
 }
