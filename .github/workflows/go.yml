@@ -3,21 +3,26 @@ name: Go
 on: [push, pull_request]
 
 jobs:
-
   test:
-    name: Test
+    strategy:
+      matrix:
+        go: ['1.16.5', '1.17.0-beta1']
+    name: Test with Go ${{ matrix.go }}
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev
 
-    - uses: actions/setup-go@v1
+    - name: Setup Go
+      uses: actions/setup-go@v2
       with:
-        go-version: 1.15.5
-      id: go
-    - uses: actions/checkout@v2
+        go-version: ${{ matrix.go }}
+        stable: false
 
     - name: Test stdlib
       working-directory: test/stdlib
