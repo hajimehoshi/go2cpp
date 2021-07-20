@@ -75,28 +75,35 @@ private:
   void *glBindAttribLocation_;
   void *glBindBuffer_;
   void *glBindFramebuffer_;
+  void *glBindRenderbuffer_;
   void *glBindTexture_;
   void *glBlendFunc_;
   void *glBufferData_;
   void *glBufferSubData_;
   void *glCheckFramebufferStatus_;
+  void *glClear_;
+  void *glColorMask_;
   void *glCompileShader_;
   void *glCreateProgram_;
   void *glCreateShader_;
   void *glDeleteBuffers_;
   void *glDeleteFramebuffers_;
+  void *glDeleteRenderbuffers_;
   void *glDeleteProgram_;
   void *glDeleteShader_;
   void *glDeleteTextures_;
+  void *glDisable_;
   void *glDisableVertexAttribArray_;
   void *glDrawElements_;
   void *glEnable_;
   void *glEnableVertexAttribArray_;
   void *glFlush_;
+  void *glFramebufferRenderbuffer_;
   void *glFramebufferTexture2D_;
   void *glGetBufferSubData_;
   void *glGenBuffers_;
   void *glGenFramebuffers_;
+  void *glGenRenderbuffers_;
   void *glGenTextures_;
   void *glGetError_;
   void *glGetIntegerv_;
@@ -107,12 +114,17 @@ private:
   void *glGetUniformLocation_;
   void *glIsFramebuffer_;
   void *glIsProgram_;
+  void *glIsRenderbuffer_;
   void *glIsTexture_;
   void *glLinkProgram_;
   void *glPixelStorei_;
   void *glReadPixels_;
+  void *glRenderbufferStorage_;
   void *glScissor_;
   void *glShaderSource_;
+  void *glStencilFunc_;
+  void *glStencilMask_;
+  void *glStencilOp_;
   void *glTexImage2D_;
   void *glTexParameteri_;
   void *glTexSubImage2D_;
@@ -159,27 +171,34 @@ GL::GL(std::function<void*(const char*)> get_proc_address) {
   glBindAttribLocation_ = get_proc_address("glBindAttribLocation");
   glBindBuffer_ = get_proc_address("glBindBuffer");
   glBindFramebuffer_ = get_proc_address("glBindFramebuffer");
+  glBindRenderbuffer_ = get_proc_address("glBindRenderbuffer");
   glBindTexture_ = get_proc_address("glBindTexture");
   glBlendFunc_ = get_proc_address("glBlendFunc");
   glBufferData_ = get_proc_address("glBufferData");
   glBufferSubData_ = get_proc_address("glBufferSubData");
   glCheckFramebufferStatus_ = get_proc_address("glCheckFramebufferStatus");
+  glClear_ = get_proc_address("glClear");
+  glColorMask_ = get_proc_address("glColorMask");
   glCompileShader_ = get_proc_address("glCompileShader");
   glCreateProgram_ = get_proc_address("glCreateProgram");
   glCreateShader_ = get_proc_address("glCreateShader");
   glDeleteBuffers_ = get_proc_address("glDeleteBuffers");
   glDeleteFramebuffers_ = get_proc_address("glDeleteFramebuffers");
   glDeleteProgram_ = get_proc_address("glDeleteProgram");
+  glDeleteRenderbuffers_ = get_proc_address("glDeleteRenderbuffers");
   glDeleteShader_ = get_proc_address("glDeleteShader");
   glDeleteTextures_ = get_proc_address("glDeleteTextures");
+  glDisable_ = get_proc_address("glDisable");
   glDisableVertexAttribArray_ = get_proc_address("glDisableVertexAttribArray");
   glDrawElements_ = get_proc_address("glDrawElements");
   glEnable_ = get_proc_address("glEnable");
   glEnableVertexAttribArray_ = get_proc_address("glEnableVertexAttribArray");
   glFlush_ = get_proc_address("glFlush");
+  glFramebufferRenderbuffer_ = get_proc_address("glFramebufferRenderbuffer");
   glFramebufferTexture2D_ = get_proc_address("glFramebufferTexture2D");
   glGenBuffers_ = get_proc_address("glGenBuffers");
   glGenFramebuffers_ = get_proc_address("glGenFramebuffers");
+  glGenRenderbuffers_ = get_proc_address("glGenRenderbuffers");
   glGenTextures_ = get_proc_address("glGenTextures");
   glGetBufferSubData_ = get_proc_address("glGetBufferSubData");
   glGetError_ = get_proc_address("glGetError");
@@ -191,12 +210,17 @@ GL::GL(std::function<void*(const char*)> get_proc_address) {
   glGetUniformLocation_ = get_proc_address("glGetUniformLocation");
   glIsFramebuffer_ = get_proc_address("glIsFramebuffer");
   glIsProgram_ = get_proc_address("glIsProgram");
+  glIsRenderbuffer_ = get_proc_address("glIsRenderbuffer");
   glIsTexture_ = get_proc_address("glIsTexture");
   glLinkProgram_ = get_proc_address("glLinkProgram");
   glPixelStorei_ = get_proc_address("glPixelStorei");
   glReadPixels_ = get_proc_address("glReadPixels");
+  glRenderbufferStorage_ = get_proc_address("glRenderbufferStorage");
   glScissor_ = get_proc_address("glScissor");
   glShaderSource_ = get_proc_address("glShaderSource");
+  glStencilFunc_ = get_proc_address("glStencilFunc");
+  glStencilMask_ = get_proc_address("glStencilMask");
+  glStencilOp_ = get_proc_address("glStencilOp");
   glTexImage2D_ = get_proc_address("glTexImage2D");
   glTexParameteri_ = get_proc_address("glTexParameteri");
   glTexSubImage2D_ = get_proc_address("glTexSubImage2D");
@@ -272,6 +296,16 @@ Value GL::Get(const std::string &key) {
           return Value{};
         })};
   }
+  if (key == "bindRenderbuffer") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLenum target = static_cast<GLenum>(args[0].ToNumber());
+          GLuint renderbuffer = static_cast<GLuint>(args[1].ToNumber());
+          using f = void(*)(GLenum, GLuint);
+          reinterpret_cast<f>(glBindRenderbuffer_)(target, renderbuffer);
+          return Value{};
+        })};
+  }
   if (key == "bindTexture") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
@@ -332,6 +366,27 @@ Value GL::Get(const std::string &key) {
           return Value{static_cast<double>(status)};
         })};
   }
+  if (key == "clear") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLbitfield mask = static_cast<GLbitfield>(args[0].ToNumber());
+          using f = void(*)(GLbitfield);
+          reinterpret_cast<f>(glClear_)(mask);
+          return Value{};
+        })};
+  }
+  if (key == "colorMask") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLboolean red = static_cast<GLboolean>(args[0].ToBool());
+          GLboolean green = static_cast<GLboolean>(args[1].ToBool());
+          GLboolean blue = static_cast<GLboolean>(args[2].ToBool());
+          GLboolean alpha = static_cast<GLboolean>(args[3].ToBool());
+          using f = void(*)(GLboolean, GLboolean, GLboolean, GLboolean);
+          reinterpret_cast<f>(glColorMask_)(red, green, blue, alpha);
+          return Value{};
+        })};
+  }
   if (key == "compileShader") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
@@ -365,6 +420,15 @@ Value GL::Get(const std::string &key) {
           using f = GLuint(*)();
           GLuint program = reinterpret_cast<f>(glCreateProgram_)();
           return Value{static_cast<double>(program)};
+        })};
+  }
+  if (key == "createRenderbuffer") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLuint renderbuffer;
+          using f = void(*)(GLsizei, GLuint*);
+          reinterpret_cast<f>(glGenRenderbuffers_)(1, &renderbuffer);
+          return Value{static_cast<double>(renderbuffer)};
         })};
   }
   if (key == "createShader") {
@@ -412,6 +476,15 @@ Value GL::Get(const std::string &key) {
           return Value{};
         })};
   }
+  if (key == "deleteRenderbuffer") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLuint renderbuffer = static_cast<GLuint>(args[0].ToNumber());
+          using f = void(*)(GLsizei, GLuint*);
+          reinterpret_cast<f>(glDeleteRenderbuffers_)(1, &renderbuffer);
+          return Value{};
+        })};
+  }
   if (key == "deleteShader") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
@@ -427,6 +500,15 @@ Value GL::Get(const std::string &key) {
           GLuint texture = static_cast<GLuint>(args[0].ToNumber());
           using f = void(*)(GLsizei, GLuint*);
           reinterpret_cast<f>(glDeleteTextures_)(1, &texture);
+          return Value{};
+        })};
+  }
+  if (key == "disable") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLenum cap = static_cast<GLenum>(args[0].ToNumber());
+          using f = void(*)(GLenum);
+          reinterpret_cast<f>(glDisable_)(cap);
           return Value{};
         })};
   }
@@ -481,6 +563,19 @@ Value GL::Get(const std::string &key) {
         [this](Value self, std::vector<Value> args) -> Value {
           using f = void(*)();
           reinterpret_cast<f>(glFlush_)();
+          return Value{};
+        })};
+  }
+  if (key == "framebufferRenderbuffer") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLenum target = static_cast<GLenum>(args[0].ToNumber());
+          GLenum attachment = static_cast<GLenum>(args[1].ToNumber());
+          GLenum renderbuffertarget = static_cast<GLenum>(args[2].ToNumber());
+          GLuint renderbuffer = static_cast<GLuint>(args[3].ToNumber());
+          using f = void(*)(GLenum, GLenum, GLenum, GLuint);
+          reinterpret_cast<f>(glFramebufferRenderbuffer_)(
+              target, attachment, renderbuffertarget, renderbuffer);
           return Value{};
         })};
   }
@@ -659,6 +754,15 @@ Value GL::Get(const std::string &key) {
           return Value{result};
         })};
   }
+  if (key == "isRenderbuffer") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLuint renderbuffer = static_cast<GLuint>(args[0].ToNumber());
+          using f = GLboolean(*)(GLuint);
+          bool result = reinterpret_cast<f>(glIsRenderbuffer_)(renderbuffer) == GL_TRUE;
+          return Value{result};
+        })};
+  }
   if (key == "isTexture") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
@@ -709,6 +813,18 @@ Value GL::Get(const std::string &key) {
           return Value{};
         })};
   }
+  if (key == "renderbufferStorage") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLenum target = static_cast<GLenum>(args[0].ToNumber());
+          GLenum internalformat = static_cast<GLenum>(args[1].ToNumber());
+          GLsizei width = static_cast<GLsizei>(args[2].ToNumber());
+          GLsizei height = static_cast<GLsizei>(args[3].ToNumber());
+          using f = void(*)(GLenum, GLenum, GLsizei, GLsizei);
+          reinterpret_cast<f>(glRenderbufferStorage_)(target, internalformat, width, height);
+          return Value{};
+        })};
+  }
   if (key == "scissor") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
@@ -729,6 +845,37 @@ Value GL::Get(const std::string &key) {
           const char *cstr = str.c_str();
           using f = void(*)(GLuint, GLsizei, const GLchar**, const GLint*);
           reinterpret_cast<f>(glShaderSource_)(shader, 1, &cstr, nullptr);
+          return Value{};
+        })};
+  }
+  if (key == "stencilFunc") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLenum func = static_cast<GLenum>(args[0].ToNumber());
+          GLint ref = static_cast<GLint>(args[1].ToNumber());
+          GLuint mask = static_cast<GLuint>(args[2].ToNumber());
+          using f = void(*)(GLenum, GLint, GLuint);
+          reinterpret_cast<f>(glStencilFunc_)(func, ref, mask);
+          return Value{};
+        })};
+  }
+  if (key == "stencilMask") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLuint mask = static_cast<GLuint>(args[0].ToNumber());
+          using f = void(*)(GLuint);
+          reinterpret_cast<f>(glStencilMask_)(mask);
+          return Value{};
+        })};
+  }
+  if (key == "stencilOp") {
+    return Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          GLenum sfail = static_cast<GLenum>(args[0].ToNumber());
+          GLenum dpfail = static_cast<GLenum>(args[1].ToNumber());
+          GLenum dppass = static_cast<GLenum>(args[2].ToNumber());
+          using f = void(*)(GLenum, GLenum, GLenum);
+          reinterpret_cast<f>(glStencilOp_)(sfail, dpfail, dppass);
           return Value{};
         })};
   }
