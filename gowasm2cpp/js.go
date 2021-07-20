@@ -2016,6 +2016,9 @@ Value Value::ReflectGet(Value target, const std::string& key) {
     return target.ToObject().Get(key);
   }
   if (target.IsArray()) {
+    if (key == "length") {
+      return Value{static_cast<double>(target.ToArray().size())};
+    }
     int idx = std::stoi(key);
     if (idx > 0 || (idx == 0 && key == "0")) {
       return target.ToArray()[idx];

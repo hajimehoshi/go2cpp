@@ -84,6 +84,7 @@ std::vector<go2cpp_autogen::Game::Gamepad> GLFWDriver::GetGamepads() {
 
     go2cpp_autogen::Game::Gamepad gamepad;
     gamepad.id = id;
+    gamepad.standard = false;
 
     const unsigned char *button_states =
         glfwGetJoystickButtons(id, &gamepad.button_count);
