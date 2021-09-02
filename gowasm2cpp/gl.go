@@ -1134,7 +1134,11 @@ Value GL::Get(const std::string &key) {
   if (key == "useProgram") {
     return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
-          GLuint program = static_cast<GLuint>(args[0].ToNumber());
+          GLuint program = 0;
+          // Allow undefined or null for args[0].
+          if (args[0].IsNumber()) {
+            program = static_cast<GLuint>(args[0].ToNumber());
+          }
           using f = void(*)(GLuint);
           reinterpret_cast<f>(glUseProgram_)(program);
           return Value{};
