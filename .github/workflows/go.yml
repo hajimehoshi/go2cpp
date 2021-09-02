@@ -6,7 +6,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go: ['1.16.5', '1.17.0-beta1']
+        go: ['1.16.x', '1.17.x']
     name: Test with Go ${{ matrix.go }}
     runs-on: ubuntu-latest
     steps:
