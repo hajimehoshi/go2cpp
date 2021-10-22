@@ -75,7 +75,8 @@ public:
     int id;
     bool standard;
     int button_count;
-    bool buttons[256];
+    bool button_pressed[256];
+    float button_values[256];
     int axis_count;
     float axes[16];
   };
@@ -273,7 +274,8 @@ public:
             std::vector<Value> buttons(gamepads[i].button_count);
             for (size_t j = 0; j < buttons.size(); j++) {
               buttons[j] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-                {"pressed", Value{gamepads[i].buttons[j]}},
+                {"pressed", Value{gamepads[i].button_pressed[j]}},
+                {"value", Value{gamepads[i].button_values[j]}},
               })};
             }
 

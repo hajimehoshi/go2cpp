@@ -89,12 +89,13 @@ std::vector<go2cpp_autogen::Game::Gamepad> GLFWDriver::GetGamepads() {
     const unsigned char *button_states =
         glfwGetJoystickButtons(id, &gamepad.button_count);
     constexpr int kButtonMaxCount =
-        sizeof(gamepad.buttons) / sizeof(gamepad.buttons[0]);
+        sizeof(gamepad.buttons) / sizeof(gamepad.button_pressed[0]);
     if (kButtonMaxCount < gamepad.button_count) {
       gamepad.button_count = kButtonMaxCount;
     }
     for (int i = 0; i < gamepad.button_count; i++) {
-      gamepad.buttons[i] = button_states[i] == GLFW_PRESS;
+      gamepad.button_pressed[i] = button_states[i] == GLFW_PRESS;
+      gamepad.button_values[i] = button_states[i] == GLFW_PRESS ? 1.0f : 0.0f;
     }
 
     const float *axis_states = glfwGetJoystickAxes(id, &gamepad.axis_count);
