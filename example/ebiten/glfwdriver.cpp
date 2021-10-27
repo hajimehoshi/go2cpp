@@ -89,7 +89,7 @@ std::vector<go2cpp_autogen::Game::Gamepad> GLFWDriver::GetGamepads() {
     const unsigned char *button_states =
         glfwGetJoystickButtons(id, &gamepad.button_count);
     constexpr int kButtonMaxCount =
-        sizeof(gamepad.buttons) / sizeof(gamepad.button_pressed[0]);
+        sizeof(gamepad.button_pressed) / sizeof(gamepad.button_pressed[0]);
     if (kButtonMaxCount < gamepad.button_count) {
       gamepad.button_count = kButtonMaxCount;
     }
