@@ -641,6 +641,7 @@ private:
   void ClearTimeout(int32_t id);
   void GetRandomBytes(BytesSpan bytes);
   int32_t GetIdFromValue(const Value& value);
+  void GC();
 
   ImportImpl import_;
   std::unique_ptr<Writer> debug_writer_;
@@ -659,6 +660,7 @@ private:
   std::vector<double> go_ref_counts_;
   std::unordered_map<Value, int32_t, Value::Hash> ids_;
   std::stack<int32_t, std::vector<int32_t>> id_pool_;
+  std::vector<int32_t> finalizing_ids_;
   bool exited_ = false;
   int32_t exit_code_ = 0;
 
@@ -782,6 +784,7 @@ int Go::Run(const std::vector<std::string>& args) {
   while (!exited_) {
     TaskQueue::Task task = task_queue_.Dequeue();
     task();
+    GC();
   }
 
   return static_cast<int>(exit_code_);
@@ -1031,6 +1034,18 @@ int32_t Go::GetIdFromValue(const Value& value) {
   go_ref_counts_[id] = 0;
   ids_[value] = id;
   return id;
+}
+
+void Go::GC() {
+  size_t num = std::min(finalizing_ids_.size(), std::max(finalizing_ids_.size() / 16, 64ul));
+  for (size_t i = 0; i < num; i++) {
+    int32_t id = finalizing_ids_[i];
+    Value v = values_[id];
+    values_[id] = Value{};
+    ids_.erase(v);
+    id_pool_.push(id);
+  }
+  finalizing_ids_.erase(finalizing_ids_.begin(), finalizing_ids_.begin() + num);
 }
 
 }
