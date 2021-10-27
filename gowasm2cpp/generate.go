@@ -640,7 +640,7 @@ private:
   int32_t SetTimeout(double interval);
   void ClearTimeout(int32_t id);
   void GetRandomBytes(BytesSpan bytes);
-  int32_t GetIdFromValue(Value value);
+  int32_t GetIdFromValue(const Value& value);
 
   ImportImpl import_;
   std::unique_ptr<Writer> debug_writer_;
@@ -1008,7 +1008,7 @@ void Go::EnqueueTask(std::function<void()> task) {
   task_queue_.Enqueue(task);
 }
 
-int32_t Go::GetIdFromValue(Value value) {
+int32_t Go::GetIdFromValue(const Value& value) {
   auto it = ids_.find(value);
   if (it != ids_.end()) {
     return it->second;
