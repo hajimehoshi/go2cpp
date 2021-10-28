@@ -57,7 +57,7 @@ var taskqueueHTmpl = template.Must(template.New("taskqueue.h").Parse(`// Code ge
 #include <functional>
 #include <mutex>
 #include <queue>
-#include <thread>
+#include <future>
 
 namespace {{.Namespace}} {
 
@@ -79,22 +79,21 @@ public:
   Timer(std::function<void()> func, double interval);
   ~Timer();
 
-  void Stop();
-
 private:
   enum class Result {
     kTimeout,
     kNoTimeout,
   };
 
+  void Stop();
   Result WaitFor(double milliseconds);
 
-  // All the member variables other than a thread must be initialized before the thread.
+  // All the member variables other than the future must be initialized before the future.
   bool stopped_ = false;
   std::mutex mutex_;
   std::condition_variable cond_;
 
-  std::thread thread_;
+  std::future<void> future_;
 };
 
 }
@@ -128,19 +127,20 @@ TaskQueue::Task TaskQueue::Dequeue() {
 }
 
 Timer::Timer(std::function<void()> func, double interval)
-    : thread_{[this, interval](std::function<void()> func) {
-        Result result = WaitFor(interval);
-        if (result == Timer::Result::kNoTimeout) {
-          return;
-        }
-        func();
-      }, std::move(func)} {
+    : future_{std::async(
+        std::bind([this, interval](std::function<void()> func) {
+          Result result = WaitFor(interval);
+          if (result == Timer::Result::kNoTimeout) {
+            return;
+          }
+          func();
+        }, std::move(func))
+      )} {
 }
 
 Timer::~Timer() {
-  if (thread_.joinable()) {
-    thread_.join();
-  }
+  Stop();
+  future_.wait();
 }
 
 void Timer::Stop() {
