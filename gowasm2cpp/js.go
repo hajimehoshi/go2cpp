@@ -89,14 +89,14 @@ class ArrayBuffer;
 
 class Value {
 public:
-  enum class Type {
-    Undefined,
-    Null,
-    Bool,
-    Number,
-    String,
-    Object,
-  };
+  using Type = uint8_t;
+  static constexpr Type kUndefined = 0;
+  static constexpr Type kNull = 1 << 0;
+  static constexpr Type kBool = 1 << 1;
+  static constexpr Type kNumber = 1 << 2;
+  static constexpr Type kString = 1 << 3;
+  static constexpr Type kObject = 1 << 4;
+  static constexpr Type kArray = 1 << 5;
 
   class Hash {
   public:
@@ -150,8 +150,7 @@ private:
   explicit Value(Type type);
   Value(Type type, double num);
 
-  Type type_ = Type::Undefined;
-  bool is_array_ = false;
+  Type type_ = kUndefined;
   double num_value_ = 0;
   std::string str_value_;
   std::shared_ptr<Object> object_value_;
@@ -1438,18 +1437,18 @@ std::size_t Value::Hash::operator()(const Value& value) const {
 }
 
 Value Value::Null() {
-  return Value{Type::Null};
+  return Value{kNull};
 }
 
 Value::Value() = default;
 
 Value::Value(bool b)
-    : type_{Type::Bool},
+    : type_{kBool},
       num_value_{static_cast<double>(b)}{
 }
 
 Value::Value(double num)
-    : type_{Type::Number},
+    : type_{kNumber},
       num_value_{num} {
 }
 
@@ -1458,18 +1457,17 @@ Value::Value(const char* str)
 }
 
 Value::Value(const std::string& str)
-    : type_{Type::String},
+    : type_{kString},
       str_value_{str} {
 }
 
 Value::Value(std::shared_ptr<Object> object)
-    : type_{Type::Object},
+    : type_{kObject},
       object_value_{object} {
 }
 
 Value::Value(const std::vector<Value>& array)
-    : type_{Type::Object},
-      is_array_{true},
+    : type_{kObject | kArray},
       array_value_{array.size() ? std::make_shared<std::vector<Value>>(array.begin(), array.end()) : nullptr} {
 }
 
@@ -1495,61 +1493,61 @@ Value::Value(Type type, double num)
 }
 
 bool Value::IsNull() const {
-  return type_ == Type::Null;
+  return (type_ & kNull);
 }
 
 bool Value::IsUndefined() const {
-  return type_ == Type::Undefined;
+  return type_ == kUndefined;
 }
 
 bool Value::IsBool() const {
-  return type_ == Type::Bool;
+  return (type_ & kBool);
 }
 
 bool Value::IsNumber() const {
-  return type_ == Type::Number;
+  return (type_ & kNumber);
 }
 
 bool Value::IsString() const {
-  return type_ == Type::String;
+  return (type_ & kString);
 }
 
 bool Value::IsBytes() const {
-  return type_ == Type::Object && object_value_->IsBytes();
+  return (type_ & kObject) && object_value_->IsBytes();
 }
 
 bool Value::IsObject() const {
-  return type_ == Type::Object && !!object_value_;
+  return (type_ & kObject) && !!object_value_;
 }
 
 bool Value::IsArray() const {
-  return type_ == Type::Object && is_array_;
+  return (type_ & kObject) && (type_ & kArray);
 }
 
 bool Value::ToBool() const {
-  if (type_ != Type::Bool) {
-    Panic("Value::ToBool: the type must be Type::Bool but not: " + Inspect());
+  if (!(type_ & kBool)) {
+    Panic("Value::ToBool: the type must be kBool but not: " + Inspect());
   }
   return static_cast<bool>(num_value_);
 }
 
 double Value::ToNumber() const {
-  if (type_ != Type::Number) {
-    Panic("Value::ToNumber: the type must be Type::Number but not: " + Inspect());
+  if (!(type_ & kNumber)) {
+    Panic("Value::ToNumber: the type must be kNumber but not: " + Inspect());
   }
   return num_value_;
 }
 
 std::string Value::ToString() const {
-  if (type_ != Type::String) {
-    Panic("Value::ToString: the type must be Type::String but not: " + Inspect());
+  if (!(type_ & kString)) {
+    Panic("Value::ToString: the type must be kString but not: " + Inspect());
   }
   return str_value_;
 }
 
 BytesSpan Value::ToBytes() {
-  if (type_ != Type::Object) {
-    Panic("Value::ToBytes: the type must be Type::Object but not: " + Inspect());
+  if (!(type_ & kObject)) {
+    Panic("Value::ToBytes: the type must be kObject but not: " + Inspect());
   }
   if (!object_value_) {
     Panic("Value::ToBytes: object_value_ must not be null");
@@ -1561,8 +1559,8 @@ BytesSpan Value::ToBytes() {
 }
 
 Object& Value::ToObject() {
-  if (type_ != Type::Object) {
-    Panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
+  if (!(type_ & kObject)) {
+    Panic("Value::ToObject: the type must be kObject but not: " + Inspect());
   }
   if (!object_value_) {
     Panic("Value::ToObject: object_value_ must not be null");
@@ -1571,8 +1569,8 @@ Object& Value::ToObject() {
 }
 
 const Object& Value::ToObject() const {
-  if (type_ != Type::Object) {
-    Panic("Value::ToObject: the type must be Type::Object but not: " + Inspect());
+  if (!(type_ & kObject)) {
+    Panic("Value::ToObject: the type must be kObject but not: " + Inspect());
   }
   if (!object_value_) {
     Panic("Value::ToObject: object_value_ must not be null");
@@ -1581,10 +1579,10 @@ const Object& Value::ToObject() const {
 }
 
 std::vector<Value>& Value::ToMutableArray() {
-  if (type_ != Type::Object) {
-    Panic("Value::ToArray: the type must be Type::Object but not: " + Inspect());
+  if (!(type_ & kObject)) {
+    Panic("Value::ToArray: the type must be kObject but not: " + Inspect());
   }
-  if (!is_array_) {
+  if (!(type_ & kArray)) {
     Panic("Value::ToArray: the object must be an array but not: " + Inspect());
   }
   if (!array_value_) {
@@ -1594,10 +1592,10 @@ std::vector<Value>& Value::ToMutableArray() {
 }
 
 const std::vector<Value>& Value::ToArray() const {
-  if (type_ != Type::Object) {
-    Panic("Value::ToArray: the type must be Type::Object but not: " + Inspect());
+  if (!(type_ & kObject)) {
+    Panic("Value::ToArray: the type must be kObject but not: " + Inspect());
   }
-  if (!is_array_) {
+  if (!(type_ & kArray)) {
     Panic("Value::ToArray: the object must be an array but not: " + Inspect());
   }
   if (!array_value_) {
@@ -1608,8 +1606,8 @@ const std::vector<Value>& Value::ToArray() const {
 }
 
 std::shared_ptr<ArrayBuffer> Value::ToArrayBuffer() {
-  if (type_ != Type::Object) {
-    Panic("Value::ToArrayBuffer: the type must be Type::Object but not: " + Inspect());
+  if (!(type_ & kObject)) {
+    Panic("Value::ToArrayBuffer: the type must be kObject but not: " + Inspect());
   }
   if (!object_value_) {
     Panic("Value::ToArrayBuffer: object_value_ must not be null");
@@ -1618,18 +1616,22 @@ std::shared_ptr<ArrayBuffer> Value::ToArrayBuffer() {
 }
 
 std::string Value::Inspect() const {
-  switch (type_) {
-  case Type::Null:
-    return "null";
-  case Type::Undefined:
+  if (type_ == kUndefined) {
     return "undefined";
-  case Type::Bool:
+  }
+  if (type_ & kNull) {
+    return "null";
+  }
+  if (type_ & kBool) {
     return ToBool() ? "true" : "false";
-  case Type::Number:
+  }
+  if (type_ & kNumber) {
     return std::to_string(ToNumber());
-  case Type::String:
+  }
+  if (type_ & kString) {
     return ToString();
-  case Type::Object:
+  }
+  if (type_ & kObject) {
     if (IsArray()) {
       std::string str = "[";
       if (array_value_) {
@@ -1647,9 +1649,9 @@ std::string Value::Inspect() const {
       return ToObject().Inspect();
     }
     return "(object)";
-  default:
-    Panic("invalid type: " + std::to_string(static_cast<int>(type_)));
   }
+
+  Panic("invalid type: " + std::to_string(static_cast<int>(type_)));
   return "";
 }
 
