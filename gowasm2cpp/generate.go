@@ -984,6 +984,7 @@ double Go::UnixNowInMilliseconds() {
 int32_t Go::SetTimeout(double interval) {
   int32_t id = next_callback_timeout_id_;
   next_callback_timeout_id_++;
+
   std::unique_ptr<Timer> timer = std::make_unique<Timer>(
     [this, id] {
       task_queue_.Enqueue([this, id]{
