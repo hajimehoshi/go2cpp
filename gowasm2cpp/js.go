@@ -138,7 +138,8 @@ public:
   BytesSpan ToBytes();
   Object& ToObject();
   const Object& ToObject() const;
-  std::vector<Value>& ToArray();
+  std::vector<Value>& ToMutableArray();
+  const std::vector<Value>& ToArray() const;
   std::shared_ptr<ArrayBuffer> ToArrayBuffer();
 
   std::string Inspect() const;
@@ -150,6 +151,7 @@ private:
   Value(Type type, double num);
 
   Type type_ = Type::Undefined;
+  bool is_array_ = false;
   double num_value_ = 0;
   std::string str_value_;
   std::shared_ptr<Object> object_value_;
@@ -1467,7 +1469,8 @@ Value::Value(std::shared_ptr<Object> object)
 
 Value::Value(const std::vector<Value>& array)
     : type_{Type::Object},
-      array_value_{std::make_shared<std::vector<Value>>(array.begin(), array.end())} {
+      is_array_{true},
+      array_value_{array.size() ? std::make_shared<std::vector<Value>>(array.begin(), array.end()) : nullptr} {
 }
 
 Value::Value(const Value& rhs) = default;
@@ -1520,7 +1523,7 @@ bool Value::IsObject() const {
 }
 
 bool Value::IsArray() const {
-  return type_ == Type::Object && !!array_value_;
+  return type_ == Type::Object && is_array_;
 }
 
 bool Value::ToBool() const {
@@ -1577,12 +1580,29 @@ const Object& Value::ToObject() const {
   return *object_value_;
 }
 
-std::vector<Value>& Value::ToArray() {
+std::vector<Value>& Value::ToMutableArray() {
   if (type_ != Type::Object) {
     Panic("Value::ToArray: the type must be Type::Object but not: " + Inspect());
   }
+  if (!is_array_) {
+    Panic("Value::ToArray: the object must be an array but not: " + Inspect());
+  }
   if (!array_value_) {
-    Panic("Value::ToArray: array_value_ must not be null");
+    array_value_ = std::make_shared<std::vector<Value>>();
+  }
+  return *array_value_;
+}
+
+const std::vector<Value>& Value::ToArray() const {
+  if (type_ != Type::Object) {
+    Panic("Value::ToArray: the type must be Type::Object but not: " + Inspect());
+  }
+  if (!is_array_) {
+    Panic("Value::ToArray: the object must be an array but not: " + Inspect());
+  }
+  if (!array_value_) {
+    static std::vector<Value> empty_array{};
+    return empty_array;
   }
   return *array_value_;
 }
@@ -1612,11 +1632,13 @@ std::string Value::Inspect() const {
   case Type::Object:
     if (IsArray()) {
       std::string str = "[";
-      for (auto& v : *array_value_) {
-        str += v.Inspect() + " ";
-      }
-      if (array_value_->size()) {
-        str.resize(str.size()-1);
+      if (array_value_) {
+        for (auto& v : *array_value_) {
+          str += v.Inspect() + " ";
+        }
+        if (array_value_->size()) {
+          str.resize(str.size()-1);
+        }
       }
       str += "]";
       return str;

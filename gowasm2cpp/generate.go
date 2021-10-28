@@ -925,7 +925,7 @@ Value Go::MakeFuncWrapper(int32_t id) {
         auto it = cached_args_.find(id);
         if (it != cached_args_.end()) {
           argsv = it->second;
-          auto& vec = argsv.ToArray();
+          auto& vec = argsv.ToMutableArray();
           if (vec.size() != args.size()) {
             vec.resize(args.size());
           }
