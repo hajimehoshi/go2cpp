@@ -79,14 +79,13 @@ public:
   Timer(std::function<void()> func, double interval);
   ~Timer();
 
-  void Stop();
-
 private:
   enum class Result {
     kTimeout,
     kNoTimeout,
   };
 
+  void Stop();
   Result WaitFor(double milliseconds);
 
   // All the member variables other than a thread must be initialized before the thread.
@@ -138,6 +137,7 @@ Timer::Timer(std::function<void()> func, double interval)
 }
 
 Timer::~Timer() {
+  Stop();
   if (thread_.joinable()) {
     thread_.join();
   }

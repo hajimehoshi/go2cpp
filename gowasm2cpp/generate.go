@@ -1000,9 +1000,6 @@ int32_t Go::SetTimeout(double interval) {
 }
 
 void Go::ClearTimeout(int32_t id) {
-  if (scheduled_timeouts_.find(id) != scheduled_timeouts_.end()) {
-    scheduled_timeouts_[id]->Stop();
-  }
   scheduled_timeouts_.erase(id);
 }
 
