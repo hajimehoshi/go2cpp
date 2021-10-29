@@ -651,7 +651,7 @@ private:
   // A TaskQueue must be destructed after the timers are destructed.
   TaskQueue task_queue_;
 
-  Value pending_event_;
+  Value pending_event_{Value::Null()};
   std::unordered_map<int32_t, std::unique_ptr<Timer>> scheduled_timeouts_;
   int32_t next_callback_timeout_id_ = 1;
 
@@ -704,8 +704,7 @@ Go::Go()
 
 Go::Go(std::unique_ptr<Writer> debug_writer)
     : import_{this},
-      debug_writer_{std::move(debug_writer)},
-      pending_event_{Value::Null()} {
+      debug_writer_{std::move(debug_writer)} {
 }
 
 int Go::Run() {
@@ -917,6 +916,15 @@ Value Go::MakeFuncWrapper(int32_t id) {
   static constexpr double inf = std::numeric_limits<double>::infinity();
   go_ref_counts_[GetIdFromValue(empty_args)] = inf;
 
+  // evt represents the next function to be called when resuming.
+  // As resuming never happens recursively, this value should be reusable.
+  static Value evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+    {"id", Value{0.0}},
+    {"this", Value{}},
+    {"args", Value{}},
+  })};
+  go_ref_counts_[GetIdFromValue(evt)] = inf;
+
   return Value{std::make_shared<Function>(
     [this, id](Value self, std::vector<Value> args) -> Value {
       Value argsv;
@@ -927,13 +935,14 @@ Value Go::MakeFuncWrapper(int32_t id) {
         argsv = empty_args;
       }
 
-      Value evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-        {"id", Value{static_cast<double>(id)}},
-        {"this", self},
-        {"args", argsv},
-      })};
+      evt.ToObject().Set("id", Value{static_cast<double>(id)});
+      evt.ToObject().Set("this", self);
+      evt.ToObject().Set("args", argsv);
       pending_event_ = evt;
+
       Resume();
+      // After Resume is called, pending_event_ should be null.
+
       return Value::ReflectGet(evt, "result");
     }
   )};
