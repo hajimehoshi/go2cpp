@@ -264,30 +264,49 @@ public:
       return Value{std::make_shared<Function>(
         [this](Value self, std::vector<Value> args) -> Value {
           const std::vector<Game::Gamepad>& gamepads = driver_->GetGamepads();
-          std::vector<Value> gamepad_values(gamepads.size());
+          static Value gamepad_values_value{std::vector<Value>{}};
+          auto& gamepad_values = gamepad_values_value.ToArray();
+          if (gamepads.size() != gamepad_values.size()) {
+            gamepad_values.resize(gamepads.size());
+          }
+
           for (size_t i = 0; i < gamepads.size(); i++) {
-            std::vector<Value> axes(gamepads[i].axis_count);
+            if (!gamepad_values[i].IsObject()) {
+              gamepad_values[i] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+                {"index", Value{0.0}},
+                {"id", Value{""}},
+                {"mapping", Value{""}},
+                {"axes", Value{std::vector<Value>{}}},
+                {"buttons", Value{std::vector<Value>{}}},
+              })};
+            }
+
+            auto& obj = gamepad_values[i].ToObject();
+            obj.Set("index", Value{static_cast<double>(gamepads[i].id)});
+            obj.Set("id", Value{"go2cpp gamepad " + std::to_string(gamepads[i].id)});
+            obj.Set("mapping", Value{gamepads[i].standard ? "standard" : ""});
+
+            auto& axes = obj.Get("axes").ToArray();
+            axes.resize(gamepads[i].axis_count);
             for (size_t j = 0; j < axes.size(); j++) {
               axes[j] = Value{gamepads[i].axes[j]};
             }
 
-            std::vector<Value> buttons(gamepads[i].button_count);
+            auto& buttons = obj.Get("buttons").ToArray();
+            buttons.resize(gamepads[i].button_count);
             for (size_t j = 0; j < buttons.size(); j++) {
-              buttons[j] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-                {"pressed", Value{gamepads[i].button_pressed[j]}},
-                {"value", Value{gamepads[i].button_values[j]}},
-              })};
+              if (!buttons[j].IsObject()) {
+                buttons[j] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+                  {"pressed", Value{false}},
+                  {"value", Value{0.0}},
+                })};
+              }
+              auto& button_obj = buttons[j].ToObject();
+              button_obj.Set("pressed", Value{gamepads[i].button_pressed[j]});
+              button_obj.Set("value", Value{gamepads[i].button_values[j]});
             }
-
-            gamepad_values[i] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-              {"index", Value{static_cast<double>(gamepads[i].id)}},
-              {"id", Value{"go2cpp gamepad " + std::to_string(gamepads[i].id)}},
-              {"mapping", Value{gamepads[i].standard ? "standard" : ""}},
-              {"axes", Value{axes}},
-              {"buttons", Value{buttons}},
-            })};
           }
-          return Value{gamepad_values};
+          return gamepad_values_value;
         })};
     }
     return Value{};
