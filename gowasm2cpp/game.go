@@ -223,21 +223,27 @@ public:
 
   Value Get(const std::string& key) override {
     if (key == "setItem") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          const std::string& key = args[0].ToString();
-          const std::string& value = args[1].ToString();
-          driver_->SetLocalStorageItem(key, value);
-          return Value{};
-        })};
+      if (!func_set_item_.IsFunction()) {
+        func_set_item_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            const std::string& key = args[0].ToString();
+            const std::string& value = args[1].ToString();
+            driver_->SetLocalStorageItem(key, value);
+            return Value{};
+          })};
+      }
+      return func_set_item_;
     }
     if (key == "getItem") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          const std::string& key = args[0].ToString();
-          const std::string& value = driver_->GetLocalStorageItem(key);
-          return Value{value};
-        })};
+      if (!func_get_item_.IsFunction()) {
+        func_get_item_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            const std::string& key = args[0].ToString();
+            const std::string& value = driver_->GetLocalStorageItem(key);
+            return Value{value};
+          })};
+      }
+      return func_get_item_;
     }
     return Value{};
   }
@@ -248,6 +254,9 @@ public:
 
 private:
   Game::Driver* driver_;
+
+  Value func_set_item_;
+  Value func_get_item_;
 };
 
 class Navigator : public Object {
@@ -261,53 +270,56 @@ public:
       return Value{driver_->GetDefaultLanguage()};
     }
     if (key == "getGamepads") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          const std::vector<Game::Gamepad>& gamepads = driver_->GetGamepads();
-          static Value gamepad_values_value{std::vector<Value>{}};
-          auto& gamepad_values = gamepad_values_value.ToArray();
-          if (gamepads.size() != gamepad_values.size()) {
-            gamepad_values.resize(gamepads.size());
-          }
-
-          for (size_t i = 0; i < gamepads.size(); i++) {
-            if (!gamepad_values[i].IsObject()) {
-              gamepad_values[i] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-                {"index", Value{0.0}},
-                {"id", Value{""}},
-                {"mapping", Value{""}},
-                {"axes", Value{std::vector<Value>{}}},
-                {"buttons", Value{std::vector<Value>{}}},
-              })};
+      if (!func_get_gamepads_.IsFunction()) {
+        func_get_gamepads_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            const std::vector<Game::Gamepad>& gamepads = driver_->GetGamepads();
+            static Value gamepad_values_value{std::vector<Value>{}};
+            auto& gamepad_values = gamepad_values_value.ToArray();
+            if (gamepads.size() != gamepad_values.size()) {
+              gamepad_values.resize(gamepads.size());
             }
 
-            auto& obj = gamepad_values[i].ToObject();
-            obj.Set("index", Value{static_cast<double>(gamepads[i].id)});
-            obj.Set("id", Value{"go2cpp gamepad " + std::to_string(gamepads[i].id)});
-            obj.Set("mapping", Value{gamepads[i].standard ? "standard" : ""});
-
-            auto& axes = obj.Get("axes").ToArray();
-            axes.resize(gamepads[i].axis_count);
-            for (size_t j = 0; j < axes.size(); j++) {
-              axes[j] = Value{gamepads[i].axes[j]};
-            }
-
-            auto& buttons = obj.Get("buttons").ToArray();
-            buttons.resize(gamepads[i].button_count);
-            for (size_t j = 0; j < buttons.size(); j++) {
-              if (!buttons[j].IsObject()) {
-                buttons[j] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-                  {"pressed", Value{false}},
-                  {"value", Value{0.0}},
+            for (size_t i = 0; i < gamepads.size(); i++) {
+              if (!gamepad_values[i].IsObject()) {
+                gamepad_values[i] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+                  {"index", Value{0.0}},
+                  {"id", Value{""}},
+                  {"mapping", Value{""}},
+                  {"axes", Value{std::vector<Value>{}}},
+                  {"buttons", Value{std::vector<Value>{}}},
                 })};
               }
-              auto& button_obj = buttons[j].ToObject();
-              button_obj.Set("pressed", Value{gamepads[i].button_pressed[j]});
-              button_obj.Set("value", Value{gamepads[i].button_values[j]});
+
+              auto& obj = gamepad_values[i].ToObject();
+              obj.Set("index", Value{static_cast<double>(gamepads[i].id)});
+              obj.Set("id", Value{"go2cpp gamepad " + std::to_string(gamepads[i].id)});
+              obj.Set("mapping", Value{gamepads[i].standard ? "standard" : ""});
+
+              auto& axes = obj.Get("axes").ToArray();
+              axes.resize(gamepads[i].axis_count);
+              for (size_t j = 0; j < axes.size(); j++) {
+                axes[j] = Value{gamepads[i].axes[j]};
+              }
+
+              auto& buttons = obj.Get("buttons").ToArray();
+              buttons.resize(gamepads[i].button_count);
+              for (size_t j = 0; j < buttons.size(); j++) {
+                if (!buttons[j].IsObject()) {
+                  buttons[j] = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+                    {"pressed", Value{false}},
+                    {"value", Value{0.0}},
+                  })};
+                }
+                auto& button_obj = buttons[j].ToObject();
+                button_obj.Set("pressed", Value{gamepads[i].button_pressed[j]});
+                button_obj.Set("value", Value{gamepads[i].button_values[j]});
+              }
             }
-          }
-          return gamepad_values_value;
-        })};
+            return gamepad_values_value;
+          })};
+      }
+      return func_get_gamepads_;
     }
     return Value{};
   }
@@ -319,6 +331,7 @@ public:
 private:
   Game::Driver* driver_;
 
+  Value func_get_gamepads_;
 };
 
 class AudioPlayer : public Object {
@@ -344,38 +357,50 @@ public:
       return Value{player_->GetVolume()};
     }
     if (key == "pause") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          player_->Pause();
-          return Value{};
-        })};
+      if (!func_pause_.IsFunction()) {
+        func_pause_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            player_->Pause();
+            return Value{};
+          })};
+      }
+      return func_pause_;
     }
     if (key == "play") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          player_->Play();
-          return Value{};
-        })};
+      if (!func_pause_.IsFunction()) {
+        func_pause_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            player_->Play();
+            return Value{};
+          })};
+      }
+      return func_pause_;
     }
     if (key == "close") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          closed_ = true;
-          bool immediately = args[0].ToBool();
-          // Removing a player might cause joining its thread, which can take long.
-          // Call Close explicitly.
-          player_->Close(immediately);
-          return Value{};
-        })};
+      if (!func_close_.IsFunction()) {
+        func_close_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            closed_ = true;
+            bool immediately = args[0].ToBool();
+            // Removing a player might cause joining its thread, which can take long.
+            // Call Close explicitly.
+            player_->Close(immediately);
+            return Value{};
+          })};
+      }
+      return func_close_;
     }
     if (key == "write") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          BytesSpan buf = args[0].ToBytes();
-          int size = static_cast<int>(args[1].ToNumber());
-          player_->Write(buf.begin(), size);
-          return Value{};
-        })};
+      if (!func_write_.IsFunction()) {
+        func_write_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            BytesSpan buf = args[0].ToBytes();
+            int size = static_cast<int>(args[1].ToNumber());
+            player_->Write(buf.begin(), size);
+            return Value{};
+          })};
+      }
+      return func_write_;
     }
     if (key == "unplayedBufferSize") {
       return Value{static_cast<double>(player_->GetUnplayedBufferSize())};
@@ -400,6 +425,11 @@ private:
   Value buf_;
   Value on_written_;
 
+  Value func_pause_;
+  Value func_play_;
+  Value func_close_;
+  Value func_write_;
+
   bool closed_ = false;
   std::mutex mutex_;
 };
@@ -413,19 +443,22 @@ public:
 
   Value Get(const std::string& key) override {
     if (key == "createPlayer") {
-      return Value{std::make_shared<Function>(
-        [this](Value self, std::vector<Value> args) -> Value {
-          auto p = std::make_shared<AudioPlayer>(driver_);
-          // Capture the shared pointer and use it in the lambda.
-          // The AudioPlayer must exist when invoking.
-          p->SetOnWrittenCallback(args[0], [this, p]() {
-            // This callback can be invoked from a different thread. Use EnqueueTask here.
-            go_->EnqueueTask([p]() {
-              p->InvokeOnWrittenCallback();
+      if (!func_create_player_.IsFunction()) {
+        func_create_player_ = Value{std::make_shared<Function>(
+          [this](Value self, std::vector<Value> args) -> Value {
+            auto p = std::make_shared<AudioPlayer>(driver_);
+            // Capture the shared pointer and use it in the lambda.
+            // The AudioPlayer must exist when invoking.
+            p->SetOnWrittenCallback(args[0], [this, p]() {
+              // This callback can be invoked from a different thread. Use EnqueueTask here.
+              go_->EnqueueTask([p]() {
+                p->InvokeOnWrittenCallback();
+              });
             });
-          });
-          return Value{p};
-        })};
+            return Value{p};
+          })};
+      }
+      return func_create_player_;
     }
     return Value{};
   }
@@ -437,6 +470,8 @@ public:
 private:
   Go* go_;
   Game::Driver* driver_;
+
+  Value func_create_player_;
 };
 
 } // namespace

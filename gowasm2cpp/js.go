@@ -130,6 +130,7 @@ public:
   bool IsBytes() const;
   bool IsObject() const;
   bool IsArray() const;
+  bool IsFunction() const;
 
   bool ToBool() const;
   double ToNumber() const;
@@ -1511,7 +1512,7 @@ bool Value::IsString() const {
 }
 
 bool Value::IsBytes() const {
-  return (type_ & kObject) && object_value_->IsBytes();
+  return (type_ & kObject) && !!object_value_ && object_value_->IsBytes();
 }
 
 bool Value::IsObject() const {
@@ -1520,6 +1521,10 @@ bool Value::IsObject() const {
 
 bool Value::IsArray() const {
   return (type_ & kObject) && !!array_value_;
+}
+
+bool Value::IsFunction() const {
+  return (type_ & kObject) && !!object_value_ && object_value_->IsFunction();
 }
 
 bool Value::ToBool() const {
