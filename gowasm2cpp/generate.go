@@ -627,6 +627,8 @@ private:
 
   private:
     Go* go_;
+
+    Value func_make_func_wrapper_;
   };
 
   Value LoadValue(int32_t addr);
@@ -814,11 +816,14 @@ Go::GoObject::GoObject(Go* go)
 
 Value Go::GoObject::Get(const std::string& key) {
   if (key == "_makeFuncWrapper") {
-    return Value{std::make_shared<Function>(
-      [this](Value self, std::vector<Value> args) -> Value {
-        return go_->MakeFuncWrapper(static_cast<int32_t>(args[0].ToNumber()));
-      }
-    )};
+    if (!func_make_func_wrapper_.IsFunction()) {
+      func_make_func_wrapper_ = Value{std::make_shared<Function>(
+        [this](Value self, std::vector<Value> args) -> Value {
+          return go_->MakeFuncWrapper(static_cast<int32_t>(args[0].ToNumber()));
+        }
+      )};
+    }
+    return func_make_func_wrapper_;
   }
   if (key == "_pendingEvent") {
     return go_->pending_event_;
