@@ -652,8 +652,6 @@ private:
   TaskQueue task_queue_;
 
   Value pending_event_;
-  std::unordered_map<int32_t, Value> cached_args_;
-  std::unordered_map<int32_t, Value> cached_events_;
   std::unordered_map<int32_t, std::unique_ptr<Timer>> scheduled_timeouts_;
   int32_t next_callback_timeout_id_ = 1;
 
@@ -923,47 +921,17 @@ Value Go::MakeFuncWrapper(int32_t id) {
     [this, id](Value self, std::vector<Value> args) -> Value {
       Value argsv;
 
-      // The array Values for the arguments are kept and reused.
-      // By caching these Values, this can avoid being finalized at syscall/js.finalizeRef.
-      // This assumes that the callback is never called recursively.
       if (args.size()) {
-        auto it = cached_args_.find(id);
-        if (it != cached_args_.end()) {
-          argsv = it->second;
-          auto& vec = argsv.ToArray();
-          if (vec.size() != args.size()) {
-            vec.resize(args.size());
-          }
-          for (int i = 0; i < args.size(); i++) {
-            vec[i] = args[i];
-          }
-        } else {
-          argsv = Value{args};
-          cached_args_[id] = argsv;
-          go_ref_counts_[GetIdFromValue(argsv)] = inf;
-        }
+        argsv = Value{args};
       } else {
         argsv = empty_args;
       }
 
-      auto it = cached_events_.find(id);
-      Value evt;
-      if (it != cached_events_.end()) {
-        evt = it->second;
-        evt.ToObject().Set("this", self);
-        evt.ToObject().Set("args", argsv);
-      } else {
-        evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
-          {"id", Value{static_cast<double>(id)}},
-          {"this", self},
-          {"args", argsv},
-        })};
-
-        // Note that the cached event is never released.
-        // This means that every js.FuncOf calls increases the number of Value objects.
-        cached_events_[static_cast<double>(id)] = evt;
-        go_ref_counts_[GetIdFromValue(evt)] = inf;
-      }
+      Value evt = Value{std::make_shared<DictionaryValues>(std::map<std::string, Value>{
+        {"id", Value{static_cast<double>(id)}},
+        {"this", self},
+        {"args", argsv},
+      })};
       pending_event_ = evt;
       Resume();
       return Value::ReflectGet(evt, "result");
