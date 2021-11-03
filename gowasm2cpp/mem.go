@@ -127,7 +127,7 @@ public:
     return *(reinterpret_cast<const double*>(bytes_ + addr));
   }
 
-  void StoreInt8(int32_t addr, int8_t val) {
+  inline void StoreInt8(int32_t addr, int8_t val) {
     *(bytes_ + addr) = static_cast<uint8_t>(val);
   }
 
