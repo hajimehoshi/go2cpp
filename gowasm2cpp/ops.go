@@ -695,7 +695,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			if offset != 0 {
 				off = fmt.Sprintf(" + %d", offset)
 			}
-			appendBody("mem_->StoreInt8((%s)%s, static_cast<int8_t>(%s));", addr, off, idx)
+			idx = optimizeStaticCasts(fmt.Sprintf("static_cast<int8_t>(%s)", idx))
+			appendBody("mem_->StoreInt8((%s)%s, %s);", addr, off, idx)
 		case operators.I32Store16:
 			for _, expr := range blockStack.FlushExprsIfNeeded("mem_->") {
 				appendBody(expr)
@@ -707,7 +708,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			if offset != 0 {
 				off = fmt.Sprintf(" + %d", offset)
 			}
-			appendBody("mem_->StoreInt16((%s)%s, static_cast<int16_t>(%s));", addr, off, idx)
+			idx = optimizeStaticCasts(fmt.Sprintf("static_cast<int16_t>(%s)", idx))
+			appendBody("mem_->StoreInt16((%s)%s, %s);", addr, off, idx)
 		case operators.I64Store8:
 			for _, expr := range blockStack.FlushExprsIfNeeded("mem_->") {
 				appendBody(expr)
@@ -719,7 +721,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			if offset != 0 {
 				off = fmt.Sprintf(" + %d", offset)
 			}
-			appendBody("mem_->StoreInt8((%s)%s, static_cast<int8_t>(%s));", addr, off, idx)
+			idx = optimizeStaticCasts(fmt.Sprintf("static_cast<int8_t>(%s)", idx))
+			appendBody("mem_->StoreInt8((%s)%s, %s);", addr, off, idx)
 		case operators.I64Store16:
 			offset := instr.Immediates[1].(uint32)
 			idx, _ := blockStack.PopExpr()
@@ -728,7 +731,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			if offset != 0 {
 				off = fmt.Sprintf(" + %d", offset)
 			}
-			appendBody("mem_->StoreInt16((%s)%s, static_cast<int16_t>(%s));", addr, off, idx)
+			idx = optimizeStaticCasts(fmt.Sprintf("static_cast<int16_t>(%s)", idx))
+			appendBody("mem_->StoreInt16((%s)%s, %s);", addr, off, idx)
 		case operators.I64Store32:
 			for _, expr := range blockStack.FlushExprsIfNeeded("mem_->") {
 				appendBody(expr)
@@ -740,7 +744,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			if offset != 0 {
 				off = fmt.Sprintf(" + %d", offset)
 			}
-			appendBody("mem_->StoreInt32((%s)%s, static_cast<int32_t>(%s));", addr, off, idx)
+			idx = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", idx))
+			appendBody("mem_->StoreInt32((%s)%s, %s);", addr, off, idx)
 
 		case operators.CurrentMemory:
 			blockStack.PushExpr("mem_->GetSize()", stackvar.I32)
@@ -798,7 +803,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32LtU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) < static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32GtS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -806,7 +813,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32GtU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) > static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32LeS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -814,7 +823,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32LeU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) <= static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
 		case operators.I32GeS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -822,7 +833,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32GeU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint32_t>(%s) >= static_cast<uint32_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64Eqz:
 			arg, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("(%s) == 0", arg), stackvar.I32)
@@ -841,7 +854,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64LtU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) < static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) < (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64GtS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -849,7 +864,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64GtU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) > static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) > (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64LeS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -857,7 +874,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64LeU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) <= static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) <= (%s)", arg0, arg1), stackvar.I32)
 		case operators.I64GeS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -865,7 +884,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64GeU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<uint64_t>(%s) >= static_cast<uint64_t>(%s)", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) >= (%s)", arg0, arg1), stackvar.I32)
 		case operators.F32Eq:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -919,13 +940,15 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			arg, _ := blockStack.PopExpr()
 			v := fmt.Sprintf("stack0_%d_", tmpidx)
 			tmpidx++
-			appendBody("uint32_t %s = static_cast<uint32_t>(%s);", v, arg)
+			arg = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg))
+			appendBody("uint32_t %s = %s;", v, arg)
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(%s ? __builtin_clzl(%s) : 32)", v, v), stackvar.I32)
 		case operators.I32Ctz:
 			arg, _ := blockStack.PopExpr()
 			v := fmt.Sprintf("stack0_%d_", tmpidx)
 			tmpidx++
-			appendBody("uint32_t %s = static_cast<uint32_t>(%s);", v, arg)
+			arg = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg))
+			appendBody("uint32_t %s = %s;", v, arg)
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(%s ? __builtin_ctzl(%s) : 32)", v, v), stackvar.I32)
 		case operators.I32Popcnt:
 			arg, _ := blockStack.PopExpr()
@@ -934,15 +957,21 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
 			// Cast to unsigned types to avoid undefined signed overflow.
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) + static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>((%s) + (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32Sub:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) - static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>((%s) - (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32Mul:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) * static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>((%s) * (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32DivS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -950,7 +979,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32DivU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) / static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>((%s) / (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32RemS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -958,7 +989,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32RemU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) %% static_cast<uint32_t>(%s))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>((%s) %% (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32And:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -974,7 +1007,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32Shl:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) << (%s))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>((%s) << (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32ShrS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -982,43 +1016,57 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I32ShrU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(%s) >> (%s))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>((%s) >> (%s))", arg0, arg1), stackvar.I32)
 		case operators.I32Rotl:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(static_cast<uint32_t>(%s), static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(%s, %s))", arg0, arg1), stackvar.I32)
 		case operators.I32Rotr:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(static_cast<uint32_t>(%s), -static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I32)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(Bits::RotateLeft(%s, -(%s)))", arg0, arg1), stackvar.I32)
 		case operators.I64Clz:
 			arg, _ := blockStack.PopExpr()
 			v := fmt.Sprintf("stack0_%d_", tmpidx)
 			tmpidx++
-			appendBody("uint64_t %s = static_cast<uint64_t>(%s);", v, arg)
+			arg = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg))
+			appendBody("uint64_t %s = %s;", v, arg)
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(%s ? __builtin_clzll(%s) : 64)", v, v), stackvar.I64)
 		case operators.I64Ctz:
 			arg, _ := blockStack.PopExpr()
 			v := fmt.Sprintf("stack0_%d_", tmpidx)
 			tmpidx++
-			appendBody("uint64_t %s = static_cast<uint64_t>(%s);", v, arg)
+			arg = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg))
+			appendBody("uint64_t %s = %s;", v, arg)
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(%s ? __builtin_ctzll(%s) : 64)", v, v), stackvar.I64)
 		case operators.I64Popcnt:
 			arg, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(__builtin_popcountll(static_cast<uint64_t>(%s)))", arg), stackvar.I64)
+			arg = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(__builtin_popcountll(%s))", arg), stackvar.I64)
 		case operators.I64Add:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
 			// Cast to unsigned types to avoid undefined signed overflow.
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) + static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>((%s) + (%s))", arg0, arg1), stackvar.I64)
 		case operators.I64Sub:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) - static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>((%s) - (%s))", arg0, arg1), stackvar.I64)
 		case operators.I64Mul:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) * static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>((%s) * (%s))", arg0, arg1), stackvar.I64)
 		case operators.I64DivS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -1026,7 +1074,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64DivU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) / static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>((%s) / (%s))", arg0, arg1), stackvar.I64)
 		case operators.I64RemS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -1034,7 +1084,9 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64RemU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) %% static_cast<uint64_t>(%s))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>((%s) %% (%s))", arg0, arg1), stackvar.I64)
 		case operators.I64And:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
@@ -1050,23 +1102,32 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 		case operators.I64Shl:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) << static_cast<int32_t>(%s))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>((%s) << (%s))", arg0, arg1), stackvar.I64)
 		case operators.I64ShrS:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("(%s) >> static_cast<int32_t>(%s)", arg0, arg1), stackvar.I64)
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("(%s) >> (%s)", arg0, arg1), stackvar.I64)
 		case operators.I64ShrU:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint64_t>(%s) >> static_cast<int32_t>(%s))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>((%s) >> (%s))", arg0, arg1), stackvar.I64)
 		case operators.I64Rotl:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft(static_cast<uint64_t>(%s), static_cast<int32_t>(%s)))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft((%s), (%s)))", arg0, arg1), stackvar.I64)
 		case operators.I64Rotr:
 			arg1, _ := blockStack.PopExpr()
 			arg0, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft(static_cast<uint64_t>(%s), -(static_cast<int32_t>(%s))))", arg0, arg1), stackvar.I64)
+			arg0 = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", arg0))
+			arg1 = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", arg1))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(Bits::RotateLeft((%s), -(%s)))", arg0, arg1), stackvar.I64)
 		case operators.F32Abs:
 			expr, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("std::abs(%s)", expr), stackvar.F32)
@@ -1168,7 +1229,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 
 		case operators.I32WrapI64:
 			expr, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(%s)", expr), stackvar.I32)
+			expr = optimizeStaticCasts(fmt.Sprintf("static_cast<int32_t>(%s)", expr))
+			blockStack.PushExpr(fmt.Sprintf("(%s)", expr), stackvar.I32)
 		case operators.I32TruncSF32:
 			expr, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(std::trunc(%s))", expr), stackvar.I32)
@@ -1183,7 +1245,8 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int32_t>(static_cast<uint32_t>(std::trunc(%s)))", expr), stackvar.I32)
 		case operators.I64ExtendSI32:
 			expr, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(%s)", expr), stackvar.I64)
+			expr = optimizeStaticCasts(fmt.Sprintf("static_cast<int64_t>(%s)", expr))
+			blockStack.PushExpr(fmt.Sprintf("(%s)", expr), stackvar.I64)
 		case operators.I64ExtendUI32:
 			expr, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("static_cast<int64_t>(static_cast<uint32_t>(%s))", expr), stackvar.I64)
@@ -1204,13 +1267,15 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
 		case operators.F32ConvertUI32:
 			expr, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(static_cast<uint32_t>(%s))", expr), stackvar.F32)
+			expr = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", expr))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
 		case operators.F32ConvertSI64:
 			expr, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
 		case operators.F32ConvertUI64:
 			expr, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(static_cast<uint64_t>((%s)))", expr), stackvar.F32)
+			expr = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", expr))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
 		case operators.F32DemoteF64:
 			expr, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("static_cast<float>(%s)", expr), stackvar.F32)
@@ -1219,13 +1284,15 @@ func (f *wasmFunc) bodyToCpp() ([]string, error) {
 			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
 		case operators.F64ConvertUI32:
 			expr, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(static_cast<uint32_t>(%s))", expr), stackvar.F64)
+			expr = optimizeStaticCasts(fmt.Sprintf("static_cast<uint32_t>(%s)", expr))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
 		case operators.F64ConvertSI64:
 			expr, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
 		case operators.F64ConvertUI64:
 			expr, _ := blockStack.PopExpr()
-			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(static_cast<uint64_t>(%s))", expr), stackvar.F64)
+			expr = optimizeStaticCasts(fmt.Sprintf("static_cast<uint64_t>(%s)", expr))
+			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
 		case operators.F64PromoteF32:
 			expr, _ := blockStack.PopExpr()
 			blockStack.PushExpr(fmt.Sprintf("static_cast<double>(%s)", expr), stackvar.F64)
@@ -1516,25 +1583,114 @@ func removeUnusedLabels(body []string) []string {
 	return r
 }
 
-func hasOuterParen(str string) bool {
-	if str[0] != '(' || str[len(str)-1] != ')' {
-		return false
-	}
+func hasOuterParens(str string, n int) bool {
+	type phase int
+	const (
+		opening phase = iota
+		middle
+		closing
+	)
 
-	count := 1
-	for _, r := range str[1 : len(str)-1] {
+	var count int
+	currentPhase := opening
+	for i, r := range str {
 		switch r {
 		case '(':
 			count++
+			switch currentPhase {
+			case opening:
+				if count == n {
+					currentPhase = middle
+				}
+			case middle:
+			case closing:
+				return false
+			}
 		case ')':
 			count--
+			switch currentPhase {
+			case opening:
+				return false
+			case middle:
+				if count < n {
+					currentPhase = closing
+				}
+			case closing:
+			}
 		}
 		if count == 0 {
-			return false
+			if i < len(str)-1 {
+				return false
+			}
+			return currentPhase == closing
 		}
 	}
 
-	return true
+	return false
+}
+
+func optimizeStaticCasts(str string) string {
+	const (
+		i8cast  = "static_cast<int8_t>"
+		i16cast = "static_cast<int16_t>"
+		i32cast = "static_cast<int32_t>"
+		i64cast = "static_cast<int64_t>"
+		u8cast  = "static_cast<uint8_t>"
+		u16cast = "static_cast<uint16_t>"
+		u32cast = "static_cast<uint32_t>"
+		u64cast = "static_cast<uint64_t>"
+	)
+
+	// Remove a redundant static cast.
+
+	replacablePrefixes := map[string]string{
+		i8cast + "(" + i8cast + "(":  i8cast + "(",
+		i16cast + "(" + i8cast + "(": i16cast + "(",
+		i32cast + "(" + i8cast + "(": i32cast + "(",
+		i64cast + "(" + i8cast + "(": i64cast + "(",
+
+		i16cast + "(" + i16cast + "(": i16cast + "(",
+		i32cast + "(" + i16cast + "(": i32cast + "(",
+		i64cast + "(" + i16cast + "(": i64cast + "(",
+
+		i32cast + "(" + i32cast + "(": i32cast + "(",
+		i64cast + "(" + i32cast + "(": i64cast + "(",
+
+		i64cast + "(" + i64cast + "(": i64cast + "(",
+
+		u8cast + "(" + u8cast + "(":  u8cast + "(",
+		u16cast + "(" + u8cast + "(": u16cast + "(",
+		u32cast + "(" + u8cast + "(": u32cast + "(",
+		u64cast + "(" + u8cast + "(": u64cast + "(",
+
+		u16cast + "(" + u16cast + "(": u16cast + "(",
+		u32cast + "(" + u16cast + "(": u32cast + "(",
+		u64cast + "(" + u16cast + "(": u64cast + "(",
+
+		u32cast + "(" + u32cast + "(": u32cast + "(",
+		u64cast + "(" + u32cast + "(": u64cast + "(",
+
+		u64cast + "(" + u64cast + "(": u64cast + "(",
+	}
+
+loop:
+	for {
+		if hasOuterParens(str, 1) {
+			str = str[1 : len(str)-1]
+			continue
+		}
+
+		for from, to := range replacablePrefixes {
+			if strings.HasPrefix(str, from) && hasOuterParens(str[strings.Index(str, "("):], 2) {
+				str = to + str[len(from):len(str)-1]
+				continue loop
+			}
+		}
+
+		break
+	}
+
+	return str
 }
 
 func optimizeCondition(cond string) string {
@@ -1548,7 +1704,7 @@ func optimizeCondition(cond string) string {
 			u64cast        = "static_cast<uint64_t>"
 		)
 
-		if hasOuterParen(cond) {
+		if hasOuterParens(cond, 1) {
 			cond = cond[1 : len(cond)-1]
 			continue
 		}
@@ -1569,19 +1725,19 @@ func optimizeCondition(cond string) string {
 			continue
 		}
 
-		if strings.HasPrefix(cond, i32cast) && hasOuterParen(cond[len(i32cast):]) {
+		if strings.HasPrefix(cond, i32cast) && hasOuterParens(cond[len(i32cast):], 1) {
 			cond = cond[len(i32cast)+1 : len(cond)-1]
 			continue
 		}
-		if strings.HasPrefix(cond, i64cast) && hasOuterParen(cond[len(i64cast):]) {
+		if strings.HasPrefix(cond, i64cast) && hasOuterParens(cond[len(i64cast):], 1) {
 			cond = cond[len(i64cast)+1 : len(cond)-1]
 			continue
 		}
-		if strings.HasPrefix(cond, u32cast) && hasOuterParen(cond[len(u32cast):]) {
+		if strings.HasPrefix(cond, u32cast) && hasOuterParens(cond[len(u32cast):], 1) {
 			cond = cond[len(u32cast)+1 : len(cond)-1]
 			continue
 		}
-		if strings.HasPrefix(cond, u64cast) && hasOuterParen(cond[len(u64cast):]) {
+		if strings.HasPrefix(cond, u64cast) && hasOuterParens(cond[len(u64cast):], 1) {
 			cond = cond[len(u64cast)+1 : len(cond)-1]
 			continue
 		}
