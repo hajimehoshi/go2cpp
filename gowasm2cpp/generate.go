@@ -662,7 +662,13 @@ private:
   std::unordered_map<Value, int32_t, Value::Hash> ids_;
   std::unordered_set<int32_t> id_pool_;
   int32_t next_id_;
-  std::vector<int32_t> finalizing_ids_;
+
+  // A set of Value IDs to be finalized later.
+  // Note that the ID is added to this set when Go no longer has this value,
+  // but the Value might still be alive on C++ side, and might be reused on Go side later.
+  // Value is a ref-counted object and even if a Value is removed from values_, the value might be alive.
+  std::unordered_set<int32_t> finalizing_ids_;
+
   bool exited_ = false;
   int32_t exit_code_ = 0;
 
@@ -1002,7 +1008,9 @@ void Go::EnqueueTask(std::function<void()> task) {
 int32_t Go::GetIdFromValue(const Value& value) {
   auto it = ids_.find(value);
   if (it != ids_.end()) {
-    return it->second;
+    int32_t id = it->second;
+    finalizing_ids_.erase(id);
+    return id;
   }
 
   int32_t id = 0;
@@ -1016,19 +1024,21 @@ int32_t Go::GetIdFromValue(const Value& value) {
   values_[id] = value;
   go_ref_counts_[id] = 0;
   ids_[value] = id;
+  finalizing_ids_.erase(id); // TODO: Is this really needed?
   return id;
 }
 
 void Go::GC() {
   size_t num = std::min(finalizing_ids_.size(), std::max(finalizing_ids_.size() / 16, 64ul));
   for (size_t i = 0; i < num; i++) {
-    int32_t id = finalizing_ids_[i];
+    auto it = finalizing_ids_.begin();
+    int32_t id = *it;
     Value v = values_[id];
     values_.erase(id);
     ids_.erase(v);
     id_pool_.insert(id);
+    finalizing_ids_.erase(it);
   }
-  finalizing_ids_.erase(finalizing_ids_.begin(), finalizing_ids_.begin() + num);
 }
 
 }

@@ -50,7 +50,7 @@ var importFuncBodies = map[string]string{
 	"syscall/js.finalizeRef": `  int32_t id = static_cast<int32_t>(go_->mem_->LoadUint32(local0_ + 8));
   go_->go_ref_counts_[id]--;
   if (go_->go_ref_counts_[id] == 0) {
-    go_->finalizing_ids_.push_back(id);
+    go_->finalizing_ids_.insert(id);
   }`,
 
 	// func stringVal(value string) ref
