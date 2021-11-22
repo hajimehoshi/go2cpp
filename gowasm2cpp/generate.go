@@ -1021,10 +1021,10 @@ int32_t Go::GetIdFromValue(const Value& value) {
     id = next_id_;
     next_id_++;
   }
+  assert(finalizing_ids_.find(id) == finalizing_ids_.end());
   values_[id] = value;
   go_ref_counts_[id] = 0;
   ids_[value] = id;
-  finalizing_ids_.erase(id); // TODO: Is this really needed?
   return id;
 }
 
