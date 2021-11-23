@@ -367,14 +367,14 @@ public:
       return func_pause_;
     }
     if (key == "play") {
-      if (!func_pause_.IsFunction()) {
-        func_pause_ = Value{std::make_shared<Function>(
+      if (!func_play_.IsFunction()) {
+        func_play_ = Value{std::make_shared<Function>(
           [this](Value self, std::vector<Value> args) -> Value {
             player_->Play();
             return Value{};
           })};
       }
-      return func_pause_;
+      return func_play_;
     }
     if (key == "close") {
       if (!func_close_.IsFunction()) {
